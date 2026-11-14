@@ -21,6 +21,7 @@ let seguindo = null, selecionado = null;
 let preview = null;              // {id, look} visual em edição (ainda não salvo)
 let escolhendo = false;          // modo "toque num morador no mapa"
 let estados = [], desenhados = [];
+let AO_VIVO = null;              // seguidores agora (tabela "contador" no Supabase)
 
 // ---------------------------------------------------------------------
 // tempo (hora de Brasília, UTC-3 sem horário de verão)
@@ -451,11 +452,23 @@ function atualizarHud() {
   const registrados = MORADORES.filter(m => ocupado(m.id)).length;
   $('#hudReg').textContent = registrados;
   $('#hudLivres').textContent = MORADORES.length - registrados;
-  const pm = VILA.proximo_marco;
-  if (pm) {
-    const falta = Math.max(0, pm.seguidores - VILA.seguidores);
-    $('#hudMarcoTxt').textContent = falta ? `faltam ${falta} pra ${pm.construcao} ›` : `${pm.construcao} chegando!`;
-    $('#hudMarcoBarra').style.width = clamp(100 - falta, 3, 100) + '%';
+  // número ao vivo (se houver) manda na barra do marco; o mapa é o do último episódio
+  const seg = AO_VIVO ?? VILA.seguidores;
+  const chegando = Math.max(0, seg - VILA.seguidores);
+  $('#hudVivoChip').hidden = AO_VIVO == null;
+  if (AO_VIVO != null) $('#hudVivo').textContent = AO_VIVO.toLocaleString('pt-BR');
+  $('#hudChegandoChip').hidden = !chegando;
+  $('#hudChegando').textContent = '+' + chegando;
+  const marcos = (VILA.marcos || []).filter(m => m.seguidores > VILA.seguidores);
+  const pm = marcos.find(m => m.seguidores > seg) || VILA.proximo_marco;
+  const liberado = marcos.find(m => m.seguidores <= seg);   // passou do marco, mas o episódio ainda não saiu
+  if (liberado) {
+    $('#hudMarcoTxt').textContent = `🎉 Desbloqueou: ${liberado.construcao}! Chega no próximo episódio ›`;
+    $('#hudMarcoBarra').style.width = '100%';
+  } else if (pm) {
+    const falta = Math.max(0, pm.seguidores - seg), ant = Math.max(...(VILA.marcos || [{ seguidores: 0 }]).map(m => m.seguidores).filter(s => s <= seg), 0);
+    $('#hudMarcoTxt').textContent = `faltam ${falta} pra ${pm.construcao} ›`;
+    $('#hudMarcoBarra').style.width = clamp(100 * (seg - ant) / Math.max(1, pm.seguidores - ant), 3, 100) + '%';
   } else $('#hudMarco').hidden = true;
   $('#menuEuTxt').textContent = EU ? 'Eu' : 'Entrar';
   $('#menuRegTxt').textContent = EU ? 'Meu boneco' : 'Registrar';
@@ -983,6 +996,17 @@ async function compartilhar(id) {
 // ---------------------------------------------------------------------
 // início
 // ---------------------------------------------------------------------
+async function atualizarContador() {
+  const c = await Api.contador();
+  if (!c || !Number.isFinite(c.seguidores)) return;
+  const antes = AO_VIVO;
+  AO_VIVO = c.seguidores;
+  atualizarHud();
+  if (antes != null && AO_VIVO > antes) {
+    const b = $('#hudVivo'); b.classList.remove('subiu'); void b.offsetWidth; b.classList.add('subiu');
+    const n = AO_VIVO - antes; toast(`🎉 +${n} ${n === 1 ? 'novo seguidor' : 'novos seguidores'}! A vila tá crescendo`);
+  }
+}
 const carregarImg = src => new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = src; });
 async function carregarPublicos() {
   try {
@@ -998,7 +1022,9 @@ async function iniciar() {
   VILA = v; MORADORES = m; IMG.dia = dia; IMG.noite = noite; IMG.atlas = atlas;
   IMG.atlasNoite = tingir(atlas, atlas.width, atlas.height);
   for (const k of ['A', 'B', 'C']) RY[k] = VILA.ruas[k].de[1];
-  await carregarPublicos();
+  await Promise.all([carregarPublicos(), atualizarContador()]);
+  setInterval(() => { if (!document.hidden) atualizarContador(); }, 60000);
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarContador(); });
   if (token()) {
     const r = await Api.rpc('meu_perfil', { p_token: token() });
     if (r && r.ok) { EU = { morador: r.morador, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia || null }; await carregarMeusAmigos(); }

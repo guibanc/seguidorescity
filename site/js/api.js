@@ -34,5 +34,17 @@
     }
   }
 
-  window.Api = { modo: sb ? 'supabase' : semBanco ? 'sem-banco' : 'local', rpc, publicos };
+  // número de seguidores ao vivo (null = indisponível)
+  async function contador() {
+    try {
+      if (semBanco) return null;
+      if (!sb) return (await fetch('/api/contador')).json();
+      const r = await fetch(`${base}/rest/v1/contador_publico?select=seguidores,plataforma,atualizado_em&limit=1`, { headers: H });
+      if (!r.ok) return null;
+      const d = await r.json();
+      return d[0] || null;
+    } catch { return null; }
+  }
+
+  window.Api = { contador, modo: sb ? 'supabase' : semBanco ? 'sem-banco' : 'local', rpc, publicos };
 })();

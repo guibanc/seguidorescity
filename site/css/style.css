@@ -52,8 +52,15 @@ input { font: inherit; }
 .chip b { font-family: var(--fonte-px); font-size: 14px; color: var(--amarelo); }
 .chip-reg b { color: #ffb4b4; }
 .chip-livre b { color: #b6f0a4; }
+.chip-vivo { background: var(--vermelho); border-color: var(--tinta); box-shadow: 0 2px 0 var(--tinta); }
+.chip-vivo b { color: #fff; font-size: 15px; }
+.chip-chegando b { color: var(--amarelo); }
+.ponto-vivo { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #fff; margin-right: 6px; vertical-align: 1px; animation: pisca 1.4s ease-in-out infinite; }
+@keyframes pisca { 50% { opacity: .25; } }
+.chip b.subiu { animation: subiu .9s ease-out; }
+@keyframes subiu { 0% { color: var(--amarelo); transform: scale(1.35); display: inline-block; } }
 .marco { cursor: pointer; width: fit-content; background: rgba(30,24,36,.72); padding: 4px 10px; border-radius: 999px; margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; max-width: 420px; }
-.marco-barra { flex: 1; height: 9px; background: rgba(0,0,0,.45); border: 2px solid var(--tinta); border-radius: 6px; overflow: hidden; max-width: 160px; }
+.marco-barra { flex: none; width: 110px; height: 9px; background: rgba(0,0,0,.45); border: 2px solid var(--tinta); border-radius: 6px; overflow: hidden; max-width: 160px; }
 .marco-enche { height: 100%; background: repeating-linear-gradient(90deg, var(--amarelo) 0 6px, #e0b020 6px 8px); width: 0; transition: width .6s; }
 
 /* ---------------- flutuantes ---------------- */

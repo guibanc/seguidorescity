@@ -32,6 +32,8 @@ Se não abrir, libere o Node no Firewall do Windows quando ele perguntar.
    (Lista de nomes proibidos: palavrões, ofensas e termos pejorativos.)
 6. **New query** de novo → copie tudo de `site/dados/novos_moradores.sql` → cole → **Run**.
    (Isso cria os 370 moradores.)
+   Depois rode também `supabase/3_contador.sql` (contador de seguidores ao vivo no topo do site).
+   Pra atualizar o número à mão: `update contador set seguidores = 381, atualizado_em = now() where id = 1;`
 7. Confira: menu **Table Editor** → tabela `moradores` deve ter 370 linhas.
 
 ### Pegar as chaves

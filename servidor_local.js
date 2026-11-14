@@ -123,6 +123,7 @@ const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'applic
 http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/api/publicos') return json(res, 200, moradores.map(m => publico(m.id)));
+  if (url.pathname === '/api/contador') return json(res, 200, { seguidores: db.seguidores || moradores.length, plataforma: 'local', atualizado_em: new Date().toISOString() });
   const m = url.pathname.match(/^\/api\/rpc\/(\w+)$/);
   if (m) {
     if (req.method !== 'POST' || !RPC[m[1]]) return json(res, 404, erro('função não existe'));
