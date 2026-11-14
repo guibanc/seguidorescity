@@ -48,11 +48,11 @@ input { font: inherit; }
 .hud-vel { font-size: 11px; color: var(--vermelho); }
 .hud-vel:empty { display: none; }
 .hud-numeros { margin-top: 8px; flex-wrap: wrap; gap: 6px; }
-.chip { font-size: 12.5px; background: rgba(255,248,231,.14); border: 1px solid rgba(255,248,231,.25); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
+.chip { font-size: 12.5px; background: rgba(30,24,36,.72); border: 1px solid rgba(255,248,231,.25); padding: 3px 9px; border-radius: 999px; white-space: nowrap; }
 .chip b { font-family: var(--fonte-px); font-size: 14px; color: var(--amarelo); }
 .chip-reg b { color: #ffb4b4; }
 .chip-livre b { color: #b6f0a4; }
-.marco { cursor: pointer; margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; max-width: 420px; }
+.marco { cursor: pointer; width: fit-content; background: rgba(30,24,36,.72); padding: 4px 10px; border-radius: 999px; margin-top: 8px; display: flex; align-items: center; gap: 8px; font-size: 12.5px; max-width: 420px; }
 .marco-barra { flex: 1; height: 9px; background: rgba(0,0,0,.45); border: 2px solid var(--tinta); border-radius: 6px; overflow: hidden; max-width: 160px; }
 .marco-enche { height: 100%; background: repeating-linear-gradient(90deg, var(--amarelo) 0 6px, #e0b020 6px 8px); width: 0; transition: width .6s; }
 
