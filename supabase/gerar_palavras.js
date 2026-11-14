@@ -39,7 +39,10 @@ const EXCECOES = new Set([
   'grelho', 'heroina', 'heterosexual', 'homem gay', 'homosexual', 'homoerotico', 'inferno', 'lesbica', 'mama',
   'passar um cheque', 'saco', 'torneira', 'aborto', 'camisinha', 'cocaina', 'fecal', 'pinto', 'burro', 'balalao',
   'bicha', 'pau', 'sexual', 'gay', 'lesbian', 'bisexual', 'homosexual', 'heterosexual', 'transsexual', 'queer', 'jesus',
-]);
+  // viram nomes/palavras normais depois de juntar letras ou são nomes comuns
+  'boob', 'boobs', 'quim', 'coon', 'coons', 'poon', 'poof', 'butt', 'negro', 'gook', 'ecchi', 'domme', 'dommes',
+  'santorum', 'mong', 'escort', 'jugs', 'twinkie', 'yiffy', 'playboy', 'swinger', 'kinky', 'sexy', 'nude', 'erotic',
+].map(normalizar));
 
 const lista = new Set();
 const daBiblioteca = new Set([...nw.pt, ...nw.en]);
