@@ -34,6 +34,20 @@ Se não abrir, libere o Node no Firewall do Windows quando ele perguntar.
    (Isso cria os 370 moradores.)
    Depois rode também `supabase/3_contador.sql` (contador de seguidores ao vivo no topo do site).
    Pra atualizar o número à mão: `update contador set seguidores = 381, atualizado_em = now() where id = 1;`
+
+### Contador automático pelo YouTube (a cada 10 min)
+1. **Chave do Google:** console.cloud.google.com → crie um projeto (ex. "cidade-seguidores") →
+   **APIs e serviços → Biblioteca** → procure **YouTube Data API v3** → **Ativar** →
+   **Credenciais → Criar credenciais → Chave de API** → copie.
+   Em **Editar chave → Restrições de API**, marque só **YouTube Data API v3** e salve.
+2. **Guardar a chave no cofre do Supabase** (SQL Editor, troque pelo sua chave):
+   `select vault.create_secret('SUA_CHAVE_AQUI', 'youtube_api_key');`
+3. Rode `supabase/4_contador_youtube.sql`.
+4. Espere uns segundos e rode `select contador_youtube();` de novo → o número aparece no site.
+   Pra ver se deu algum erro: `select ultimo_erro, conferido_em from contador_config;`
+
+Obs.: acima de 1.000 inscritos o YouTube arredonda o número (1.234 aparece como 1.230).
+Trocar a chave depois: `select vault.update_secret((select id from vault.secrets where name = 'youtube_api_key'), 'CHAVE_NOVA');`
 7. Confira: menu **Table Editor** → tabela `moradores` deve ter 370 linhas.
 
 ### Pegar as chaves
