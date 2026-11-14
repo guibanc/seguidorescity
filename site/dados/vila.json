@@ -1,7 +1,7 @@
 {
- "episodio": 3,
- "seguidores": 370,
- "casas": 37,
+ "episodio": 4,
+ "seguidores": 460,
+ "casas": 46,
  "estilo": "16 bits",
  "mapa": {
   "largura": 540,
@@ -9,8 +9,8 @@
   "escala_logica": 2
  },
  "proximo_marco": {
-  "seguidores": 400,
-  "construcao": "escola"
+  "seguidores": 500,
+  "construcao": "prefeitura + ruas calçadas (vira cidadezinha)"
  },
  "nome_vila": null,
  "pontos": {
@@ -80,7 +80,15 @@
     940
    ]
   },
-  "escola_reservada": {
+  "escola": {
+   "porta": [
+    364,
+    306
+   ],
+   "rua": [
+    364,
+    312
+   ],
    "lotes": [
     [
      322,
@@ -91,6 +99,19 @@
      252
     ]
    ]
+  },
+  "prefeitura_reservada": {
+   "lotes": [
+    [
+     278,
+     792
+    ],
+    [
+     322,
+     792
+    ]
+   ],
+   "marco": 500
   }
  },
  "ruas": {
@@ -132,6 +153,16 @@
    "ate": [
     434,
     310
+   ]
+  },
+  "D": {
+   "de": [
+    32,
+    850
+   ],
+   "ate": [
+    434,
+    850
    ]
   }
  },
@@ -1319,6 +1350,446 @@
     369,
     370
    ]
+  },
+  {
+   "casa": 38,
+   "lote": [
+    118,
+    252
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    138,
+    296
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    138,
+    310
+   ],
+   "moradores": [
+    371,
+    372,
+    373,
+    374,
+    375,
+    376,
+    377,
+    378,
+    379,
+    380
+   ]
+  },
+  {
+   "casa": 39,
+   "lote": [
+    118,
+    324
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    138,
+    368
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    138,
+    310
+   ],
+   "moradores": [
+    381,
+    382,
+    383,
+    384,
+    385,
+    386,
+    387,
+    388,
+    389,
+    390
+   ]
+  },
+  {
+   "casa": 40,
+   "lote": [
+    366,
+    324
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    386,
+    368
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    386,
+    310
+   ],
+   "moradores": [
+    391,
+    392,
+    393,
+    394,
+    395,
+    396,
+    397,
+    398,
+    399,
+    400
+   ]
+  },
+  {
+   "casa": 41,
+   "lote": [
+    74,
+    252
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    94,
+    296
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    94,
+    310
+   ],
+   "moradores": [
+    401,
+    402,
+    403,
+    404,
+    405,
+    406,
+    407,
+    408,
+    409,
+    410
+   ]
+  },
+  {
+   "casa": 42,
+   "lote": [
+    74,
+    324
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    94,
+    368
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    94,
+    310
+   ],
+   "moradores": [
+    411,
+    412,
+    413,
+    414,
+    415,
+    416,
+    417,
+    418,
+    419,
+    420
+   ]
+  },
+  {
+   "casa": 43,
+   "lote": [
+    410,
+    252
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    430,
+    296
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    430,
+    310
+   ],
+   "moradores": [
+    421,
+    422,
+    423,
+    424,
+    425,
+    426,
+    427,
+    428,
+    429,
+    430
+   ]
+  },
+  {
+   "casa": 44,
+   "lote": [
+    410,
+    324
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    430,
+    368
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    430,
+    310
+   ],
+   "moradores": [
+    431,
+    432,
+    433,
+    434,
+    435,
+    436,
+    437,
+    438,
+    439,
+    440
+   ]
+  },
+  {
+   "casa": 45,
+   "lote": [
+    30,
+    252
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    50,
+    296
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    50,
+    310
+   ],
+   "moradores": [
+    441,
+    442,
+    443,
+    444,
+    445,
+    446,
+    447,
+    448,
+    449,
+    450
+   ]
+  },
+  {
+   "casa": 46,
+   "lote": [
+    30,
+    324
+   ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    50,
+    368
+   ],
+   "rua": "C",
+   "ponto_na_rua": [
+    50,
+    310
+   ],
+   "moradores": [
+    451,
+    452,
+    453,
+    454,
+    455,
+    456,
+    457,
+    458,
+    459,
+    460
+   ]
+  }
+ ],
+ "lotes_livres": [
+  {
+   "casa": 47,
+   "lote": [
+    206,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 465,
+   "pronta_em": 470
+  },
+  {
+   "casa": 48,
+   "lote": [
+    206,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 475,
+   "pronta_em": 480
+  },
+  {
+   "casa": 49,
+   "lote": [
+    162,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 485,
+   "pronta_em": 490
+  },
+  {
+   "casa": 50,
+   "lote": [
+    162,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 495,
+   "pronta_em": 500
+  },
+  {
+   "casa": 51,
+   "lote": [
+    322,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 505,
+   "pronta_em": 510
+  },
+  {
+   "casa": 52,
+   "lote": [
+    118,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 515,
+   "pronta_em": 520
+  },
+  {
+   "casa": 53,
+   "lote": [
+    118,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 525,
+   "pronta_em": 530
+  },
+  {
+   "casa": 54,
+   "lote": [
+    366,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 535,
+   "pronta_em": 540
+  },
+  {
+   "casa": 55,
+   "lote": [
+    366,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 545,
+   "pronta_em": 550
+  },
+  {
+   "casa": 56,
+   "lote": [
+    74,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 555,
+   "pronta_em": 560
+  },
+  {
+   "casa": 57,
+   "lote": [
+    74,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 565,
+   "pronta_em": 570
+  },
+  {
+   "casa": 58,
+   "lote": [
+    410,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 575,
+   "pronta_em": 580
+  },
+  {
+   "casa": 59,
+   "lote": [
+    410,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 585,
+   "pronta_em": 590
+  },
+  {
+   "casa": 60,
+   "lote": [
+    30,
+    792
+   ],
+   "rua": "D",
+   "comeca_em": 595,
+   "pronta_em": 600
+  },
+  {
+   "casa": 61,
+   "lote": [
+    30,
+    864
+   ],
+   "rua": "D",
+   "comeca_em": 605,
+   "pronta_em": 610
   }
  ],
  "atlas": {
@@ -1412,8 +1883,13 @@
   }
  ],
  "proxima_casa": {
-  "numero": 38,
-  "comeca_em": 375,
-  "pronta_em": 380
+  "numero": 47,
+  "comeca_em": 465,
+  "pronta_em": 470,
+  "lote": [
+   104,
+   420,
+   "a"
+  ]
  }
 }

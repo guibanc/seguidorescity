@@ -1,0 +1,116 @@
+{
+ "6": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "11": {
+  "segue": [
+   193
+  ],
+  "seguidores": [
+   193,
+   24
+  ]
+ },
+ "24": {
+  "segue": [
+   11
+  ],
+  "seguidores": [
+   181,
+   347
+  ]
+ },
+ "34": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "67": {
+  "segue": [],
+  "seguidores": []
+ },
+ "83": {
+  "segue": [],
+  "seguidores": []
+ },
+ "88": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "150": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "154": {
+  "segue": [],
+  "seguidores": []
+ },
+ "171": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "181": {
+  "segue": [
+   24
+  ],
+  "seguidores": [
+   347
+  ]
+ },
+ "193": {
+  "segue": [
+   11
+  ],
+  "seguidores": [
+   229,
+   11
+  ]
+ },
+ "212": {
+  "segue": [],
+  "seguidores": []
+ },
+ "229": {
+  "segue": [
+   193
+  ],
+  "seguidores": []
+ },
+ "302": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "322": {
+  "segue": [],
+  "seguidores": [
+   347
+  ]
+ },
+ "347": {
+  "segue": [
+   349,
+   181,
+   6,
+   322,
+   24,
+   302,
+   88,
+   34,
+   171,
+   150
+  ],
+  "seguidores": []
+ }
+}

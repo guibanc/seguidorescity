@@ -37,7 +37,7 @@ DIRT = [(146, 102, 64), (170, 126, 82), (188, 146, 98), (206, 168, 120)]
 WATER = [(38, 86, 168), (50, 108, 194), (70, 136, 216), (110, 172, 232)]
 SAND = [(176, 154, 98), (204, 186, 128), (224, 208, 150)]
 
-def make_ground16():
+def make_ground16(extra_roads=()):
     """grama + rio + ruas + praça, tudo estático (a vila já tem as ruas desde o ep. 1)"""
     n = value_noise(H2, W2, 24, 11)*0.6 + value_noise(H2, W2, 7, 12)*0.3 + np.random.RandomState(13).rand(H2, W2)*0.1
     yy, xx = np.mgrid[0:H2, 0:W2]
@@ -120,7 +120,7 @@ def make_ground16():
             x, y = rr.randint(X0+2, X1-2), rr.randint(Y0+2, Y1-2)
             a[y, x] = (222, 196, 150); a[y+1, x] = DIRT[0]
     road(MAINX0, 104, MAINX1+1, 480, True)
-    for ry in (ROADA, ROADB, ROADC): road(14, ry, 219, ry+10, False)
+    for ry in (ROADA, ROADB, ROADC)+tuple(extra_roads): road(14, ry, 219, ry+10, False)
 
     # ---- praça (pedra) ----
     X0, Y0, X1, Y1 = 100*S, 213*S, 164*S, 277*S
@@ -611,4 +611,107 @@ def npc_sprite(look, dirc='down', frame=0, uniforme=None, tool=None, carry=None)
     elif carry == 'sacola':
         p[10, top_s+3] = (248, 240, 210, 255); p[10, top_s+4] = (248, 240, 210, 255); p[11, top_s+4] = (232, 220, 186, 255)
         p[10, top_s+5] = (232, 220, 186, 255); p[11, top_s+3] = (226, 64, 50, 255)
+    return im
+
+
+# ---------------- escola (marco 400, ep. 4) — ocupa 2 lotes ----------------
+def escola16(p, lit=False, bell=0, flag=0):
+    """86x50 (2 lotes lógicos). p: 0..1  bell: -1/0/1 (balanço do sino)  flag: quadro da bandeira"""
+    from font import draw_text
+    im = Image.new('RGBA', (86, 50), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    X0, X1, RY, WY, BY = 2, 77, 10, 28, 41
+    TX0, TX1 = 33, 46                       # torre do sino
+    ramp = ROOF16[3]; wc = (250, 224, 140); trim = (250, 250, 244)
+    if p <= 0: return im
+    stake = (120, 80, 40); wood = (124, 82, 46)
+    if p < 1:
+        for (x, y) in [(X0, RY), (X1, RY), (X0, BY), (X1, BY)]:
+            d.line([x, y-3, x, y], fill=A(stake)); d.point((x, y-3), fill=A(sh(stake, 1.4)))
+    if p < 0.2:
+        for x in range(X0, X1, 3): d.point((x, RY-1), fill=(250, 250, 250, 220)); d.point((x, BY-1), fill=(250, 250, 250, 220))
+        for y in range(RY, BY, 3): d.point((X0, y), fill=(250, 250, 250, 220)); d.point((X1, y), fill=(250, 250, 250, 220))
+        n = int(p/0.2*(X1-X0-2))
+        if n > 0:
+            d.rectangle([X0+1, RY+1, X0+n, BY-1], fill=(150, 150, 156, 255))
+            for y in range(RY+3, BY-1, 4):
+                for x in range(X0+2+(y % 8)//2, X0+n, 6): d.point((x, y), fill=(128, 128, 134, 255))
+        return im
+    # fundação + piso
+    d.rectangle([X0, RY, X1, BY], fill=(140, 140, 146, 255))
+    d.rectangle([X0+2, RY+2, X1-2, WY-1], fill=(176, 130, 84, 255))
+    for y in range(RY+3, WY, 3): d.line([X0+2, y, X1-2, y], fill=(150, 108, 68, 255))
+    if p < 0.62:
+        f = clamp((p-0.3)/0.32)
+        for x in (X0+1, X1-1, TX0, TX1, 18, 62):
+            d.rectangle([x-1, RY, x, BY], fill=A(wood)); d.line([x-1, RY, x-1, BY], fill=A(sh(wood, 1.3)))
+        d.rectangle([X0, RY, X1, RY+1], fill=A(wood))
+        hh = int(round(f*(BY-WY+1)))
+        if hh > 0:
+            d.rectangle([X0+1, BY+1-hh, X1-1, BY], fill=A(wc))
+            for y in range(BY+1-hh, BY+1, 2): d.line([X0+1, y, X1-1, y], fill=A(sh(wc, 0.93)))
+        return im
+    # ---- paredes prontas ----
+    d.rectangle([X0+1, WY, X1-1, BY], fill=A(wc))
+    for y in range(WY+2, BY, 3): d.line([X0+1, y, X1-1, y], fill=A(sh(wc, 0.95)))
+    d.rectangle([X0+1, BY-2, X1-1, BY], fill=(214, 120, 70, 255))          # rodapé
+    d.line([X0+1, BY, X1-1, BY], fill=(160, 84, 50, 255))
+    d.line([X0, WY, X0, BY], fill=A(OUT)); d.line([X1, WY, X1, BY], fill=A(OUT))
+    # porta dupla verde
+    cx = (X0+X1)//2
+    d.rectangle([cx-6, WY+2, cx+6, BY], fill=A(trim))
+    d.rectangle([cx-5, WY+3, cx+5, BY], fill=(40, 132, 70, 255))
+    d.line([cx, WY+3, cx, BY], fill=(24, 90, 46, 255)); d.line([cx-5, WY+3, cx+5, WY+3], fill=(70, 170, 100, 255))
+    d.point((cx-2, WY+8), fill=(250, 210, 90, 255)); d.point((cx+2, WY+8), fill=(250, 210, 90, 255))
+    for k in range(2): d.line([cx-7-k, BY+1+k, cx+7+k, BY+1+k], fill=(180-k*20, 178-k*20, 170-k*20, 255))
+    # janelas (4)
+    g = LITW[0] if lit else (110, 166, 222)
+    for wx in (X0+5, X0+19, X1-25, X1-11):
+        d.rectangle([wx-1, WY+3, wx+7, WY+10], fill=A(trim))
+        d.rectangle([wx, WY+4, wx+6, WY+9], fill=A(g))
+        if lit: d.rectangle([wx+1, WY+5, wx+3, WY+6], fill=A(LITW[1]))
+        else: d.line([wx, WY+4, wx+2, WY+4], fill=(214, 236, 252, 255)); d.point((wx, WY+5), fill=(214, 236, 252, 255))
+        d.line([wx+3, WY+4, wx+3, WY+9], fill=A(trim)); d.line([wx, WY+6, wx+6, WY+6], fill=A(trim))
+        d.rectangle([wx-1, WY+11, wx+7, WY+11], fill=(150, 150, 150, 255))
+    # ---- telhado ----
+    f = clamp((p-0.62)/0.23)
+    for x in range(X0, X1+1, 4): d.line([x, RY, x, WY-1], fill=A(wood))
+    total = len(range(WY-1, RY-1, -3))
+    done = total if f >= 1 else int(math.ceil(f*total))
+    roof_tiles(d, X0-1, RY, X1+1, WY-1, ramp, done)
+    if f >= 1:
+        d.rectangle([X0-1, RY-1, X1+1, RY+1], fill=A(ramp[3])); d.line([X0-1, RY+2, X1+1, RY+2], fill=A(ramp[2]))
+        d.line([X0-2, RY-1, X0-2, WY-1], fill=A(OUT)); d.line([X1+2, RY-1, X1+2, WY-1], fill=A(OUT))
+        d.line([X0-2, RY-2, X1+2, RY-2], fill=A(OUT)); d.line([X0-2, WY-1, X1+2, WY-1], fill=A(ramp[0]))
+        d.line([X0-1, WY-2, X1+1, WY-2], fill=A(ramp[1]))
+    # ---- torre do sino ----
+    if p >= 0.85:
+        d.rectangle([TX0-1, 0, TX1+1, WY-1], fill=A(OUT))
+        d.rectangle([TX0, 1, TX1, WY-2], fill=A(trim)); d.line([TX1-2, 1, TX1-2, WY-2], fill=(220, 214, 204, 255))
+        d.rectangle([TX0, 1, TX1, 4], fill=A(ramp[2])); d.line([TX0, 1, TX1, 1], fill=A(ramp[3]))
+        bx = (TX0+TX1)//2
+        d.rectangle([bx-4, 7, bx+4, 15], fill=(56, 48, 46, 255)); d.ellipse([bx-4, 5, bx+4, 10], fill=(56, 48, 46, 255))
+        d.line([bx-3, 7, bx+3, 7], fill=(90, 80, 74, 255))
+        o = bell
+        d.polygon([(bx-3+o, 14), (bx+3+o, 14), (bx+2+o//2, 9), (bx-2+o//2, 9)], fill=(214, 168, 56, 255))
+        d.ellipse([bx-2+o//2, 8, bx+2+o//2, 11], fill=(214, 168, 56, 255))
+        d.point((bx-1+o//2, 10), fill=(250, 220, 120, 255)); d.point((bx+o, 15), fill=(150, 110, 30, 255))
+        # placa ESCOLA
+        d.rectangle([TX0-13, 17, TX1+13, 26], fill=A(OUT)); d.rectangle([TX0-12, 18, TX1+12, 25], fill=(250, 250, 244, 255))
+        draw_text(d, "ESCOLA", (TX0+TX1)//2+1, 19, 1, (40, 70, 160, 255), outline=None)
+    # ---- mastro com bandeira ----
+    if p >= 0.93:
+        px_ = 82
+        d.line([px_, 2, px_, BY+2], fill=(150, 150, 160, 255)); d.line([px_+1, 2, px_+1, BY+2], fill=(100, 100, 110, 255))
+        d.rectangle([px_-1, BY+1, px_+2, BY+3], fill=(120, 120, 126, 255))
+        h = clamp((p-0.93)/0.07)
+        fy = int(BY-4-(BY-8)*h)
+        wav = [0, 1, 0, -1][flag % 4]
+        for i_ in range(8):
+            yo = fy+(1 if (i_+flag) % 4 in (1, 2) else 0)
+            for j in range(6):
+                d.point((px_-1-i_, yo+j), fill=(30, 150, 70, 255))
+        d.polygon([(px_-5, fy+1), (px_-2, fy+3), (px_-5, fy+5), (px_-8, fy+3)], fill=(250, 214, 50, 255))
+        d.point((px_-5, fy+3), fill=(40, 70, 160, 255)); d.point((px_-4, fy+3), fill=(40, 70, 160, 255))
+    if p >= 1:
+        for y in range(RY, BY+3): im.putpixel((X1+3, y), (0, 0, 0, 70)); im.putpixel((X1+4, y), (0, 0, 0, 40))
     return im

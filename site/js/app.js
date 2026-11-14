@@ -445,6 +445,8 @@ function atualizarRelogio(t, nf) {
   const v = relogio.vel;
   $('#hudVel').textContent = v === 1 ? '' : v > 1.5 ? 'x' + Math.round(v) : 'outro horário';
 }
+// nome do marco sem o comentário entre parênteses (cabe no celular)
+const curto = t => String(t).replace(/\s*\([^)]*\)/g, '').trim();
 function atualizarHud() {
   $('#hudEp').textContent = 'EP ' + VILA.episodio;
   $('#hudNome').textContent = VILA.nome_vila || 'A Cidade dos Seguidores';
@@ -464,11 +466,11 @@ function atualizarHud() {
   const pm = marcos.find(m => m.seguidores > seg) || VILA.proximo_marco;
   const liberado = marcos.find(m => m.seguidores <= seg);   // passou do marco, mas o episódio ainda não saiu
   if (liberado) {
-    $('#hudMarcoTxt').textContent = `🎉 Desbloqueou: ${liberado.construcao}! Chega no próximo episódio ›`;
+    $('#hudMarcoTxt').textContent = `🎉 Desbloqueou: ${curto(liberado.construcao)}! Chega no próximo episódio ›`;
     $('#hudMarcoBarra').style.width = '100%';
   } else if (pm) {
     const falta = Math.max(0, pm.seguidores - seg), ant = Math.max(...(VILA.marcos || [{ seguidores: 0 }]).map(m => m.seguidores).filter(s => s <= seg), 0);
-    $('#hudMarcoTxt').textContent = `faltam ${falta} pra ${pm.construcao} ›`;
+    $('#hudMarcoTxt').textContent = `faltam ${falta} pra ${curto(pm.construcao)} ›`;
     $('#hudMarcoBarra').style.width = clamp(100 * (seg - ant) / Math.max(1, pm.seguidores - ant), 3, 100) + '%';
   } else $('#hudMarco').hidden = true;
   $('#menuEuTxt').textContent = EU ? 'Eu' : 'Entrar';
@@ -1091,7 +1093,7 @@ async function iniciar() {
     carregarImg('img/vila_dia.png'), carregarImg('img/vila_noite.png'), carregarImg('img/moradores.png')]);
   VILA = v; MORADORES = m; IMG.dia = dia; IMG.noite = noite; IMG.atlas = atlas;
   IMG.atlasNoite = tingir(atlas, atlas.width, atlas.height);
-  for (const k of ['A', 'B', 'C']) RY[k] = VILA.ruas[k].de[1];
+  for (const k of Object.keys(VILA.ruas)) if (k !== 'principal') RY[k] = VILA.ruas[k].de[1];
   await Promise.all([carregarPublicos(), atualizarContador()]);
   setInterval(() => { if (!document.hidden) atualizarContador(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarContador(); });

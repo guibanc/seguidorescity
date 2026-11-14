@@ -1,0 +1,3 @@
+Baixado do site em 14/11/2026 18:52 (Brasília).
+registrados.json: moradores que têm dono. "aparencia" = mesmo formato do npc_look() (null = visual original).
+amizades.json: por morador, "segue" = quem ele adicionou, "seguidores" = quem adicionou ele.

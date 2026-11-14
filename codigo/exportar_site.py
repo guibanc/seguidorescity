@@ -11,7 +11,7 @@ from PIL import Image
 from world import W, H, ROADA, ROADB, ROADC, MAINX0, MAINX1
 from world16 import npc_sprite, npc_look, S
 import vila16 as V
-from scene import house_lots, house_var, NH, VENDA, MERCADO, ESCOLA, lot, C1, EP
+from scene import house_lots, house_var, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, lot, C1, EP
 
 out = sys.argv[1] if len(sys.argv) > 1 else '../site'
 os.makedirs(f'{out}/img', exist_ok=True); os.makedirs(f'{out}/dados', exist_ok=True)
@@ -19,8 +19,13 @@ N = C1
 
 # ---------- mapa sem moradores ----------
 def mapa(lit):
-    base, _ = V.static(lit)
+    base, _ = V.static(lit, True)
     img = base.copy(); objs = []
+    from PIL import ImageDraw
+    dd = ImageDraw.Draw(img)
+    for l in house_lots[NH:]: V.draw_stakes(dd, l)          # lotes livres (rua D)
+    V.draw_fence(dd, PREFEITURA)                             # reservado: prefeitura (500)
+    x, y = V.L2(*lot(*ESCOLA[0])); objs.append((y, V.ESC(1, lit, 0, 0), x))
     for i, l in enumerate(house_lots[:NH]):
         x, y = V.L2(*lot(*l)); hi = V.HOUSE(house_var[i], 1, lit)
         objs.append((y, hi, x))
@@ -63,29 +68,34 @@ pontos = {
     'praca': {'centro': P(132, 245), 'bancos': [P(111, 265), P(151, 265), P(111, 221)], 'area': [P(104, 216), P(160, 274)]},
     'igreja': {'porta': P(130, 105)},
     'entrada': {'placa': P(149, 446), 'rua': P(131.5, 470)},
-    'escola_reservada': {'lotes': [P(*lot(*l)) for l in ESCOLA]},
+    'escola': {'porta': P(lot(*ESCOLA[0])[0]+21, ROADC+3), 'rua': P(lot(*ESCOLA[0])[0]+21, ROADC+6), 'lotes': [P(*lot(*l)) for l in ESCOLA]},
+    'prefeitura_reservada': {'lotes': [P(*lot(*l)) for l in PREFEITURA], 'marco': 500},
 }
 ruas = {
     'principal': {'de': P(131.5, 104), 'ate': P(131.5, 480)},
     'A': {'de': P(16, ROADA+5), 'ate': P(217, ROADA+5)},
     'B': {'de': P(16, ROADB+5), 'ate': P(217, ROADB+5)},
     'C': {'de': P(16, ROADC+5), 'ate': P(217, ROADC+5)},
+    'D': {'de': P(16, ROADD+5), 'ate': P(217, ROADD+5)},
 }
+RUAS = {ROADA: 'A', ROADB: 'B', ROADC: 'C', ROADD: 'D'}
 casas = []
 for i, l in enumerate(house_lots[:NH]):
     x, y = lot(*l)
-    casas.append({'casa': i+1, 'lote': P(x, y), 'tamanho': [42, 50], 'porta': P(x+10, y+22), 'rua': ['A', 'B', 'C'][[ROADA, ROADB, ROADC].index(l[1])],
+    casas.append({'casa': i+1, 'lote': P(x, y), 'tamanho': [42, 50], 'porta': P(x+10, y+22), 'rua': RUAS[l[1]],
                   'ponto_na_rua': P(x+10, l[1]+5), 'moradores': list(range(i*10+1, min(N, i*10+10)+1))})
+lotes_livres = [{'casa': NH+k+1, 'lote': P(*lot(*l)), 'rua': RUAS[l[1]], 'comeca_em': 10*(NH+k)+5, 'pronta_em': 10*(NH+k+1)}
+                for k, l in enumerate(house_lots[NH:])]
 vila = {'episodio': EP, 'seguidores': N, 'casas': NH, 'estilo': '16 bits', 'mapa': {'largura': W*S, 'altura': H*S, 'escala_logica': S},
-        'proximo_marco': {'seguidores': 400, 'construcao': 'escola'}, 'nome_vila': None,
-        'pontos': pontos, 'ruas': ruas, 'lista_casas': casas,
+        'proximo_marco': {'seguidores': 500, 'construcao': 'prefeitura'}, 'nome_vila': None,
+        'pontos': pontos, 'ruas': ruas, 'lista_casas': casas, 'lotes_livres': lotes_livres,
         'atlas': {'arquivo': 'img/moradores.png', 'por_linha': cols, 'celula': [CW, CH], 'quadro': [12, 18],
                   'direcoes': DIRS, 'quadros_por_direcao': 4, 'ancora_pes': [6, 14]}}
 # regras e marcos (vêm do estado_vila.json) — o site mostra na tela "Como a vila cresce"
 _est = json.load(open(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'estado_vila.json'), encoding='utf-8'))
 vila['regras'] = ['1 seguidor = 1 morador', '10 seguidores = 1 casa nova (10 moradores por casa)',
                   'a obra da casa começa 5 seguidores antes de ela ficar pronta']
-vila['marcos'] = [{'seguidores': 300, 'construcao': 'mercadinho'}] + \
+vila['marcos'] = [{'seguidores': int(k), 'construcao': c} for k, c in _est.get('marcos_feitos', {'300': 'mercadinho'}).items()] + \
                  [{'seguidores': int(s), 'construcao': c} for s, c in _est['proximos_marcos'].items()]
 vila['proxima_casa'] = _est.get('proxima_casa')
 _prox = next((m for m in vila['marcos'] if m['seguidores'] > N), None)
@@ -127,7 +137,7 @@ moradores = []
 for k in range(N):
     mid = k+1
     ag, dom = agenda(mid)
-    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3,
+    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4,
                       'aparencia': npc_look(mid), 'atlas': {'col': k % cols, 'lin': k//cols},
                       'velocidade': round(random.Random(mid).uniform(0.85, 1.15), 2), 'agenda': ag, 'domingo': dom})
 json.dump(moradores, open(f'{out}/dados/moradores.json', 'w'), ensure_ascii=False)

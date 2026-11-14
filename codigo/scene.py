@@ -4,31 +4,33 @@ from world import *
 from font import draw_text, text_width
 
 # =====================================================================
-#  EPISÓDIO 3  (320 -> 370 seguidores)
-#  A vila evolui de 8 bits para 16 bits + site na bio (cada inscrito
-#  registra o nome dele num morador).
-#  Linha do tempo PROVISÓRIA: quando a narração chegar, só ajustar T{}
+#  EPISÓDIO 4  (370 -> 460 seguidores)
+#  Escola (marco 400), casas 38-46, o mapa lota e a vila abre a rua D,
+#  visão em primeira pessoa passando pela escola, sábado de mercadinho.
+#  Tempos sincronizados com a narração (narracao_ep4.wav, 78,5 s).
 # =====================================================================
-EP=3; C0=320; C1=370; C8=340      # até 340 ainda é 8 bits
+EP=4; C0=370; C1=460
 T=dict(
-    titulo=(0.2,4.4), recap=(4.4,9.4),
-    cresce8=(9.4,13.8),         # "mais duas casas prontas na rua de cima" 11.25-13.3
-    aviso=(13.8,17.3),          # "Mas hoje..." 14.08 / "a vila vai mudar" 15.14
-    evolucao=(17.3,24.2),       # "A vila EVOLUIU" 17.5 / "16 bits!" 22.66
-    compara=(24.2,32.3),        # telha 25.47 / floreira 26.74 / chaminé 28.47 / mercadinho 30.16
-    detalhe=(32.3,40.6),        # único 33.46 / cabelo 35.71 / roupa 36.62 / chapéu 37.24 / óculos 38.42 / iguais 39.41
-    cresce16=(40.6,46.2),       # "chegamos a 370" 42.11 / "três casas novas" 43.48
-    site=(46.2,55.6),           # site 47.42 / link 49.12 / escolhe 50.4 / nome 52.23 / acompanha 53.6
-    npc=(55.6,63.4),            # rotina 55.86 / manhã 57.31 / mercadinho 58.86 / praça 60.09 / noite 61.2
-    resumo=(63.4,70.0),         # 370 64.87 / 37 casas 66.98 / 16 bits 68.3
-    proximo=(70.0,73.9),        # escola 72.4
-    cta=(74.0,78.4),
+    titulo=(0.0,3.4), recap=(3.4,9.0),
+    cresce1=(9.0,14.8),        # casa 38 11.2 / casa 39 12.3 / casa 40 13.6
+    quase=(14.8,18.2),         # "bateu quatrocentos" 16.7-17.9
+    escola=(18.2,25.5),        # ESCOLA 19.3 / fundação 20.3 / parede 21.3 / telhado 22.1 / sino 23.4 / bandeira 24.6
+    fp=(25.5,28.9),            # primeira pessoa: "o sino toca" 27.1
+    cresce2=(28.9,35.1),       # 400 -> 460
+    lotado=(35.1,39.7),        # casa 46 36.3 / nenhum lote 38.3
+    ruanova=(39.7,45.6),       # pilha 41.6 / episódio 1 43.0 / rua nova 44.3
+    casa47=(45.6,47.9),
+    sabado=(47.9,51.0),        # sábado 48.2 / dia de quê 52.3
+    mercado=(51.0,58.8),       # mercadinho 51.2 / fila 56.3 / vendinha 56.8
+    resumo=(58.8,65.1),        # 460 60.1 / 46 casas 61.9 / escola 63.1 / rua 63.8
+    proximo=(65.1,70.2),       # 500 66.2 / prefeitura 68.5 / calçadas 69.2
+    nome=(70.2,74.5),          # placa 70.4 / nome 72.4 / comenta 73.7
+    cta=(74.5,79.6),
 )
-DUR=78.4
-T_SWEEP=(17.45,18.6)   # a "varredura" que troca 8->16
+DUR=79.6
 
 # ---------- contador ----------
-CK=[(0,C0),(9.8,C0),(13.0,C8),(41.4,C8),(45.4,C1)]
+CK=[(0,C0),(9.3,C0),(11.7,380),(12.8,390),(14.0,395),(16.6,399),(17.45,400),(29.4,400),(34.4,C1)]
 def count_at(t):
     if t>=CK[-1][0]: return CK[-1][1]
     if t<CK[0][0]: return C0
@@ -46,9 +48,15 @@ def time_reach(n):
         if count_at(m)>=n: hi=m
         else: lo=m
     return hi
-def is16(t): return t>=T_SWEEP[1]
 
-# ---------- lotes (iguais aos eps. anteriores) ----------
+def interp(t,keys):
+    if t<=keys[0][0]: return keys[0][1]
+    for (a,va),(b,vb) in zip(keys,keys[1:]):
+        if a<=t<b: return va+(vb-va)*(t-a)/(b-a)
+    return keys[-1][1]
+
+# ---------- lotes (os antigos nunca mudam de ordem; novos entram no fim) ----------
+ROADD=420                                   # rua D (ep. 4): entre a rua A e a entrada
 LX_L=[104,82,60,38,16]; LX_R=[140,162,184,206]
 def lot(x,road,side):
     return (x-1, road-24 if side=='a' else road+12)
@@ -61,15 +69,35 @@ for road in (ROADA,ROADB,ROADC):
                     x=xs[i]
                     if road==ROADB and x in (104,140): continue
                     lots.append((x,road,side))
+LOTS_D=[]
+for i in range(5):
+    for xs in (LX_L,LX_R):
+        if i<len(xs):
+            for side in ('a','b'):
+                x=xs[i]
+                if x==140 and side=='b': continue      # placa da entrada
+                LOTS_D.append((x,ROADD,side))
+lots=lots+LOTS_D
 VENDA=(82,ROADB,'a'); MERCADO=(162,ROADB,'a')
-ESCOLA=[(162,ROADC,'a'),(184,ROADC,'a')]   # reservado p/ marco 400 (2 lotes)
-RESERV=[VENDA,MERCADO]+ESCOLA
+ESCOLA=[(162,ROADC,'a'),(184,ROADC,'a')]    # marco 400 (construída no ep. 4)
+PREFEITURA=[(140,ROADD,'a'),(162,ROADD,'a')]  # reservado p/ marco 500
+RESERV=[VENDA,MERCADO]+ESCOLA+PREFEITURA
 house_lots=[l for l in lots if l not in RESERV]
-NH=C1//10                                   # 37 casas
+NH=C1//10                                   # 46 casas
 house_var=[(i*5+2)%6 for i in range(len(house_lots))]
 def house_p(i,C): return clamp((C-(10*i+5))/5)
 def house_done_time(i): return time_reach(10*(i+1))
-def mercado_p(t): return 1.0
+
+# ---------- obras do episódio ----------
+ESC_KEYS=[(19.0,0.0),(20.3,0.2),(21.2,0.3),(21.9,0.62),(22.9,0.85),(23.6,0.9),(24.5,0.93),(25.0,1.0)]
+def escola_p(t): return 0.0 if t<19.0 else interp(t,ESC_KEYS)
+def pile_n(t): return int(round(interp(t,[(41.5,10),(44.0,0)])))       # toras na pilha
+def roadd_f(t): return interp(t,[(44.0,0.0),(45.2,1.0)])               # rua D sendo aberta (0..1)
+def stakes_f(t): return interp(t,[(44.8,0.0),(45.8,1.0)])
+def bell_swing(t):
+    for a in (23.6,27.0,27.6):
+        if a<=t<a+0.9: return [1,0,-1,0][int((t-a)*12)%4]
+    return 0
 
 # ---------- árvores ----------
 trees=[]
@@ -81,10 +109,6 @@ for _ in range(400):
     if 228<=x<=254: continue
     if border: trees.append(dict(x=x,y=y,r=tr.choice([5,6,6,7]),k=tr.randint(0,1),chop=None))
 trees.sort(key=lambda d:d['y'])
-TREE_SPR={}
-def tree_img(r,k):
-    if (r,k) not in TREE_SPR: TREE_SPR[(r,k)]=tree_sprite(r,k,r*10+k)
-    return TREE_SPR[(r,k)]
 
 # ---------- moradores (mesmo sorteio dos eps. anteriores: ninguém muda de lugar) ----------
 ROADSEG={'A':((16,ROADA+5),(217,ROADA+5)),'B':((16,ROADB+5),(217,ROADB+5)),
@@ -140,84 +164,99 @@ for k in range(9):
     SHOPPERS.append(dict(skin=sr.choice(SKINS)+(255,),hair=sr.choice(HAIRS)+(255,),shirt=sr.choice(SHIRTS)+(255,),pants=sr.choice(PANTS)+(255,),
                          t0=-20+k*0.55,x0=sr.choice([60,100,131.5,200,215]),ph=sr.uniform(0,6),seed=9000+k))
 
-PSPR={}
-def pimg(d,frame,tool=None,log=False):
-    key=(d['skin'],d['hair'],d['shirt'],d['pants'],frame,tool,log)
-    if key not in PSPR: PSPR[key]=person_sprite(d['skin'],d['hair'],d['shirt'],d['pants'],frame,tool,log)
-    return PSPR[key]
-WORKERS=[dict(skin=SKINS[i%5]+(255,),hair=HAIRS[i%6]+(255,),shirt=[(240,130,40),(60,110,220),(220,60,60),(70,170,90)][i%4]+(255,),pants=(60,60,80,255),seed=8000+i) for i in range(6)]
+# ---------- moradores registrados no site (nome + visual escolhido) ----------
+_REGF=os.path.join(os.path.dirname(os.path.abspath(__file__)),'..','dados_do_site','registrados.json')
+REG={}
+if os.path.exists(_REGF):
+    for r_ in json.load(open(_REGF,encoding='utf-8')):
+        if r_['id']<=C1: REG[r_['id']]=r_
 
-# ---------- morador em destaque (cena do site) ----------
-DESTAQUE_ID=205                         # morador #205, casa 21 (índice 20)
-DEST_CASA=house_lots[(DESTAQUE_ID-1)//10]
 def lot_center(l,dy=16):
     x,y=lot(*l); return (x+10,y+dy)
-_hx,_hy=lot(*DEST_CASA)
-_door=(_hx+10,_hy+22) if DEST_CASA[2]=='b' else (_hx+10,_hy+22)
-_road=DEST_CASA[1]+5
-_mx,_my=lot(*MERCADO); _mdoor=(_mx+10,ROADB+3)
-# horário da vila durante a cena (07h -> 21h30)
-HOURS=[(55.6,6.5),(57.3,7.0),(58.9,9.5),(60.1,14.0),(61.2,18.5),(62.8,21.0),(63.4,21.5)]
-def hour_at(t):
-    if not (T['npc'][0]<=t<T['npc'][1]+0.6): return None
-    if t>=T['npc'][1]: return 21.5-(t-T['npc'][1])/0.6*7.5     # volta pro dia rapidinho
-    for (a,va),(b,vb) in zip(HOURS,HOURS[1:]):
-        if a<=t<b: return va+(vb-va)*(t-a)/(b-a)
-    return 21.5
-# roteiro do morador: casa -> mercadinho -> praça -> casa
-_t=T['npc'][0]
-DEST_PATH=[ (55.6,  _door, 'casa'),
-            (57.3,  _door, 'anda'),
-            (57.8,  (_door[0],_road), 'anda'),
-            (58.8,  (_mdoor[0],ROADB+6), 'anda'),
-            (59.0,  _mdoor, 'entra'),
-            (59.6,  _mdoor, 'sai'),
-            (59.9,  (131.5,ROADB+6), 'anda'),
-            (60.3,  (118,262), 'senta'),
-            (61.3,  (118,262), 'anda'),
-            (61.9,  (131.5,_road), 'anda'),
-            (62.5,  (_door[0],_road), 'anda'),
-            (62.8,  _door, 'casa'),
-            (99,    _door, 'casa')]
-def destaque_state(t):
-    """(x,y,acao,sacola) lógico, ou None fora da cena"""
-    if not (T['npc'][0]<=t<T['npc'][1]): return None
-    for (a,pa,acao),(b,pb,_) in zip(DEST_PATH,DEST_PATH[1:]):
-        if a<=t<b:
-            f=(t-a)/(b-a)
-            x=pa[0]+(pb[0]-pa[0])*f; y=pa[1]+(pb[1]-pa[1])*f
-            sac = t>_t+4.2
-            return (x,y,acao,sac)
-    return None
+
+# ---------- sábado: a vila inteira vai pro mercadinho ----------
+SAT=(48.0,60.2)                  # janela em que só a "multidão" aparece
+DOOR_M=(lot(*MERCADO)[0]+9.5,ROADB+3)
+QY=ROADB+5; EXY=ROADB+9; QSP=5.0; QX0=DOOR_M[0]-4.5; SVC=0.32
+def q_slot(n): return (QX0-n*QSP,QY)
+_cr=random.Random(404)
+_regids=sorted(REG)
+_others=[i for i in _cr.sample(range(1,C1+1),80) if i not in REG]
+CROWD=[]
+_oi=0
+for j in range(51):
+    if j%3==1 and _regids: pid=_regids.pop(0)
+    else: pid=_others[_oi]; _oi+=1
+    l=house_lots[(pid-1)//10]; lx,ly=lot(*l)
+    sx=lx+10+_cr.uniform(-4,4)
+    sy=(l[1]+3) if l[2]=='a' else (l[1]+8)
+    ry=l[1]+7
+    if l[1]==ROADB: pts=[(sx,sy),(sx,ry)]
+    else:
+        mx=131.5+_cr.uniform(-2,2)
+        pts=[(sx,sy),(sx,ry),(mx,ry),(mx,ROADB+7)]
+    CROWD.append(dict(id=pid,pts=pts,dep=48.3+_cr.uniform(0,1.6),ph=_cr.uniform(0,6),
+                      exit=('dir' if j%2 else 'desce')))
+# chegada na fila em ordem (j); velocidade ajustada pra chegar na hora
+for j,c in enumerate(CROWD):
+    want=51.0+j*0.15
+    L=plen(c['pts'])+abs(c['pts'][-1][0]-QX0)+10
+    spd=clamp(L/max(0.5,want-c['dep']),18,60)
+    c['arr']=c['dep']+L/spd; c['spd']=spd
+CROWD.sort(key=lambda c:c['arr'])
+_e=0
+for c in CROWD:
+    c['ent']=max(c['arr']+0.3,_e+SVC); _e=c['ent']
+for j,c in enumerate(CROWD):
+    c['ahead']=[k['ent'] for k in CROWD[:j]]
+    c['n_arr']=sum(1 for e in c['ahead'] if e>c['arr'])
+    tail=q_slot(c['n_arr'])
+    c['walk']=c['pts']+[(tail[0],ROADB+7),tail]
+    c['spd']=plen(c['walk'])/max(0.4,c['arr']-c['dep'])
+    door=DOOR_M
+    if c['exit']=='dir': c['out']=[door,(door[0]+2,EXY),(226,EXY)]
+    else: c['out']=[door,(door[0],EXY),(134.5,EXY),(134.5,370)]
+def crowd_state(c,t):
+    """(x,y,dir_hint,sacola) ou None"""
+    if t<c['dep'] or t>=SAT[1]: return None
+    if t<c['arr']:
+        (x,y),_=path_pos(c['walk'],(t-c['dep'])*c['spd']); return (x,y,False)
+    if t<c['ent']:
+        n=sum(clamp((e+0.35-t)/0.35) for e in c['ahead'])
+        n=min(n,c['n_arr']) if t<c['arr']+0.4 else n
+        x,y=q_slot(n); return (x,y,False)
+    if t<c['ent']+0.2:
+        f=(t-c['ent'])/0.2; x0,y0=q_slot(0)
+        return (x0+(DOOR_M[0]-x0)*f,y0+(DOOR_M[1]-y0)*f,False)
+    if t<c['ent']+1.0: return None                       # dentro do mercadinho
+    (x,y),end=path_pos(c['out'],(t-c['ent']-1.0)*30)
+    if end: return None
+    return (x,y,True)
+VENDEDOR=(lot(*VENDA)[0]+9.5,ROADB+4)
 
 # ---------- câmera (x, y, largura visível em pixels lógicos) ----------
 WIDE=(135,240,270)
-_c=(122,168); _e=lot_center(ESCOLA[0]); _m=lot_center(MERCADO)
-_hs=lot_center(house_lots[29]); _ppl=(108,246)
-CAM=[(0,(131,300,150)),(T['recap'][0],(131,300,150)),(T['recap'][1]-0.6,WIDE),
-     (T['cresce8'][0]+0.4,(_c[0]+8,_c[1],150)),(T['cresce8'][1],(_c[0]+8,_c[1],150)),
-     (T['aviso'][0]+0.8,WIDE),(T['evolucao'][1],WIDE),
-     (T['compara'][0]+0.8,(_m[0]-14,_m[1]+6,120)),(T['compara'][1],(_m[0]-14,_m[1]+6,120)),
-     (T['detalhe'][0]+0.8,(_ppl[0],_ppl[1],70)),(T['detalhe'][1],(_ppl[0]+14,_ppl[1]-6,70)),
-     (T['cresce16'][0]+0.8,(_c[0]-14,_c[1],150)),(T['cresce16'][1],(_c[0]-14,_c[1],150)),
-     (T['site'][0]+0.8,WIDE),(T['site'][1]-0.4,WIDE),
+_esc=(lot(*ESCOLA[0])[0]+21,lot(*ESCOLA[0])[1]+12)
+_c47=lot_center(house_lots[46],12)
+_pref=(lot(*PREFEITURA[0])[0]+21,lot(*PREFEITURA[0])[1]+12)
+_h46=lot_center(house_lots[45])
+CAM=[(0,(131,300,150)),(2.6,(131,300,150)),(4.0,WIDE),(T['recap'][1],WIDE),
+     (T['cresce1'][0]+0.8,(120,170,210)),(T['quase'][1],(120,170,210)),
+     (T['escola'][0]+0.8,(_esc[0],_esc[1]+14,92)),(T['escola'][1]-0.45,(_esc[0],_esc[1]+14,92)),
+     (T['escola'][1],(_esc[0],_esc[1]+10,40)),
+     (T['cresce2'][0],(118,168,240)),(T['cresce2'][1],(118,168,240)),
+     (T['lotado'][0]+0.7,WIDE),(T['lotado'][1],WIDE),
+     (T['ruanova'][0]+1.0,(125,340,170)),(T['ruanova'][1],(125,340,170)),
+     (T['casa47'][0]+0.7,(_c47[0]+8,_c47[1],110)),(T['casa47'][1],(_c47[0]+8,_c47[1],110)),
+     (T['sabado'][0]+0.7,WIDE),(T['sabado'][1],WIDE),
+     (T['mercado'][0]+0.8,(150,236,124)),(55.9,(150,236,124)),(56.7,(108,236,124)),(T['mercado'][1],(108,236,124)),
      (T['resumo'][0]+0.8,WIDE),(T['resumo'][1],WIDE),
-     (T['proximo'][0]+0.8,(_e[0]+10,_e[1],130)),(T['proximo'][1],(_e[0]+10,_e[1],130)),
+     (T['proximo'][0]+0.8,(_pref[0],_pref[1],130)),(T['proximo'][1],(_pref[0],_pref[1],130)),
+     (T['nome'][0]+0.7,(149,440,96)),(T['nome'][1],(149,440,96)),
      (T['cta'][0]+0.6,WIDE),(99,WIDE)]
 def cam_at(t):
-    if T['site'][1]-0.4<=t<T['resumo'][0]+0.8:
-        # segue o morador em destaque
-        st=destaque_state(min(max(t,T['npc'][0]),T['npc'][1]-0.01))
-        fx,fy=(st[0],st[1]) if st else _door
-        tgt=(fx,fy-8,82)
-        if t<T['npc'][0]+0.5:
-            a=(T['site'][1]-0.4); f=smooth((t-a)/(T['npc'][0]+0.5-a)); va=WIDE
-            return tuple(va[i]+(tgt[i]-va[i])*f for i in range(3))
-        if t>=T['npc'][1]:
-            f=smooth((t-T['npc'][1])/(T['resumo'][0]+0.8-T['npc'][1])); vb=WIDE
-            return tuple(tgt[i]+(vb[i]-tgt[i])*f for i in range(3))
-        return tgt
     for (a,va),(b,vb) in zip(CAM,CAM[1:]):
         if a<=t<b:
             f=smooth((t-a)/(b-a)); return tuple(va[i]+(vb[i]-va[i])*f for i in range(3))
     return CAM[-1][1]
+def hour_at(t): return None          # o ep. 4 é todo de dia

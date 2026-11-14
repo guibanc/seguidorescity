@@ -1,0 +1,331 @@
+[
+ {
+  "id": 6,
+  "casa": 1,
+  "chegou_no_ep": 1,
+  "nome": "Luiz",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "coque",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 1,
+   "estampa": "duas_cores",
+   "cor_baixo": 0,
+   "cor_cabelo": 5,
+   "cor_chapeu": 9
+  }
+ },
+ {
+  "id": 11,
+  "casa": 2,
+  "chegou_no_ep": 1,
+  "nome": "Isabely67",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "vestido",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 8,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 6,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 4,
+   "cor_chapeu": 11
+  }
+ },
+ {
+  "id": 24,
+  "casa": 3,
+  "chegou_no_ep": 1,
+  "nome": "Alyce",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "afro",
+   "camisa": 5,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 7,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 2,
+   "cor_chapeu": 8
+  }
+ },
+ {
+  "id": 34,
+  "casa": 4,
+  "chegou_no_ep": 1,
+  "nome": "Gabrielplay",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 7,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 5,
+   "estampa": "regata",
+   "cor_baixo": 2,
+   "cor_cabelo": 2,
+   "cor_chapeu": 1
+  }
+ },
+ {
+  "id": 67,
+  "casa": 7,
+  "chegou_no_ep": 1,
+  "nome": "Kira",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 10,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 0,
+   "cor_chapeu": 6
+  }
+ },
+ {
+  "id": 83,
+  "casa": 9,
+  "chegou_no_ep": 1,
+  "nome": "Poly",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 5,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 8,
+   "estampa": "duas_cores",
+   "cor_baixo": 0,
+   "cor_cabelo": 2,
+   "cor_chapeu": 6
+  }
+ },
+ {
+  "id": 88,
+  "casa": 9,
+  "chegou_no_ep": 1,
+  "nome": "Broch",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 0,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 2,
+   "cor_chapeu": 4
+  }
+ },
+ {
+  "id": 150,
+  "casa": 15,
+  "chegou_no_ep": 1,
+  "nome": "Joe Keffyler",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 7,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 3,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 0,
+   "cor_chapeu": 1
+  }
+ },
+ {
+  "id": 154,
+  "casa": 16,
+  "chegou_no_ep": 1,
+  "nome": "Wesley",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 10,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 7,
+   "estampa": "regata",
+   "cor_baixo": 2,
+   "cor_cabelo": 6,
+   "cor_chapeu": 7
+  }
+ },
+ {
+  "id": 171,
+  "casa": 18,
+  "chegou_no_ep": 1,
+  "nome": "Greninjapok09",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 9,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 0,
+   "estampa": "listrada",
+   "cor_baixo": 2,
+   "cor_cabelo": 3,
+   "cor_chapeu": 1
+  }
+ },
+ {
+  "id": 181,
+  "casa": 19,
+  "chegou_no_ep": 1,
+  "nome": "Victor",
+  "aparencia": null
+ },
+ {
+  "id": 193,
+  "casa": 20,
+  "chegou_no_ep": 1,
+  "nome": "Guilherme",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 1,
+   "chapeu": "bone",
+   "oculos": true,
+   "sapato": 3,
+   "camisa2": 0,
+   "estampa": "listrada",
+   "cor_baixo": 5,
+   "cor_cabelo": 1,
+   "cor_chapeu": 1
+  }
+ },
+ {
+  "id": 212,
+  "casa": 22,
+  "chegou_no_ep": 1,
+  "nome": "Pietro",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 0,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 7,
+   "cor_chapeu": 2
+  }
+ },
+ {
+  "id": 229,
+  "casa": 23,
+  "chegou_no_ep": 1,
+  "nome": "Pedro",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 7,
+   "chapeu": "palha",
+   "oculos": true,
+   "sapato": 3,
+   "camisa2": 1,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 1,
+   "cor_chapeu": 0
+  }
+ },
+ {
+  "id": 302,
+  "casa": 31,
+  "chegou_no_ep": 2,
+  "nome": "Arthur",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "rabo",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "listrada",
+   "cor_baixo": 2,
+   "cor_cabelo": 5,
+   "cor_chapeu": 3
+  }
+ },
+ {
+  "id": 322,
+  "casa": 33,
+  "chegou_no_ep": 3,
+  "nome": "Rafael",
+  "aparencia": null
+ },
+ {
+  "id": 347,
+  "casa": 35,
+  "chegou_no_ep": 3,
+  "nome": "João Guilherme",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 6,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 5,
+   "estampa": "regata",
+   "cor_baixo": 0,
+   "cor_cabelo": 1,
+   "cor_chapeu": 6
+  }
+ }
+]

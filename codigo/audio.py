@@ -1,6 +1,6 @@
 import numpy as np, wave, math
 import sys
-from scene import count_at, house_done_time, T, DUR, NH, T_SWEEP
+from scene import count_at, house_done_time, T, DUR, NH
 SR=44100; N=int(SR*DUR)
 out=np.zeros(N,np.float32)
 def sq(f,dur,duty=0.5,vol=0.2,decay=8.0):
@@ -41,16 +41,11 @@ while t<DUR:
 env=np.ones(N,np.float32)
 fi=int(1.5*SR); env[:fi]=np.linspace(0,1,fi); fo=int(2.0*SR); env[-fo:]=np.linspace(1,0,fo)
 out+=music*env*0.9
-# ---- efeitos ----
-# depois da evolução a música fica "16 bits": eco + dobra uma oitava acima
-s1=int(T_SWEEP[1]*SR); g0=int((T_SWEEP[0]-1.0)*SR); g1=int(T_SWEEP[0]*SR)
+# ---- ef# ---- efeitos ----
+# som "16 bits": eco leve na música inteira
 d=int(0.19*SR)
 echo=np.zeros_like(out); echo[d:]=out[:-d]
-out[s1:]+=echo[s1:]*0.35
-up=np.zeros_like(out); up[:-1:2]=0   # (mantém leve)
-# glitch: corta a música em pedacinhos antes da varredura
-for k in range(g0,g1,int(0.09*SR)):
-    if (k//int(0.09*SR))%2: out[k:k+int(0.09*SR)]*=0.15
+out+=echo*0.35
 prev=count_at(0); lt=-9
 for k in range(int(DUR*60)):
     tt=k/60; c=count_at(tt)
@@ -62,18 +57,26 @@ def chime(tt,vol=0.08):
 def blip(tt): add(tt,sq(660,0.06,0.5,0.06,20)); add(tt+0.05,sq(990,0.1,0.5,0.06,16))
 def fanfare(tt):
     for j,f in enumerate((784,988,1175,1568)): add(tt+j*0.06,sq(f,0.12,0.25,0.07,12))
-for i in range(32,NH):
+def bell(tt):
+    for f,v in ((1047,0.10),(1568,0.05),(2093,0.03)): add(tt,tri(f,1.4,v,2.6))
+def whoosh(tt,dur=0.35):
+    n=int(SR*dur); x=np.random.RandomState(int(tt*10)).uniform(-1,1,n).astype(np.float32)
+    env=np.sin(np.linspace(0,np.pi,n))**2
+    lp=np.convolve(x,np.ones(12)/12,'same'); add(tt-dur/2,(lp*env*0.12).astype(np.float32))
+for i in range(36,NH):
     td=house_done_time(i)
     if td and td>0: chime(td,0.06)
-for tt in (4.6,14.05,25.45,26.7,28.45,30.1,33.4,35.7,36.6,37.2,38.4,47.3,50.4,52.2,53.6,57.3,58.9,60.1,61.2,63.8,70.25):
+for tt in (3.7,4.9,11.2,12.3,13.6,20.3,21.25,22.1,23.4,24.4,32.3,36.25,41.6,44.9,46.1,48.2,49.4,54.1,55.0,56.4,
+           59.1,60.1,61.9,63.1,63.8,65.4,68.4,69.1,72.4,73.7):
     blip(tt)
-# varredura: sobe um "zuuum" + brilho
-a,b=T_SWEEP
-tt=np.arange(int(SR*(b-a)))/SR; f=300+2400*(tt/(b-a))**2
-w=(np.where((np.cumsum(f)/SR)%1<0.5,1,-1)*0.06*(0.3+0.7*tt/(b-a))).astype(np.float32); add(a,w)
-for j,fq in enumerate((523,659,784,1047,1319,1568,2093)): add(b+j*0.05,sq(fq,0.22,0.25,0.07,8))
-fanfare(22.6)
-fanfare(68.3)
+for tt in (17.45,19.3,24.9,44.3,51.15): fanfare(tt)
+for tt in (23.6,27.0,27.6): bell(tt)
+for k in range(int((24.8-19.3)/0.27)):            # marteladas da obra
+    add(19.3+k*0.27,noise(0.04,0.05,90,k)); add(19.3+k*0.27,sq(180,0.03,0.5,0.03,60))
+for j in range(3):                                   # alerta: mapa lotado
+    add(38.3+j*0.3,sq(330,0.14,0.5,0.06,6)); add(38.45+j*0.3,sq(247,0.14,0.5,0.06,6))
+for tt in (T['fp'][0],T['fp'][1]): whoosh(tt)
+whoosh(44.6,1.2)
 for j,fq in enumerate((523,659,784,1047,1319)): add(T['cta'][0]+j*0.09,sq(fq,0.25 if j==4 else 0.12,0.25,0.08,6))
 out=np.clip(out,-0.95,0.95)
 dst=sys.argv[1] if len(sys.argv)>1 else 'bg.wav'
