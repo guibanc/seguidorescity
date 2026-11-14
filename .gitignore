@@ -8,3 +8,5 @@ __pycache__/
 *.wav
 .vercel
 .claude/
+# pasta de troca com a IA do vídeo (zip e cópia do projeto)
+proximoEP/
