@@ -2,6 +2,8 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
+**Episódio 4: leia primeiro o `RELATORIO_PARA_EP4.md`** (números, o mapa lotado, quem registrou morador no site, morador em destaque).
+
 ## Pastas
 - `codigo/` — motor do vídeo (Python + Pillow + ffmpeg).
   - `scene.py` — **linha do tempo do episódio** (dicionário `T`), contador, câmera, morador em destaque.
