@@ -1,0 +1,10 @@
+# banco de teste local (tem hash dos PINs)
+banco_local.json
+node_modules/
+__pycache__/
+*.pyc
+# saídas de vídeo
+*.mp4
+*.wav
+.vercel
+.claude/

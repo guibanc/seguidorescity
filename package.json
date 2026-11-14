@@ -1,0 +1,13 @@
+{
+  "name": "cidade-dos-seguidores",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Site da vila 16 bits da série A Cidade dos Seguidores",
+  "scripts": {
+    "start": "node servidor_local.js",
+    "palavras": "node supabase/gerar_palavras.js"
+  },
+  "devDependencies": {
+    "naughty-words": "1.2.0"
+  }
+}
