@@ -35,6 +35,8 @@ Se não abrir, libere o Node no Firewall do Windows quando ele perguntar.
    Depois rode também `supabase/3_contador.sql` (contador de seguidores ao vivo no topo do site).
    Pra atualizar o número à mão: `update contador set seguidores = 381, atualizado_em = now() where id = 1;`
 
+   Por último `supabase/5_bio_e_pedidos.sql` (frase de bio de cada morador + botão Recusar nos pedidos de amizade).
+
 ### Contador automático pelo YouTube (a cada 10 min)
 1. **Chave do Google:** console.cloud.google.com → crie um projeto (ex. "cidade-seguidores") →
    **APIs e serviços → Biblioteca** → procure **YouTube Data API v3** → **Ativar** →

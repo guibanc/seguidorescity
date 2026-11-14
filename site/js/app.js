@@ -21,7 +21,8 @@ let seguindo = null, selecionado = null;
 let preview = null;              // {id, look} visual em edição (ainda não salvo)
 let escolhendo = false;          // modo "toque num morador no mapa"
 let estados = [], desenhados = [];
-let AO_VIVO = null;              // seguidores agora (tabela "contador" no Supabase)
+let AO_VIVO = null;
+let TEM_BIO = false;            // banco já tem bio + recusar pedido (5_bio_e_pedidos.sql)              // seguidores agora (tabela "contador" no Supabase)
 
 // ---------------------------------------------------------------------
 // tempo (hora de Brasília, UTC-3 sem horário de verão)
@@ -495,9 +496,9 @@ function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.ad
 const pilha = [];
 let telaAtual = null;
 const reg = { id: null, look: null, nome: '', usuario: '' };
-const ed = { orig: null, look: null, nome: '', nomeOrig: '', dir: 'down', modo: 'editar', salvoAgora: false };
+const ed = { orig: null, look: null, nome: '', nomeOrig: '', bio: '', bioOrig: '', dir: 'down', modo: 'editar', salvoAgora: false };
 const sujo = () => telaAtual && telaAtual.tela === 'editor' && ed.modo === 'editar' &&
-  (JSON.stringify(ed.look) !== JSON.stringify(ed.orig) || ed.nome.trim() !== ed.nomeOrig);
+  (JSON.stringify(ed.look) !== JSON.stringify(ed.orig) || ed.nome.trim() !== ed.nomeOrig || ed.bio.trim() !== ed.bioOrig);
 
 function podeSair() {
   if (!sujo()) return true;
@@ -635,6 +636,7 @@ const TELAS = {
           </div>
         </div>
       </div>
+      <p class="bio">“${esc(p.bio || bioAuto(m))}”${p.bio ? '' : '<small>escrita pela vila</small>'}</p>
       <div class="agora" id="fichaAgora"></div>
       <div class="botoes">
         <button class="btn btn-flex" id="btnSeguir"></button>
@@ -740,6 +742,7 @@ const TELAS = {
       const base = modo === 'editar' ? (EU.aparencia || MORADORES[id - 1].aparencia) : (reg.look || MORADORES[id - 1].aparencia);
       ed.orig = Sprites.normalizar(base); ed.look = { ...ed.orig };
       ed.nomeOrig = modo === 'editar' ? EU.nome : ''; ed.nome = ed.nomeOrig; ed.salvoAgora = false;
+      ed.bioOrig = modo === 'editar' ? (EU.bio || '') : ''; ed.bio = ed.bioOrig;
       telaAtual.args._iniciado = true;
       seguir(id);
     }
@@ -761,7 +764,8 @@ const TELAS = {
           ${modo === 'editar' ? (sujoAgora ? '<span class="nao-salvo">● Alterações não salvas</span>' : ed.salvoAgora ? '<span class="salvo-ok">✓ Salvo</span>' : '') : ''}
         </div>
       </div>
-      ${modo === 'editar' ? `<label class="campo"><span>Nome que aparece no boneco</span><input id="edNome" maxlength="20" value="${esc(ed.nome)}"></label>` : ''}
+      ${modo === 'editar' ? `<label class="campo"><span>Nome que aparece no boneco</span><input id="edNome" maxlength="20" value="${esc(ed.nome)}"></label>
+        ${TEM_BIO ? `<label class="campo"><span>Bio — uma frase sobre você</span><input id="edBio" maxlength="90" value="${esc(ed.bio)}" placeholder="${esc(bioAuto(MORADORES[id - 1]))}"><small>Até 90 letras. Vazio = a vila escreve uma frase pela sua rotina.</small></label>` : ''}` : ''}
       <div class="ed-grupo"><b>Pele</b>${cores('pele', S.SKIN16)}</div>
       <div class="ed-grupo"><b>Cabelo</b>${ops('cabelo', S.HAIRSTYLES, ['Curto', 'Raspado', 'Longo', 'Rabo', 'Coque', 'Black', 'Careca', 'Franja'])}</div>
       ${L.cabelo !== 'careca' || L.barba ? `<div class="ed-grupo"><b>Cor do cabelo</b>${cores('cor_cabelo', S.HAIR16)}</div>` : ''}
@@ -808,27 +812,30 @@ const TELAS = {
     };
     c.querySelector('#btnOriginal').onclick = () => mudar(MORADORES[id - 1].aparencia);
     if (modo === 'editar') {
-      const inp = c.querySelector('#edNome');
+      const inp = c.querySelector('#edNome'), inpBio = c.querySelector('#edBio');
       inp.oninput = () => {
-        ed.nome = inp.value; ed.salvoAgora = false;
+        ed.nome = inp.value; if (inpBio) ed.bio = inpBio.value; ed.salvoAgora = false;
         const s = sujo();
         c.querySelector('#btnSalvar').disabled = !s; c.querySelector('#btnDescartar').disabled = !s;
         const lado = c.querySelector('.palco-lado'), tag = lado.querySelector('.nao-salvo, .salvo-ok');
         if (tag) tag.remove();
         if (s) lado.insertAdjacentHTML('beforeend', '<span class="nao-salvo">● Alterações não salvas</span>');
       };
-      c.querySelector('#btnDescartar').onclick = () => { ed.nome = ed.nomeOrig; mudar(ed.orig); };
+      if (inpBio) inpBio.oninput = inp.oninput;
+      c.querySelector('#btnDescartar').onclick = () => { ed.nome = ed.nomeOrig; ed.bio = ed.bioOrig; mudar(ed.orig); };
       c.querySelector('#btnSalvar').onclick = async ev => {
         ev.target.disabled = true; ev.target.textContent = 'Salvando…';
-        const r = await Api.rpc('salvar_perfil', { p_token: token(), p_nome: ed.nome.trim(), p_aparencia: ed.look });
+        const params = { p_token: token(), p_nome: ed.nome.trim(), p_aparencia: ed.look };
+        if (TEM_BIO) params.p_bio = ed.bio.trim();
+        const r = await Api.rpc('salvar_perfil', params);
         if (!r || !r.ok) {
           c.querySelector('#edErro').innerHTML = `<div class="erro">${esc((r && r.erro) || 'Não deu pra salvar')}</div>`;
           if (r && r.erro === 'Entre de novo') sairConta();
           ev.target.disabled = false; ev.target.textContent = '💾 Salvar'; return;
         }
-        EU.nome = ed.nome.trim(); EU.aparencia = { ...ed.look };
-        PUB[EU.morador] = { ...(PUB[EU.morador] || {}), id: EU.morador, nome: EU.nome, aparencia: EU.aparencia, ocupado: true, usuario: EU.usuario };
-        ed.orig = { ...ed.look }; ed.nomeOrig = EU.nome; ed.salvoAgora = true;
+        EU.nome = ed.nome.trim(); EU.aparencia = { ...ed.look }; if (TEM_BIO) EU.bio = ed.bio.trim() || null;
+        PUB[EU.morador] = { ...(PUB[EU.morador] || {}), id: EU.morador, nome: EU.nome, aparencia: EU.aparencia, bio: EU.bio || null, ocupado: true, usuario: EU.usuario };
+        ed.orig = { ...ed.look }; ed.nomeOrig = EU.nome; ed.bioOrig = EU.bio || ''; ed.bio = ed.bioOrig; ed.salvoAgora = true;
         toast('💾 Morador salvo!'); TELAS.editor({ modo });
       };
     } else {
@@ -882,10 +889,11 @@ const TELAS = {
     if (!EU) return mostrar('entrar', {}, false);
     titulo('Meu morador');
     const id = EU.morador, mut = [...MEUS.segue].filter(x => MEUS.seguidores.has(x)).length;
-    const pend = [...MEUS.seguidores].filter(x => !MEUS.segue.has(x));
+    const pend = pedidos();
     const c = corpo(`<ul class="lista">${itemLista(id, '<span class="etq etq-eu">você</span>')}</ul>
       <div class="etiquetas" style="margin-top:4px"><span class="etq">❤ ${MEUS.segue.size} amigos</span><span class="etq">★ ${mut} mútuos</span></div>
-      ${pend.length ? `<div class="secao"><h3>Te adicionaram <small>adicione de volta!</small></h3><ul class="lista" id="euPend">${pend.map(x => itemLista(x, '<span class="etq etq-livre">novo</span>')).join('')}</ul></div>` : ''}
+      <div class="secao"><h3>Pedidos de amizade <small>${pend.length ? pend.length + ' esperando' : 'nenhum agora'}</small></h3>
+        ${pend.length ? `<ul class="lista pedidos" id="euPend">${pend.map(x => itemPedido(x)).join('')}</ul>` : '<p class="mini">Quando alguém te adicionar como amigo, aparece aqui.</p>'}</div>
       <div class="botoes">
         <button class="btn btn-flex" id="euVer">📍 Ver na vila</button>
         <button class="btn btn-flex" id="euLink">🔗 Meu link</button>
@@ -894,6 +902,7 @@ const TELAS = {
         <button class="btn btn-flex" id="euSair">Sair</button>
       </div>`);
     ligarLista(c, irPara);
+    ligarPedidos(c);
     c.querySelector('#euVer').onclick = () => irPara(id);
     c.querySelector('#euLink').onclick = () => compartilhar(id);
     c.querySelector('#euEditar').onclick = () => mostrar('editor', { modo: 'editar' });
@@ -971,6 +980,66 @@ async function carregarMeusAmigos() {
   if (!EU) { MEUS = { segue: new Set(), seguidores: new Set() }; return; }
   const r = await Api.rpc('amigos_de', { p_morador: EU.morador });
   MEUS = { segue: new Set((r && r.segue) || []), seguidores: new Set((r && r.seguidores) || []) };
+  atualizarBadge();
+}
+
+// ---------------------------------------------------------------------
+// pedidos de amizade = quem me adicionou e eu ainda não adicionei de volta
+// ---------------------------------------------------------------------
+const pedidos = () => [...MEUS.seguidores].filter(x => !MEUS.segue.has(x));
+function atualizarBadge() {
+  const b = document.querySelector('#menu [data-aba="eu"]'); if (!b) return;
+  let el = b.querySelector('.badge'); const n = EU ? pedidos().length : 0;
+  if (!n) { if (el) el.remove(); return; }
+  if (!el) { el = document.createElement('i'); el.className = 'badge'; b.appendChild(el); }
+  el.textContent = n > 9 ? '9+' : n;
+}
+let pedidosAvisados = false;
+function avisarPedidos() {
+  const n = pedidos().length;
+  if (n && !pedidosAvisados) { pedidosAvisados = true; toast(`❤ Você tem ${n} ${n === 1 ? 'pedido' : 'pedidos'} de amizade — veja em "Eu"`); }
+}
+function itemPedido(id) {
+  return `<li class="pedido"><button class="pedido-quem" data-id="${id}"><canvas width="12" height="15" data-look="${id}"></canvas>
+    <span class="l-txt"><span class="l-nome">${esc(rotulo(id))}</span><span class="l-sub">quer ser seu amigo</span></span></button>
+    <span class="pedido-acoes"><button class="btn btn-v" data-aceitar="${id}">Aceitar</button>${TEM_BIO ? `<button class="btn" data-recusar="${id}">Recusar</button>` : ''}</span></li>`;
+}
+function ligarPedidos(raiz) {
+  raiz.querySelectorAll('[data-aceitar]').forEach(b => b.onclick = async () => {
+    const id = Number(b.dataset.aceitar); b.disabled = true;
+    const r = await Api.rpc('adicionar_amigo', { p_token: token(), p_amigo: id });
+    if (!r || !r.ok) { b.disabled = false; return toast((r && r.erro) || 'Não deu certo'); }
+    MEUS.segue.add(id); atualizarBadge(); toast(`★ Agora você e ${rotulo(id)} são amigos!`); TELAS.eu();
+  });
+  raiz.querySelectorAll('[data-recusar]').forEach(b => b.onclick = async () => {
+    const id = Number(b.dataset.recusar); b.disabled = true;
+    const r = await Api.rpc('recusar_amizade', { p_token: token(), p_de: id });
+    if (!r || !r.ok) { b.disabled = false; return toast((r && r.erro) || 'Não deu certo'); }
+    MEUS.seguidores.delete(id); atualizarBadge(); toast('Pedido recusado'); TELAS.eu();
+  });
+}
+
+// ---------------------------------------------------------------------
+// bio automática (1 frase) a partir da rotina — pra quem não escreveu a sua
+// ---------------------------------------------------------------------
+function bioAuto(m) {
+  const r = rng(m.id * 7477 + 3), ag = m.agenda;
+  const acorda = ag[0].ate, dorme = ag[ag.length - 1].de, rua = VILA.lista_casas[m.casa - 1].rua;
+  const fora = {};
+  for (const b of ag) if (b.onde !== 'casa') fora[b.onde] = (fora[b.onde] || 0) + toMin(b.ate) - toMin(b.de);
+  const fav = Object.keys(fora).sort((a, b) => fora[b] - fora[a])[0];
+  const FAV = { praca: 'a praça', mercadinho: 'o mercadinho', vendinha: 'a vendinha', passeio_rua: 'passear pela rua ' + rua };
+  const opcoes = [
+    `Acorda às ${acorda} e já sai pensando no almoço.`,
+    `Lugar favorito da vila: ${FAV[fav] || 'a praça'}.`,
+    `Dorme às ${dorme} em ponto, nem um minuto depois.`,
+    `Mora na casa ${m.casa} e conhece todo mundo da rua ${rua}.`,
+    `Chegou no episódio ${m.chegou_no_ep} e nunca mais quis sair.`,
+  ];
+  if (m.domingo) opcoes.push(`Nunca perde a missa de domingo às ${m.domingo.de}.`);
+  if (toMin(acorda) < 400) opcoes.push('Primeiro a acordar na casa, antes do sol nascer.');
+  if (toMin(dorme) > 1380) opcoes.push('Última luz acesa da rua toda noite.');
+  return opcoes[Math.floor(r() * opcoes.length)];
 }
 
 // ---------------------------------------------------------------------
@@ -979,12 +1048,12 @@ async function carregarMeusAmigos() {
 const token = () => { try { return localStorage.getItem('vila_token'); } catch { return null; } };
 function entrou(r) {
   try { localStorage.setItem('vila_token', r.token); } catch {}
-  EU = { morador: r.morador, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia || null };
+  EU = { morador: r.morador, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia || null, bio: r.bio || null };
   atualizarHud(); carregarMeusAmigos();
 }
 function sairConta() {
   try { localStorage.removeItem('vila_token'); } catch {}
-  EU = null; MEUS = { segue: new Set(), seguidores: new Set() }; atualizarHud();
+  EU = null; MEUS = { segue: new Set(), seguidores: new Set() }; atualizarHud(); atualizarBadge();
 }
 async function compartilhar(id) {
   const url = location.origin + location.pathname + '?m=' + id;
@@ -1012,6 +1081,7 @@ async function carregarPublicos() {
   try {
     const l = await Api.publicos();
     const novo = {}; for (const p of l) novo[p.id] = p; PUB = novo;
+    TEM_BIO = l.length > 0 && 'bio' in l[0];
   } catch (e) { console.warn(e); toast('Não consegui carregar os nomes (banco fora do ar?)'); }
 }
 async function iniciar() {
@@ -1027,7 +1097,7 @@ async function iniciar() {
   document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarContador(); });
   if (token()) {
     const r = await Api.rpc('meu_perfil', { p_token: token() });
-    if (r && r.ok) { EU = { morador: r.morador, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia || null }; await carregarMeusAmigos(); }
+    if (r && r.ok) { EU = { morador: r.morador, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia || null, bio: r.bio || null }; await carregarMeusAmigos(); avisarPedidos(); }
     else if (r && r.erro === 'Entre de novo') sairConta();
   }
   atualizarHud();
@@ -1038,7 +1108,7 @@ async function iniciar() {
   $('#carregando').classList.add('some');
   setTimeout(() => { $('#carregando').hidden = true; }, 450);
   requestAnimationFrame(loop);
-  setInterval(async () => { await carregarPublicos(); atualizarHud(); }, 90000);
+  setInterval(async () => { await carregarPublicos(); atualizarHud(); if (EU) await carregarMeusAmigos(); }, 90000);
   if (Api.modo === 'local') console.info('Vila em modo LOCAL (servidor_local.js). Configure site/config.js pra usar o Supabase.');
 }
 addEventListener('resize', ajustarTela);

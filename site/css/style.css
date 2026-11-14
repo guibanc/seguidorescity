@@ -123,7 +123,7 @@ input { font: inherit; }
     top: calc(env(safe-area-inset-top, 0px) + 12px); bottom: auto; left: auto; right: 12px; height: auto; width: auto;
     border: 2px solid var(--tinta); border-radius: 14px; box-shadow: var(--sombra); padding: 4px; gap: 2px;
   }
-  #menu button { flex-direction: row; gap: 7px; padding: 8px 14px; font-size: 14px; border-radius: 10px; }
+  #menu button { flex-direction: row; gap: 7px; padding: 8px 14px; font-size: 14px; border-radius: 10px; white-space: nowrap; }
   #menu button:hover { background: var(--papel-2); }
   #menu button.ativo { background: var(--papel-2); }
   #menu button.ativo::before { display: none; }
@@ -232,6 +232,18 @@ p { line-height: 1.45; }
 .op.ativo { background: var(--amarelo); }
 .op-txt { padding: 8px 12px; min-width: 0; }
 .editor-rodape { position: sticky; bottom: -18px; background: var(--papel); padding: 10px 0 18px; margin-top: 14px; border-top: 2px solid var(--papel-3); display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* ---------------- bio ---------------- */
+.bio { margin: 12px 0 0; font-size: 15px; font-style: italic; color: var(--texto); background: var(--papel-2); border-left: 4px solid var(--amarelo); border-radius: 0 10px 10px 0; padding: 8px 12px; }
+.bio small { display: block; font-style: normal; font-size: 11.5px; color: var(--texto-2); margin-top: 2px; }
+
+/* ---------------- pedidos de amizade ---------------- */
+.badge { position: absolute; top: 6px; left: calc(50% + 6px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px; background: var(--vermelho); color: #fff; border: 2px solid var(--papel); font: 800 11px/14px var(--fonte); font-style: normal; text-align: center; }
+@media (min-width: 900px) { .badge { position: static; margin-left: 2px; } }
+.lista li.pedido { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 4px 0; }
+.lista li.pedido > .pedido-quem { flex: 1 1 180px; width: auto; }
+.pedido-acoes { display: flex; gap: 6px; }
+.pedido-acoes .btn { min-height: 38px; padding: 6px 12px; font-size: 13.5px; }
 
 /* ---------------- amigos ---------------- */
 .amigo-coracoes { color: var(--vermelho); letter-spacing: 1px; font-size: 13px; }

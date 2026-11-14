@@ -39,13 +39,14 @@ function novaSessao(mid) {
   const tok = crypto.randomBytes(24).toString('hex');
   db.sessoes[sha(tok)] = { morador: mid, expira: Date.now() + 30 * 864e5 };
   const r = db.registros[mid]; salvar();
-  return { ok: true, token: tok, morador: mid, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia };
+  return { ok: true, token: tok, morador: mid, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia, bio: r.bio || null };
 }
 const erro = e => ({ ok: false, erro: e });
 const publico = id => {
   const r = db.registros[id], m = moradores[id - 1];
   return { id, casa: m.casa, chegou_no_ep: m.chegou_no_ep, nome: r && !r.oculto ? r.nome : null,
-           usuario: r && !r.oculto ? r.usuario : null, aparencia: r && !r.oculto ? r.aparencia : null, ocupado: !!r };
+           usuario: r && !r.oculto ? r.usuario : null, aparencia: r && !r.oculto ? r.aparencia : null,
+           bio: r && !r.oculto ? (r.bio || null) : null, ocupado: !!r };
 };
 
 const RPC = {
@@ -78,15 +79,17 @@ const RPC = {
   meu_perfil({ p_token }) {
     const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
     const r = db.registros[mid];
-    return { ok: true, morador: mid, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia };
+    return { ok: true, morador: mid, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia, bio: r.bio || null };
   },
-  salvar_perfil({ p_token, p_nome, p_aparencia }) {
+  salvar_perfil({ p_token, p_nome, p_aparencia, p_bio = null }) {
     const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    const n = limpaNome(p_nome);
+    const n = limpaNome(p_nome), b = p_bio == null ? undefined : (limpaNome(p_bio) || null);
     if (!nomePermitido(n)) return erro('Nome não permitido');
+    if (b && !nomePermitido(b)) return erro('Essa frase não é permitida');
+    if (b && b.length > 90) return erro('A frase pode ter até 90 letras');
     if (n.length < 2 || n.length > 20) return erro('Nome com 2 a 20 letras');
     if (!aparenciaOk(p_aparencia)) return erro('Aparência inválida');
-    Object.assign(db.registros[mid], { nome: n, aparencia: p_aparencia }); salvar();
+    Object.assign(db.registros[mid], { nome: n, aparencia: p_aparencia }, b === undefined ? {} : { bio: b }); salvar();
     return { ok: true };
   },
   sair({ p_token }) { delete db.sessoes[sha(p_token)]; salvar(); return { ok: true }; },
@@ -97,6 +100,11 @@ const RPC = {
     if (db.amizades.filter(a => a.de === mid).length >= 100) return erro('Limite de 100 amigos');
     if (!db.amizades.some(a => a.de === mid && a.para === p_amigo)) { db.amizades.push({ de: mid, para: p_amigo }); salvar(); }
     return { ok: true, mutuo: db.amizades.some(a => a.de === p_amigo && a.para === mid) };
+  },
+  recusar_amizade({ p_token, p_de }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    db.amizades = db.amizades.filter(a => !(a.de === p_de && a.para === mid)); salvar();
+    return { ok: true };
   },
   remover_amigo({ p_token, p_amigo }) {
     const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
