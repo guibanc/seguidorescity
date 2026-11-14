@@ -1,4 +1,4 @@
--- Nomes proibidos (511 palavras). Gerado por supabase/gerar_palavras.js — não edite à mão.
+-- Nomes proibidos (506 palavras). Gerado por supabase/gerar_palavras.js — não edite à mão.
 -- Fonte: naughty-words (LDNOOBW, CC-BY-4.0) + lista própria. Pode rodar de novo à vontade.
 delete from palavras_bloqueadas;
 insert into palavras_bloqueadas (p) values
@@ -15,7 +15,6 @@ insert into palavras_bloqueadas (p) values
 ('arombada'),
 ('arombado'),
 ('arsehole'),
-('as'),
 ('ashole'),
 ('asmunch'),
 ('autoerotic'),
@@ -87,7 +86,6 @@ insert into palavras_bloqueadas (p) values
 ('but'),
 ('butcheks'),
 ('buthole'),
-('bw'),
 ('cabrao'),
 ('cacete'),
 ('cagar'),
@@ -254,7 +252,6 @@ insert into palavras_bloqueadas (p) values
 ('jiz'),
 ('judeusafado'),
 ('jugs'),
-('k'),
 ('kike'),
 ('kinbaku'),
 ('kinkster'),
@@ -418,7 +415,6 @@ insert into palavras_bloqueadas (p) values
 ('sket'),
 ('slanteye'),
 ('slut'),
-('sm'),
 ('smut'),
 ('snatch'),
 ('snowbaling'),
@@ -503,7 +499,6 @@ insert into palavras_bloqueadas (p) values
 ('worldsex'),
 ('wrapingmen'),
 ('wrinkledstarfish'),
-('x'),
 ('xana'),
 ('xavasca'),
 ('xereca'),

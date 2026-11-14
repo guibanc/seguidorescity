@@ -2,7 +2,7 @@
 (function () {
   const C = window.VILA_CONFIG || {};
   const sb = !!(C.SUPABASE_URL && C.SUPABASE_ANON_KEY);
-  const base = sb ? C.SUPABASE_URL.replace(/\/+$/, '') : '';
+  const base = sb ? C.SUPABASE_URL.trim().replace(/\/+$/, '').replace(/\/rest\/v1$/, '') : '';
   const H = sb ? { apikey: C.SUPABASE_ANON_KEY, Authorization: 'Bearer ' + C.SUPABASE_ANON_KEY, 'Content-Type': 'application/json' }
                : { 'Content-Type': 'application/json' };
 

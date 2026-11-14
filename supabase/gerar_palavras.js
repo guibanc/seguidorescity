@@ -47,6 +47,8 @@ for (const w of [...daBiblioteca, ...PROPRIA]) {
   const igual = w.startsWith('=');
   let n = normalizar(igual ? w.slice(1) : w).replace(/[^a-z ]/g, '').trim();
   if (!n || (daBiblioteca.has(w) && EXCECOES.has(n))) continue;   // exceções valem só pra biblioteca
+  // juntando letras repetidas, "xxx" vira "x", "ass" vira "as", "kkk" vira "k": barraria nomes normais
+  if (n.replace(/(.)\1+/g, '$1').replace(/ /g, '').length <= 2 && n !== 'cu') continue;
   if (!igual && n.replace(/ /g, '').length > 4) n = n.replace(/ /g, '');   // busca "colada"
   lista.add((igual ? '=' : '') + n);
 }

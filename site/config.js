@@ -5,6 +5,6 @@
 //  do Supabase (Project Settings -> API). A chave anon é pública, pode ficar aqui.
 // =====================================================================
 window.VILA_CONFIG = {
-  SUPABASE_URL: '',        // ex: 'https://abcdefgh.supabase.co'
-  SUPABASE_ANON_KEY: '',   // ex: 'eyJhbGciOiJIUzI1NiIsInR5cCI6...'
+  SUPABASE_URL: 'https://hfkcfyvmeofoaiztxrnj.supabase.co',
+  SUPABASE_ANON_KEY: 'sb_publishable_6aWuoJtFaFJVjql9r_j4TA_BIjfugIu',
 };
