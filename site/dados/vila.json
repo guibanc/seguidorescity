@@ -1,7 +1,7 @@
 {
- "episodio": 4,
- "seguidores": 460,
- "casas": 46,
+ "episodio": 5,
+ "seguidores": 577,
+ "casas": 57,
  "estilo": "16 bits",
  "mapa": {
   "largura": 540,
@@ -9,8 +9,8 @@
   "escala_logica": 2
  },
  "proximo_marco": {
-  "seguidores": 500,
-  "construcao": "prefeitura + ruas calçadas (vira cidadezinha)"
+  "seguidores": 600,
+  "construcao": "2º mercadinho (a vila fica com 2) + posto de saúde"
  },
  "nome_vila": null,
  "pontos": {
@@ -100,7 +100,15 @@
     ]
    ]
   },
-  "prefeitura_reservada": {
+  "prefeitura": {
+   "porta": [
+    320,
+    846
+   ],
+   "rua": [
+    320,
+    852
+   ],
    "lotes": [
     [
      278,
@@ -110,8 +118,7 @@
      322,
      792
     ]
-   ],
-   "marco": 500
+   ]
   }
  },
  "ruas": {
@@ -1638,18 +1645,38 @@
     459,
     460
    ]
-  }
- ],
- "lotes_livres": [
+  },
   {
    "casa": 47,
    "lote": [
     206,
     792
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    226,
+    836
+   ],
    "rua": "D",
-   "comeca_em": 465,
-   "pronta_em": 470
+   "ponto_na_rua": [
+    226,
+    850
+   ],
+   "moradores": [
+    461,
+    462,
+    463,
+    464,
+    465,
+    466,
+    467,
+    468,
+    469,
+    470
+   ]
   },
   {
    "casa": 48,
@@ -1657,9 +1684,31 @@
     206,
     864
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    226,
+    908
+   ],
    "rua": "D",
-   "comeca_em": 475,
-   "pronta_em": 480
+   "ponto_na_rua": [
+    226,
+    850
+   ],
+   "moradores": [
+    471,
+    472,
+    473,
+    474,
+    475,
+    476,
+    477,
+    478,
+    479,
+    480
+   ]
   },
   {
    "casa": 49,
@@ -1667,9 +1716,31 @@
     162,
     792
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    182,
+    836
+   ],
    "rua": "D",
-   "comeca_em": 485,
-   "pronta_em": 490
+   "ponto_na_rua": [
+    182,
+    850
+   ],
+   "moradores": [
+    481,
+    482,
+    483,
+    484,
+    485,
+    486,
+    487,
+    488,
+    489,
+    490
+   ]
   },
   {
    "casa": 50,
@@ -1677,9 +1748,31 @@
     162,
     864
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    182,
+    908
+   ],
    "rua": "D",
-   "comeca_em": 495,
-   "pronta_em": 500
+   "ponto_na_rua": [
+    182,
+    850
+   ],
+   "moradores": [
+    491,
+    492,
+    493,
+    494,
+    495,
+    496,
+    497,
+    498,
+    499,
+    500
+   ]
   },
   {
    "casa": 51,
@@ -1687,9 +1780,31 @@
     322,
     864
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    342,
+    908
+   ],
    "rua": "D",
-   "comeca_em": 505,
-   "pronta_em": 510
+   "ponto_na_rua": [
+    342,
+    850
+   ],
+   "moradores": [
+    501,
+    502,
+    503,
+    504,
+    505,
+    506,
+    507,
+    508,
+    509,
+    510
+   ]
   },
   {
    "casa": 52,
@@ -1697,9 +1812,31 @@
     118,
     792
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    138,
+    836
+   ],
    "rua": "D",
-   "comeca_em": 515,
-   "pronta_em": 520
+   "ponto_na_rua": [
+    138,
+    850
+   ],
+   "moradores": [
+    511,
+    512,
+    513,
+    514,
+    515,
+    516,
+    517,
+    518,
+    519,
+    520
+   ]
   },
   {
    "casa": 53,
@@ -1707,9 +1844,31 @@
     118,
     864
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    138,
+    908
+   ],
    "rua": "D",
-   "comeca_em": 525,
-   "pronta_em": 530
+   "ponto_na_rua": [
+    138,
+    850
+   ],
+   "moradores": [
+    521,
+    522,
+    523,
+    524,
+    525,
+    526,
+    527,
+    528,
+    529,
+    530
+   ]
   },
   {
    "casa": 54,
@@ -1717,9 +1876,31 @@
     366,
     792
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    386,
+    836
+   ],
    "rua": "D",
-   "comeca_em": 535,
-   "pronta_em": 540
+   "ponto_na_rua": [
+    386,
+    850
+   ],
+   "moradores": [
+    531,
+    532,
+    533,
+    534,
+    535,
+    536,
+    537,
+    538,
+    539,
+    540
+   ]
   },
   {
    "casa": 55,
@@ -1727,9 +1908,31 @@
     366,
     864
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    386,
+    908
+   ],
    "rua": "D",
-   "comeca_em": 545,
-   "pronta_em": 550
+   "ponto_na_rua": [
+    386,
+    850
+   ],
+   "moradores": [
+    541,
+    542,
+    543,
+    544,
+    545,
+    546,
+    547,
+    548,
+    549,
+    550
+   ]
   },
   {
    "casa": 56,
@@ -1737,9 +1940,31 @@
     74,
     792
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    94,
+    836
+   ],
    "rua": "D",
-   "comeca_em": 555,
-   "pronta_em": 560
+   "ponto_na_rua": [
+    94,
+    850
+   ],
+   "moradores": [
+    551,
+    552,
+    553,
+    554,
+    555,
+    556,
+    557,
+    558,
+    559,
+    560
+   ]
   },
   {
    "casa": 57,
@@ -1747,10 +1972,34 @@
     74,
     864
    ],
+   "tamanho": [
+    42,
+    50
+   ],
+   "porta": [
+    94,
+    908
+   ],
    "rua": "D",
-   "comeca_em": 565,
-   "pronta_em": 570
-  },
+   "ponto_na_rua": [
+    94,
+    850
+   ],
+   "moradores": [
+    561,
+    562,
+    563,
+    564,
+    565,
+    566,
+    567,
+    568,
+    569,
+    570
+   ]
+  }
+ ],
+ "lotes_livres": [
   {
    "casa": 58,
    "lote": [
@@ -1883,11 +2132,11 @@
   }
  ],
  "proxima_casa": {
-  "numero": 47,
-  "comeca_em": 465,
-  "pronta_em": 470,
+  "numero": 58,
+  "comeca_em": 575,
+  "pronta_em": 580,
   "lote": [
-   104,
+   206,
    420,
    "a"
   ]

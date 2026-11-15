@@ -22,6 +22,7 @@ let preview = null;              // {id, look} visual em edição (ainda não sa
 let escolhendo = false;          // modo "toque num morador no mapa"
 let estados = [], desenhados = [];
 let AO_VIVO = null;
+let CASAS = [];                 // casas prontas + casas em obra que já têm moradores
 let TEM_BIO = false;            // banco já tem bio + recusar pedido (5_bio_e_pedidos.sql)              // seguidores agora (tabela "contador" no Supabase)
 
 // ---------------------------------------------------------------------
@@ -96,7 +97,7 @@ function nosCasa(c) {
   return [c.porta, [px, py + 5], [lx, py + 5], [lx, ry], c.ponto_na_rua];
 }
 function lugar(m, b, k) {
-  const c = VILA.lista_casas[m.casa - 1], P = VILA.pontos;
+  const c = CASAS[m.casa - 1], P = VILA.pontos;
   switch (b.onde) {
     case 'mercadinho': case 'vendinha':
       return { nos: [P[b.onde].porta, P[b.onde].rua], rua: 'B', dentro: true, porta: P[b.onde].porta };
@@ -171,7 +172,7 @@ function estado(m, ms) {
 // encontros: dois moradores no mesmo lugar ao mesmo tempo (>= 10 min)
 function encontrosNoDia(a, b, dia, sem) {
   const A = blocosDoDia(a, dia, sem), B = blocosDoDia(b, dia, sem);
-  const ca = VILA.lista_casas[a.casa - 1].rua, cb = VILA.lista_casas[b.casa - 1].rua, out = [];
+  const ca = CASAS[a.casa - 1].rua, cb = CASAS[b.casa - 1].rua, out = [];
   for (const x of A) for (const y of B) {
     if (x.onde !== y.onde || x.onde === 'casa') continue;
     if (x.onde === 'passeio_rua' && ca !== cb) continue;
@@ -412,7 +413,7 @@ function tocar(sx, sy) {
     if (d < 1 && d < md) { md = d; melhor = e; }
   }
   if (melhor) return escolherNoMapa(melhor.id);
-  const casa = VILA.lista_casas.find(c => m.x >= c.lote[0] && m.x <= c.lote[0] + c.tamanho[0] && m.y >= c.lote[1] && m.y <= c.lote[1] + c.tamanho[1]);
+  const casa = CASAS.find(c => m.x >= c.lote[0] && m.x <= c.lote[0] + c.tamanho[0] && m.y >= c.lote[1] && m.y <= c.lote[1] + c.tamanho[1]);
   if (casa) return mostrar('casa', { n: casa.casa });
   if (selecionado && !seguindo) { selecionado = null; }
 }
@@ -633,7 +634,7 @@ const TELAS = {
           <p class="ficha-nome">${esc(p.nome || 'Morador #' + id)}</p>
           ${p.usuario ? `<div class="ficha-user">@${esc(p.usuario)}</div>` : `<div class="texto-2" style="font-weight:700">Livre — ainda sem dono</div>`}
           <div class="etiquetas">
-            <span class="etq">#${id}</span><span class="etq">Casa ${m.casa}</span><span class="etq">Chegou no ep. ${m.chegou_no_ep}</span>
+            <span class="etq">#${id}</span><span class="etq">${nomeCasa(m.casa)}</span><span class="etq">Chegou no ep. ${m.chegou_no_ep}</span>
             ${eu ? '<span class="etq etq-eu">Você</span>' : !p.ocupado ? '<span class="etq etq-livre">Livre</span>' : ''}
           </div>
         </div>
@@ -656,17 +657,17 @@ const TELAS = {
     c.querySelector('#btnLink').onclick = () => compartilhar(id);
     const bm = c.querySelector('#btnMeu'); if (bm) bm.onclick = () => { reg.id = id; reg.look = null; mostrar('editor', { modo: 'registro' }); };
     const be = c.querySelector('#btnEditar'); if (be) be.onclick = () => mostrar('editor', { modo: 'editar' });
-    const vizinhos = VILA.lista_casas[m.casa - 1].moradores.filter(x => x !== id);
+    const vizinhos = CASAS[m.casa - 1].moradores.filter(x => x !== id);
     const lc = c.querySelector('#fichaCasa'); lc.innerHTML = vizinhos.map(v => itemLista(v)).join(''); ligarLista(lc, irPara);
     renderAmigos(id);
   },
 
   // ------------------------------------------------ casa
   casa({ n }) {
-    const casa = VILA.lista_casas[n - 1];
-    titulo(`Casa ${n}`);
+    const casa = CASAS[n - 1];
+    titulo(nomeCasa(n));
     const dentro = casa.moradores.filter(id => estados[id - 1] && estados[id - 1].onde === 'casa').length;
-    const c = corpo(`<p class="mini">Rua ${casa.rua} · ${dentro} de ${casa.moradores.length} em casa agora${escolhendo ? ' · toque num livre pra escolher' : ''}.</p>
+    const c = corpo(`<p class="mini">${casa.pronta ? '' : `Em obra — fica pronta com ${casa.pronta_em || 10 * n} seguidores. `}Rua ${casa.rua} · ${dentro} de ${casa.moradores.length} em casa agora${escolhendo ? ' · toque num livre pra escolher' : ''}.</p>
       <ul class="lista">${casa.moradores.map(id => itemLista(id, ocupado(id) ? '' : '<span class="etq etq-livre">livre</span>')).join('')}</ul>`);
     ligarLista(c, id => {
       if (escolhendo) return escolherNoMapa(id);
@@ -923,7 +924,7 @@ function atualizarFicha() {
   const ag = document.getElementById('fichaAgora'); if (!ag) return;
   const L = LUGAR[e.onde] || LUGAR[e.destino] || { ico: '🚶' };
   const oque = e.faz;
-  const onde = e.onde === 'passeio_rua' ? ' · rua ' + VILA.lista_casas[m.casa - 1].rua
+  const onde = e.onde === 'passeio_rua' ? ' · rua ' + CASAS[m.casa - 1].rua
     : (e.onde === 'andando' || e.onde === 'casa' || LUGAR[e.onde].em === e.faz) ? '' : ' · ' + LUGAR[e.onde].em;
   ag.innerHTML = `<span class="ico">${e.onde === 'andando' ? '🚶' : L.ico}</span><span>Agora: <b>${esc(oque)}</b>${esc(onde)}<br><span style="opacity:.75;font-size:13px">${e.onde === 'andando' ? 'chega' : 'até'} ${fmt(e.ate)}</span></span>`;
   const bl = blocosDoDia(m, t.dia, t.sem);
@@ -1026,7 +1027,7 @@ function ligarPedidos(raiz) {
 // ---------------------------------------------------------------------
 function bioAuto(m) {
   const r = rng(m.id * 7477 + 3), ag = m.agenda;
-  const acorda = ag[0].ate, dorme = ag[ag.length - 1].de, rua = VILA.lista_casas[m.casa - 1].rua;
+  const acorda = ag[0].ate, dorme = ag[ag.length - 1].de, rua = CASAS[m.casa - 1].rua;
   const fora = {};
   for (const b of ag) if (b.onde !== 'casa') fora[b.onde] = (fora[b.onde] || 0) + toMin(b.ate) - toMin(b.de);
   const fav = Object.keys(fora).sort((a, b) => fora[b] - fora[a])[0];
@@ -1043,6 +1044,28 @@ function bioAuto(m) {
   if (toMin(dorme) > 1380) opcoes.push('Última luz acesa da rua toda noite.');
   return opcoes[Math.floor(r() * opcoes.length)];
 }
+
+// casas prontas + casas em obra. Ex.: com 577 inscritos, os moradores 571–577 já existem,
+// mas a casa 58 só fica pronta com 580 — eles "moram" no lote da obra até lá.
+function montarCasas() {
+  const lista = VILA.lista_casas.map(c => ({ ...c, pronta: true }));
+  const maior = Math.max(...MORADORES.map(m => m.casa));
+  for (let n = lista.length + 1; n <= maior; n++) {
+    const ids = MORADORES.filter(m => m.casa === n).map(m => m.id);
+    const l = (VILA.lotes_livres || []).find(x => x.casa === n);
+    if (l && RY[l.rua] != null) {
+      const [x, y] = l.lote;
+      lista.push({ casa: n, lote: l.lote, tamanho: [42, 50], porta: [x + 20, y + 44], rua: l.rua,
+                   ponto_na_rua: [x + 20, RY[l.rua]], moradores: ids, pronta: false, pronta_em: l.pronta_em });
+    } else {
+      // sem lote ainda (mapa lotado): ficam hospedados na última casa pronta
+      const ult = lista[VILA.lista_casas.length - 1];
+      lista.push({ ...ult, casa: n, moradores: ids, pronta: false, hospedado: true });
+    }
+  }
+  return lista;
+}
+const nomeCasa = n => { const c = CASAS[n - 1]; return c && !c.pronta ? `Casa ${n} (em obra)` : `Casa ${n}`; };
 
 // ---------------------------------------------------------------------
 // sessão
@@ -1094,6 +1117,7 @@ async function iniciar() {
   VILA = v; MORADORES = m; IMG.dia = dia; IMG.noite = noite; IMG.atlas = atlas;
   IMG.atlasNoite = tingir(atlas, atlas.width, atlas.height);
   for (const k of Object.keys(VILA.ruas)) if (k !== 'principal') RY[k] = VILA.ruas[k].de[1];
+  CASAS = montarCasas();
   await Promise.all([carregarPublicos(), atualizarContador()]);
   setInterval(() => { if (!document.hidden) atualizarContador(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarContador(); });

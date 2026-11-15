@@ -11,7 +11,7 @@ from PIL import Image
 from world import W, H, ROADA, ROADB, ROADC, MAINX0, MAINX1
 from world16 import npc_sprite, npc_look, S
 import vila16 as V
-from scene import house_lots, house_var, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, lot, C1, EP
+from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, lot, C1, EP
 
 out = sys.argv[1] if len(sys.argv) > 1 else '../site'
 os.makedirs(f'{out}/img', exist_ok=True); os.makedirs(f'{out}/dados', exist_ok=True)
@@ -19,15 +19,18 @@ N = C1
 
 # ---------- mapa sem moradores ----------
 def mapa(lit):
-    base, _ = V.static(lit, True)
+    base, _ = V.static(lit, True, True)                     # ruas calçadas (marco 500)
     img = base.copy(); objs = []
     from PIL import ImageDraw
     dd = ImageDraw.Draw(img)
-    for l in house_lots[NH:]: V.draw_stakes(dd, l)          # lotes livres (rua D)
-    V.draw_fence(dd, PREFEITURA)                             # reservado: prefeitura (500)
+    for i, l in enumerate(house_lots):                       # lotes livres (estacas)
+        if house_p(i, C1) <= 0: V.draw_stakes(dd, l)
+    x, y = V.L2(*lot(*PREFEITURA[0])); objs.append((y, V.PREF(1, lit, 0), x))   # prefeitura (500)
     x, y = V.L2(*lot(*ESCOLA[0])); objs.append((y, V.ESC(1, lit, 0, 0), x))
-    for i, l in enumerate(house_lots[:NH]):
-        x, y = V.L2(*lot(*l)); hi = V.HOUSE(house_var[i], 1, lit)
+    for i, l in enumerate(house_lots):
+        p = house_p(i, C1)
+        if p <= 0: continue
+        x, y = V.L2(*lot(*l)); hi = V.HOUSE(house_var[i], p, lit and p >= 1)
         objs.append((y, hi, x))
     x, y = V.L2(*lot(*VENDA)); objs.append((y, V.HOUSE(5, 1, lit, True), x))
     x, y = V.L2(*lot(*MERCADO)); objs.append((y, V.MERC(lit), x))
@@ -69,7 +72,7 @@ pontos = {
     'igreja': {'porta': P(130, 105)},
     'entrada': {'placa': P(149, 446), 'rua': P(131.5, 470)},
     'escola': {'porta': P(lot(*ESCOLA[0])[0]+21, ROADC+3), 'rua': P(lot(*ESCOLA[0])[0]+21, ROADC+6), 'lotes': [P(*lot(*l)) for l in ESCOLA]},
-    'prefeitura_reservada': {'lotes': [P(*lot(*l)) for l in PREFEITURA], 'marco': 500},
+    'prefeitura': {'porta': P(lot(*PREFEITURA[0])[0]+21, ROADD+3), 'rua': P(lot(*PREFEITURA[0])[0]+21, ROADD+6), 'lotes': [P(*lot(*l)) for l in PREFEITURA]},
 }
 ruas = {
     'principal': {'de': P(131.5, 104), 'ate': P(131.5, 480)},
@@ -87,7 +90,7 @@ for i, l in enumerate(house_lots[:NH]):
 lotes_livres = [{'casa': NH+k+1, 'lote': P(*lot(*l)), 'rua': RUAS[l[1]], 'comeca_em': 10*(NH+k)+5, 'pronta_em': 10*(NH+k+1)}
                 for k, l in enumerate(house_lots[NH:])]
 vila = {'episodio': EP, 'seguidores': N, 'casas': NH, 'estilo': '16 bits', 'mapa': {'largura': W*S, 'altura': H*S, 'escala_logica': S},
-        'proximo_marco': {'seguidores': 500, 'construcao': 'prefeitura'}, 'nome_vila': None,
+        'proximo_marco': {'seguidores': 600, 'construcao': '2º mercadinho + posto de saúde'}, 'nome_vila': None,
         'pontos': pontos, 'ruas': ruas, 'lista_casas': casas, 'lotes_livres': lotes_livres,
         'atlas': {'arquivo': 'img/moradores.png', 'por_linha': cols, 'celula': [CW, CH], 'quadro': [12, 18],
                   'direcoes': DIRS, 'quadros_por_direcao': 4, 'ancora_pes': [6, 14]}}
@@ -137,7 +140,7 @@ moradores = []
 for k in range(N):
     mid = k+1
     ag, dom = agenda(mid)
-    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4,
+    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5,
                       'aparencia': npc_look(mid), 'atlas': {'col': k % cols, 'lin': k//cols},
                       'velocidade': round(random.Random(mid).uniform(0.85, 1.15), 2), 'agenda': ag, 'domingo': dom})
 json.dump(moradores, open(f'{out}/dados/moradores.json', 'w'), ensure_ascii=False)

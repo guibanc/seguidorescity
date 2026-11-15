@@ -37,7 +37,7 @@ DIRT = [(146, 102, 64), (170, 126, 82), (188, 146, 98), (206, 168, 120)]
 WATER = [(38, 86, 168), (50, 108, 194), (70, 136, 216), (110, 172, 232)]
 SAND = [(176, 154, 98), (204, 186, 128), (224, 208, 150)]
 
-def make_ground16(extra_roads=()):
+def make_ground16(extra_roads=(), paved=False):
     """grama + rio + ruas + praça, tudo estático (a vila já tem as ruas desde o ep. 1)"""
     n = value_noise(H2, W2, 24, 11)*0.6 + value_noise(H2, W2, 7, 12)*0.3 + np.random.RandomState(13).rand(H2, W2)*0.1
     yy, xx = np.mgrid[0:H2, 0:W2]
@@ -121,6 +121,37 @@ def make_ground16(extra_roads=()):
             a[y, x] = (222, 196, 150); a[y+1, x] = DIRT[0]
     road(MAINX0, 104, MAINX1+1, 480, True)
     for ry in (ROADA, ROADB, ROADC)+tuple(extra_roads): road(14, ry, 219, ry+10, False)
+    if paved:   # marco 500: ruas calçadas (paralelepípedo + calçada), mesmas coordenadas
+        rects = [(MAINX0, 104, MAINX1+1, 480)] + [(14, ry, 219, ry+10) for ry in (ROADA, ROADB, ROADC)+tuple(extra_roads)]
+        rm = np.zeros((H2, W2), bool)
+        for (x0, y0, x1, y1) in rects: rm[y0*S:y1*S, x0*S:x1*S] = True
+        side = np.zeros_like(rm)
+        for dy in range(-3, 4):
+            for dx in range(-3, 4):
+                side |= np.roll(np.roll(rm, dy, 0), dx, 1)
+        side &= ~rm
+        side[213*S:277*S, 100*S:164*S] = False
+        side &= ~river
+        ps = np.random.RandomState(31)
+        cob = np.zeros((H2, W2, 3), np.uint8); cob[:] = (92, 90, 96)
+        STONES = [(150, 146, 150), (164, 160, 162), (138, 136, 142), (176, 170, 168), (128, 128, 136)]
+        for row, y in enumerate(range(0, H2, 4)):
+            off = 2 if row % 2 else 0
+            for x in range(-off, W2, 5):
+                c = STONES[ps.randint(0, 5)]
+                x0, x1 = max(0, x), min(W2, x+4)
+                if x1 <= x0: continue
+                cob[y:y+3, x0:x1] = c
+                cob[y, x0:x1] = sh(c, 1.1); cob[y+2:y+3, x0:x1] = sh(c, 0.86)
+        a[rm] = cob[rm]
+        sw = np.zeros((H2, W2, 3), np.uint8); sw[:] = (206, 202, 192)
+        sw[(yy % 6 == 0) | (xx % 6 == 0)] = (184, 180, 170)
+        a[side] = sw[side]
+        # meio-fio (linha clara colada na rua)
+        edge = np.zeros_like(rm)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)): edge |= np.roll(np.roll(rm, dy, 0), dx, 1)
+        edge &= side
+        a[edge] = (232, 230, 222)
 
     # ---- praça (pedra) ----
     X0, Y0, X1, Y1 = 100*S, 213*S, 164*S, 277*S
@@ -715,3 +746,90 @@ def escola16(p, lit=False, bell=0, flag=0):
     if p >= 1:
         for y in range(RY, BY+3): im.putpixel((X1+3, y), (0, 0, 0, 70)); im.putpixel((X1+4, y), (0, 0, 0, 40))
     return im
+
+
+# ---------------- prefeitura (marco 500, ep. 5) — ocupa 2 lotes ----------------
+PREF_ROOF = [(52, 58, 78), (78, 88, 112), (104, 116, 142), (146, 158, 184)]
+def prefeitura16(p, lit=False, flag=0):
+    """86x50 (2 lotes lógicos). p: 0..1  flag: quadro das bandeiras"""
+    from font import draw_text
+    im = Image.new('RGBA', (86, 50), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    X0, X1, RY, WY, BY = 7, 76, 12, 28, 41
+    PX0, PX1 = 27, 56                       # pórtico central
+    wc = (246, 240, 226); trim = (255, 255, 252); blue = (60, 92, 160); wood = (124, 82, 46)
+    if p <= 0: return im
+    if p < 1:
+        for (x, y) in [(X0, RY), (X1, RY), (X0, BY), (X1, BY)]:
+            d.line([x, y-3, x, y], fill=(120, 80, 40, 255)); d.point((x, y-3), fill=(176, 130, 80, 255))
+    if p < 0.2:
+        for x in range(X0, X1, 3): d.point((x, RY-1), fill=(250, 250, 250, 220)); d.point((x, BY-1), fill=(250, 250, 250, 220))
+        for y in range(RY, BY, 3): d.point((X0, y), fill=(250, 250, 250, 220)); d.point((X1, y), fill=(250, 250, 250, 220))
+        n = int(p/0.2*(X1-X0-2))
+        if n > 0: d.rectangle([X0+1, RY+1, X0+n, BY-1], fill=(150, 150, 156, 255))
+        return im
+    d.rectangle([X0, RY, X1, BY], fill=(140, 140, 146, 255))
+    if p < 0.62:
+        f = clamp((p-0.3)/0.32)
+        for x in (X0+1, X1-1, PX0, PX1, 17, 66):
+            d.rectangle([x-1, RY, x, BY], fill=A(wood)); d.line([x-1, RY, x-1, BY], fill=A(sh(wood, 1.3)))
+        d.rectangle([X0, RY, X1, RY+1], fill=A(wood))
+        hh = int(round(f*(BY-WY+1)))
+        if hh > 0: d.rectangle([X0+1, BY+1-hh, X1-1, BY], fill=A(wc))
+        return im
+    # ---- paredes ----
+    d.rectangle([X0+1, WY, X1-1, BY], fill=A(wc))
+    for y in range(WY+2, BY, 3): d.line([X0+1, y, X1-1, y], fill=A(sh(wc, 0.96)))
+    d.rectangle([X0+1, BY-2, X1-1, BY], fill=A(blue)); d.line([X0+1, WY, X1-1, WY], fill=A(blue))
+    d.line([X0, WY, X0, BY], fill=A(OUT)); d.line([X1, WY, X1, BY], fill=A(OUT))
+    g = LITW[0] if lit else (110, 166, 222)
+    for wx in (X0+4, X0+12, X1-17, X1-9):           # janelas altas em arco
+        d.rectangle([wx-1, WY+3, wx+5, BY-3], fill=A(trim))
+        d.rectangle([wx, WY+5, wx+4, BY-4], fill=A(g)); d.rectangle([wx+1, WY+4, wx+3, WY+4], fill=A(g))
+        if not lit: d.line([wx, WY+5, wx, WY+7], fill=(214, 236, 252, 255))
+        d.line([wx+2, WY+4, wx+2, BY-4], fill=A(trim))
+    # ---- telhado ----
+    f = clamp((p-0.62)/0.23)
+    total = len(range(WY-1, RY-1, -3)); done = total if f >= 1 else int(math.ceil(f*total))
+    roof_tiles(d, X0-1, RY, X1+1, WY-1, PREF_ROOF, done)
+    if f >= 1:
+        d.rectangle([X0-1, RY-1, X1+1, RY+1], fill=A(PREF_ROOF[3])); d.line([X0-2, RY-2, X1+2, RY-2], fill=A(OUT))
+        d.line([X0-2, RY-1, X0-2, WY-1], fill=A(OUT)); d.line([X1+2, RY-1, X1+2, WY-1], fill=A(OUT))
+        d.line([X0-1, WY-1, X1+1, WY-1], fill=A(PREF_ROOF[0]))
+    if p < 0.85: return im
+    # ---- pórtico: frontão com relógio + colunas ----
+    cx = (PX0+PX1)//2
+    d.polygon([(PX0-2, 17), (cx, 2), (PX1+2, 17)], fill=A(OUT))
+    d.polygon([(PX0, 16), (cx, 4), (PX1, 16)], fill=A(trim))
+    d.line([PX0, 16, PX1, 16], fill=(214, 210, 200, 255))
+    d.ellipse([cx-4, 7, cx+4, 15], fill=A(OUT)); d.ellipse([cx-3, 8, cx+3, 14], fill=(250, 246, 220, 255))
+    d.line([cx, 11, cx, 9], fill=A(OUT)); d.line([cx, 11, cx+2, 11], fill=A(OUT))
+    d.rectangle([PX0-1, 17, PX1+1, 19], fill=A(OUT)); d.rectangle([PX0, 17, PX1, 18], fill=(230, 226, 214, 255))
+    d.rectangle([PX0, 20, PX1, BY], fill=(196, 190, 176, 255))                 # sombra do pórtico
+    d.rectangle([cx-5, WY+1, cx+5, BY], fill=A(OUT)); d.rectangle([cx-4, WY+2, cx+4, BY], fill=(120, 72, 40, 255))
+    d.line([cx, WY+2, cx, BY], fill=(84, 50, 28, 255)); d.point((cx-2, WY+8), fill=(250, 210, 90, 255)); d.point((cx+2, WY+8), fill=(250, 210, 90, 255))
+    for x in (PX0+1, PX0+8, PX1-9, PX1-2):                                       # colunas
+        d.rectangle([x, 19, x+2, BY], fill=A(trim)); d.line([x+2, 19, x+2, BY], fill=(206, 202, 192, 255))
+        d.rectangle([x-1, 19, x+3, 20], fill=A(trim)); d.rectangle([x-1, BY-1, x+3, BY], fill=(220, 216, 206, 255))
+    for k in range(3):                                                           # escadaria
+        d.line([PX0-1-k, BY+1+k, PX1+1+k, BY+1+k], fill=(196-k*18, 194-k*18, 188-k*18, 255))
+    if p < 0.93: return im
+    # ---- placa + bandeiras ----
+    h = clamp((p-0.93)/0.07)
+    for k, px_ in enumerate((2, 82)):
+        d.line([px_, 3, px_, BY+2], fill=(150, 150, 160, 255)); d.rectangle([px_-1, BY+1, px_+1, BY+3], fill=(120, 120, 126, 255))
+        fy = int(BY-4-(BY-8)*h); sgn = 1 if k == 0 else -1
+        for i_ in range(8):
+            yo = fy+(1 if (i_+flag) % 4 in (1, 2) else 0)
+            for j in range(6):
+                if k == 0: c = (30, 150, 70) if j not in (2, 3) or i_ in (0, 1, 6, 7) else (250, 214, 50)
+                else: c = (40, 90, 170) if j < 2 else (250, 250, 250) if j < 4 else (200, 40, 50)
+                d.point((px_+sgn*(1+i_), yo+j), fill=A(c))
+    if p >= 1:
+        for y in range(RY, BY+3): im.putpixel((X1+3, y), (0, 0, 0, 70))
+    return im
+
+def prefeitura_placa(d, x, y):
+    """placa PREFEITURA na frente do prédio (desenhar por cima, coordenadas em px 2x)"""
+    from font import draw_text
+    d.rectangle([x-33, y, x+33, y+10], fill=A(OUT)); d.rectangle([x-32, y+1, x+32, y+9], fill=(250, 250, 244, 255))
+    draw_text(d, "PREFEITURA", x+1, y+2, 1, (40, 60, 130, 255), outline=None)

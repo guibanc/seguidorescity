@@ -1,14 +1,14 @@
 {
  "serie": "A Cidade dos Seguidores",
- "seguidores": 460,
+ "seguidores": 577,
  "regras": {
   "1 seguidor": "1 morador",
   "10 seguidores": "1 casa (casa i fica pronta com 10*(i+1) seguidores; construção começa em 10*i+5)",
-  "marcos": "cada marco abaixo ganha uma construção nova; marcos já feitos: 300 = mercadinho, 400 = escola"
+  "marcos": "cada marco abaixo ganha uma construção nova; marcos já feitos: 300 = mercadinho, 400 = escola, 500 = prefeitura + ruas calçadas"
  },
- "casas_prontas": 46,
+ "casas_prontas": 57,
  "construcoes": [
-  "ruas de terra: principal (x 127-136), A (y 330), B (y 240), C (y 150), D (y 420, aberta no ep. 4)",
+  "ruas calçadas (paralelepípedo + calçada + meio-fio) desde o ep. 5: principal (x 127-136), A (y 330), B (y 240), C (y 150), D (y 420) — mesmas coordenadas de antes",
   "praça com poço, árvore e bancos",
   "igreja no topo da rua principal",
   "vendinha (lote 82,240,a)",
@@ -18,7 +18,7 @@
   "ep. 3: vila inteira redesenhada em 16 bits (casas com telha, floreira, chaminé de tijolo; moradores únicos gerados por seed = id)",
   "ESCOLA (lotes 162,150,a + 184,150,a) — marco 400, ep. 4: paredes amarelas, telhado laranja, torre com sino, placa ESCOLA, mastro com bandeira (escola16 em world16.py)",
   "ep. 4: a pilha de madeira da entrada foi usada pra abrir a rua D; lotes da rua D marcados com estacas",
-  "PREFEITURA reservada (lotes 140,420,a + 162,420,a) — cerca pro marco 500"
+  "PREFEITURA (lotes 140,420,a + 162,420,a) — marco 500, ep. 5: prédio branco, telhado de ardósia, frontão com relógio, 4 colunas, escadaria, 2 bandeiras (prefeitura16 em world16.py)"
  ],
  "lotes_casas": [
   [
@@ -328,24 +328,12 @@
   ]
  ],
  "lotes_livres": [
-  "casa 47: lote 104,420,a",
-  "casa 48: lote 104,420,b",
-  "casa 49: lote 82,420,a",
-  "casa 50: lote 82,420,b",
-  "casa 51: lote 162,420,b",
-  "casa 52: lote 60,420,a",
-  "casa 53: lote 60,420,b",
-  "casa 54: lote 184,420,a",
-  "casa 55: lote 184,420,b",
-  "casa 56: lote 38,420,a",
-  "casa 57: lote 38,420,b",
   "casa 58: lote 206,420,a",
   "casa 59: lote 206,420,b",
   "casa 60: lote 16,420,a",
   "casa 61: lote 16,420,b"
  ],
  "proximos_marcos": {
-  "500": "prefeitura + ruas calçadas (vira cidadezinha)",
   "600": "2º mercadinho (a vila fica com 2) + posto de saúde",
   "700": "campo de futebol",
   "800": "padaria/lanchonete",
@@ -359,38 +347,44 @@
   "50000": "aeroporto",
   "100000": "arranha-céu símbolo"
  },
- "ultimo_episodio_publicado": 4,
+ "ultimo_episodio_publicado": 5,
  "nome_vila": null,
  "proxima_casa": {
-  "numero": 47,
-  "comeca_em": 465,
-  "pronta_em": 470,
+  "numero": 58,
+  "comeca_em": 575,
+  "pronta_em": 580,
   "lote": [
-   104,
+   206,
    420,
    "a"
   ]
  },
- "proximo_episodio": 5,
+ "proximo_episodio": 6,
  "estilo_visual": "16 bits desde o ep. 3 (vila16.py / world16.py); 8 bits só no arquivo (vila8.py); primeira pessoa em fp.py",
  "status_ep3": "vídeo gerado (78 s), sincronizado com a narração",
  "site": "pasta site/: SITE_ESPEC.md + img/ + dados/ (gerar com codigo/exportar_site.py)",
  "moradores_renderizados_max": 50,
  "marcos_feitos": {
   "300": "mercadinho",
-  "400": "escola"
+  "400": "escola",
+  "500": "prefeitura + ruas calçadas (vira cidadezinha)"
  },
- "lote_reservado_prefeitura": [
-  [
-   140,
-   420,
-   "a"
+ "prefeitura": {
+  "lotes": [
+   [
+    140,
+    420,
+    "a"
+   ],
+   [
+    162,
+    420,
+    "a"
+   ]
   ],
-  [
-   162,
-   420,
-   "a"
-  ]
- ],
- "status_ep4": "vídeo gerado (79,6 s), sincronizado com a narração; escola, casas 38-46, rua D, primeira pessoa (fp.py), sábado de mercadinho"
+  "prefeito": null,
+  "obs": "mecânica de prefeito vem em breve (anunciado no ep. 5)"
+ },
+ "mapa_lotando": "só sobram os lotes das casas 59, 60 e 61 (lota em 610); marco 600 ainda sem lote — decidir pra onde o mapa cresce (sugestão: pra baixo, passando a entrada, sem mudar coordenadas antigas)",
+ "status_ep5": "vídeo gerado (78,0 s) com a narração: casas 47-58, prefeitura, calçamento, teaser prefeito/nome, domingo à noite com show na praça"
 }
