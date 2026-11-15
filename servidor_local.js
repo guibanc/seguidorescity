@@ -13,7 +13,7 @@ const Sprites = require('./site/js/sprites.js');
 
 const moradores = JSON.parse(fs.readFileSync(path.join(SITE, 'dados', 'moradores.json'), 'utf8'));
 const existe = new Set(moradores.map(m => m.id));
-let db = { registros: {}, sessoes: {}, amizades: [] };
+let db = { registros: {}, sessoes: {}, amizades: [], chat: [] };
 try { db = Object.assign(db, JSON.parse(fs.readFileSync(BANCO, 'utf8'))); } catch {}
 const salvar = () => fs.writeFileSync(BANCO, JSON.stringify(db, null, 1));
 
@@ -116,12 +116,60 @@ const RPC = {
     return { segue: db.amizades.filter(a => a.de === p_morador && vis(a.para)).map(a => a.para),
              seguidores: db.amizades.filter(a => a.para === p_morador && db.registros[a.de] && vis(a.de)).map(a => a.de) };
   },
+  enviar_chat({ p_token, p_texto }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    const t = limpaNome(p_texto);
+    if (!t) return erro('Escreve alguma coisa');
+    if (t.length > 120) return erro('Até 120 letras por mensagem');
+    if (!nomePermitido(t)) return erro('Essa mensagem não é permitida');
+    const ult = [...db.chat].reverse().find(c => c.morador_id === mid);
+    if (ult && Date.now() - Date.parse(ult.criado_em) < 2000) return erro('Calma aí, uma mensagem a cada 2 segundos');
+    const msg = { id: (db.chat.at(-1)?.id || 0) + 1, morador_id: mid, nome: db.registros[mid].nome, texto: t, criado_em: new Date().toISOString() };
+    db.chat.push(msg); if (db.chat.length > 300) db.chat.shift(); salvar();
+    emitir('chat', msg);
+    return { ok: true, id: msg.id };
+  },
+  trocar_casa({ p_token, p_casa, p_aparencia }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    const r = db.registros[mid];
+    if (r.casa_trocada_em && Date.now() - Date.parse(r.casa_trocada_em) < 864e5) return erro('Você já se mudou hoje. Dá pra mudar de novo amanhã');
+    const antiga = moradores[mid - 1].casa;
+    if (p_casa === antiga) return erro('Você já mora nessa casa');
+    const daCasa = moradores.filter(m => m.casa === p_casa);
+    if (!daCasa.length) return erro('Essa casa não existe');
+    if (!p_aparencia || !aparenciaOk(p_aparencia)) return erro('Aparência inválida');
+    const livre = daCasa.find(m => !db.registros[m.id]);
+    if (!livre) return erro('Essa casa já está cheia de moradores com nome');
+    const novo = livre.id;
+    db.registros[novo] = { ...r, morador: novo, aparencia: p_aparencia, tentativas: 0, bloqueado_ate: 0, casa_trocada_em: new Date().toISOString() };
+    delete db.registros[mid];
+    for (const a of db.amizades) { if (a.de === mid) a.de = novo; if (a.para === novo) a.para = -1; }
+    for (const a of db.amizades) { if (a.para === mid) a.para = novo; }
+    for (const a of db.amizades) { if (a.para === -1) a.para = mid; }
+    for (const sess of Object.values(db.sessoes)) if (sess.morador === mid) sess.morador = novo;
+    for (const c of db.chat) if (c.morador_id === mid) c.morador_id = novo;
+    salvar();
+    return { ok: true, morador: novo, casa: p_casa, antigo: mid };
+  },
   buscar({ p_texto }) {
     const t = String(p_texto || '').toLowerCase(), u = limpaUser(t);
     return Object.values(db.registros).filter(r => !r.oculto && (r.nome.toLowerCase().includes(t) || r.usuario.includes(u)))
       .sort((a, b) => a.nome.localeCompare(b.nome)).slice(0, 20).map(r => publico(r.morador));
   },
 };
+
+// ---------- tempo real (imita o Realtime do Supabase): Server-Sent Events ----------
+const clientes = new Map();            // cid -> { res, m, nome, visto }
+function emitir(tipo, dados, menos) {
+  const linha = 'event: ' + tipo + '\ndata: ' + JSON.stringify(dados) + '\n\n';
+  for (const [cid, c] of clientes) if (cid !== menos) { try { c.res.write(linha); } catch { clientes.delete(cid); } }
+}
+function listaOnline() {
+  const m = new Map(); let anon = 0;
+  for (const c of clientes.values()) { if (c.m) m.set(c.m, { m: c.m, nome: c.nome }); else anon++; }
+  return { moradores: [...m.values()], visitantes: anon };
+}
+setInterval(() => { let mudou = false; for (const [cid, c] of clientes) if (Date.now() - c.visto > 45000) { try { c.res.end(); } catch {} clientes.delete(cid); mudou = true; } if (mudou) emitir('online', listaOnline()); }, 15000);
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
                 '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
@@ -132,6 +180,32 @@ http.createServer((req, res) => {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/api/publicos') return json(res, 200, moradores.map(m => publico(m.id)));
   if (url.pathname === '/api/contador') return json(res, 200, { seguidores: db.seguidores || moradores.length, plataforma: 'local', atualizado_em: new Date().toISOString() });
+  if (url.pathname === '/api/eventos') {
+    const cid = url.searchParams.get('cid') || String(Math.random());
+    res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
+    res.write('retry: 2000\n\n');
+    clientes.set(cid, { res, m: null, nome: null, visto: Date.now() });
+    res.write('event: chat_historico\ndata: ' + JSON.stringify(db.chat.slice(-30)) + '\n\n');
+    emitir('online', listaOnline());
+    req.on('close', () => { clientes.delete(cid); emitir('online', listaOnline()); });
+    return;
+  }
+  if (url.pathname === '/api/presenca' || url.pathname === '/api/pos') {
+    let body = '';
+    req.on('data', c => { body += c; if (body.length > 1e4) req.destroy(); });
+    req.on('end', () => {
+      try {
+        const d = JSON.parse(body || '{}'), c = clientes.get(d.cid);
+        if (c) {
+          c.visto = Date.now();
+          if (url.pathname === '/api/presenca') { const mudou = c.m !== (d.m || null); c.m = d.m || null; c.nome = d.nome || null; if (mudou) emitir('online', listaOnline()); }
+          else emitir('pos', d.p, d.cid);
+        }
+        json(res, 200, { ok: true });
+      } catch { json(res, 400, erro('pedido inválido')); }
+    });
+    return;
+  }
   const m = url.pathname.match(/^\/api\/rpc\/(\w+)$/);
   if (m) {
     if (req.method !== 'POST' || !RPC[m[1]]) return json(res, 404, erro('função não existe'));

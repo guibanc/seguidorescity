@@ -33,6 +33,7 @@
       <span class="chip"><b id="hudCasas">–</b> casas</span>
       <span class="chip chip-reg"><b id="hudReg">–</b> com nome</span>
       <span class="chip chip-livre"><b id="hudLivres">–</b> livres</span>
+      <button class="chip chip-online" id="hudOnlineChip" hidden>🟢 <b id="hudOnline">0</b> online</button>
     </div>
     <div class="marco" id="hudMarco">
       <div class="marco-barra"><div class="marco-enche" id="hudMarcoBarra"></div></div>
@@ -55,6 +56,17 @@
   <!-- mover meu boneco (só logado) -->
   <button id="btnJogar" hidden>🎮 Mover meu boneco</button>
   <div id="joystick" hidden><div id="joyBase"><div id="joyPino"></div></div></div>
+  <!-- ações perto do boneco (porta, banco, fonte, móveis) -->
+  <div id="acoes" hidden></div>
+  <!-- dentro de uma casa / do mercadinho -->
+  <div id="interiorTopo" hidden><span id="interiorTitulo"></span><button id="btnSairInterior">✕ Sair</button></div>
+  <!-- chat ao vivo -->
+  <aside id="chat" hidden>
+    <button id="chatToggle" aria-label="Mostrar ou esconder o chat">💬</button>
+    <div id="chatMsgs" aria-live="polite"></div>
+    <form id="chatForm" hidden onsubmit="return false"><input id="chatInput" maxlength="120" placeholder="Fala com a cidade…" autocomplete="off" enterkeyhint="send"><button type="button" id="chatEnviar" aria-label="Enviar">➤</button></form>
+    <button id="chatEntrar" hidden>💬 Entre pra conversar</button>
+  </aside>
   <div id="dicaTeclas" hidden><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd> ou setas pra andar · <kbd>Esc</kbd> pra parar</div>
 
   <!-- controles do relógio -->
@@ -113,6 +125,7 @@
   <script src="config.js"></script>
   <script src="js/sprites.js"></script>
   <script src="js/api.js"></script>
+  <script src="js/realtime.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
