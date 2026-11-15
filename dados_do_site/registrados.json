@@ -88,6 +88,28 @@
   "bio": null
  },
  {
+  "id": 7,
+  "casa": 1,
+  "chegou_no_ep": 1,
+  "nome": "Mounjaro (Teófilo)",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 3,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 8,
+   "estampa": "regata",
+   "cor_baixo": 5,
+   "cor_cabelo": 2,
+   "cor_chapeu": 1
+  },
+  "bio": null
+ },
+ {
   "id": 11,
   "casa": 2,
   "chegou_no_ep": 1,
@@ -154,6 +176,28 @@
   "bio": null
  },
  {
+  "id": 26,
+  "casa": 3,
+  "chegou_no_ep": 1,
+  "nome": "BLUE",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "rabo",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 0,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 3,
+   "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
   "id": 34,
   "casa": 4,
   "chegou_no_ep": 1,
@@ -208,14 +252,14 @@
    "barba": false,
    "cabelo": "curto",
    "camisa": 4,
-   "chapeu": null,
+   "chapeu": "bone",
    "oculos": false,
    "sapato": 0,
    "camisa2": 9,
    "estampa": "lisa",
    "cor_baixo": 0,
    "cor_cabelo": 0,
-   "cor_chapeu": 6
+   "cor_chapeu": 4
   },
   "bio": "O que posso dizer além de six seven (67)? Objetivo: ser o maior farmador de aura da vila"
  },
@@ -356,7 +400,21 @@
   "casa": 19,
   "chegou_no_ep": 1,
   "nome": "Victor",
-  "aparencia": null,
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 0,
+   "estampa": "listrada",
+   "cor_baixo": 2,
+   "cor_cabelo": 5,
+   "cor_chapeu": 5
+  },
   "bio": null
  },
  {
@@ -448,6 +506,28 @@
   "bio": null
  },
  {
+  "id": 235,
+  "casa": 24,
+  "chegou_no_ep": 1,
+  "nome": "Robert_LNS",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": true,
+   "sapato": 1,
+   "camisa2": 1,
+   "estampa": "listrada",
+   "cor_baixo": 0,
+   "cor_cabelo": 0,
+   "cor_chapeu": 4
+  },
+  "bio": null
+ },
+ {
   "id": 236,
   "casa": 24,
   "chegou_no_ep": 1,
@@ -466,6 +546,50 @@
    "cor_baixo": 2,
    "cor_cabelo": 1,
    "cor_chapeu": 1
+  },
+  "bio": null
+ },
+ {
+  "id": 251,
+  "casa": 26,
+  "chegou_no_ep": 1,
+  "nome": "Fabrício#251",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "afro",
+   "camisa": 6,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 1,
+   "estampa": "duas_cores",
+   "cor_baixo": 1,
+   "cor_cabelo": 7,
+   "cor_chapeu": 0
+  },
+  "bio": "Lugar favorito da vila: casa"
+ },
+ {
+  "id": 258,
+  "casa": 26,
+  "chegou_no_ep": 1,
+  "nome": "C4rmin",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "duas_cores",
+   "cor_baixo": 3,
+   "cor_cabelo": 0,
+   "cor_chapeu": 7
   },
   "bio": null
  },
@@ -504,14 +628,14 @@
    "camisa": 0,
    "chapeu": null,
    "oculos": false,
-   "sapato": 1,
+   "sapato": 0,
    "camisa2": 3,
    "estampa": "duas_cores",
    "cor_baixo": 5,
    "cor_cabelo": 1,
    "cor_chapeu": 6
   },
-  "bio": null
+  "bio": "melhor jogador de bola na cidade pena que não tem campo"
  },
  {
   "id": 290,
@@ -672,6 +796,50 @@
    "cor_baixo": 0,
    "cor_cabelo": 7,
    "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
+  "id": 442,
+  "casa": 45,
+  "chegou_no_ep": 4,
+  "nome": "Miguel",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "listrada",
+   "cor_baixo": 5,
+   "cor_cabelo": 1,
+   "cor_chapeu": 8
+  },
+  "bio": null
+ },
+ {
+  "id": 577,
+  "casa": 58,
+  "chegou_no_ep": 5,
+  "nome": "Dante",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 7,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 1,
+   "estampa": "listrada",
+   "cor_baixo": 2,
+   "cor_cabelo": 0,
+   "cor_chapeu": 7
   },
   "bio": null
  }

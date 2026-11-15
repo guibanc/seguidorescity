@@ -238,7 +238,9 @@ const amigoMeu = id => MEUS.segue.has(id);
 const cv = $('#mapa'), ctx = cv.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 const cam = { x: 264, y: 490, s: 2 };
-function minS() { return Math.min(W / 540, H / 960) * 0.92; }
+// tamanho do mapa vem do vila.json (o mapa pode crescer nos próximos episódios)
+const MW = () => (VILA && VILA.mapa && VILA.mapa.largura) || 540, MH = () => (VILA && VILA.mapa && VILA.mapa.altura) || 960;
+function minS() { return Math.min(W / MW(), H / MH()) * 0.92; }
 function ajustarTela() {
   DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
@@ -247,8 +249,8 @@ function ajustarTela() {
 function limitarCam() {
   // não deixa sobrar muito fundo fora do mapa (margem de ~120 px de tela)
   const m = 120 / cam.s, hx = W / 2 / cam.s, hy = H / 2 / cam.s;
-  cam.x = 540 + 2 * m > 2 * hx ? clamp(cam.x, hx - m, 540 - hx + m) : 270;
-  cam.y = 960 + 2 * m > 2 * hy ? clamp(cam.y, hy - m, 960 - hy + m) : 480;
+  cam.x = MW() + 2 * m > 2 * hx ? clamp(cam.x, hx - m, MW() - hx + m) : MW() / 2;
+  cam.y = MH() + 2 * m > 2 * hy ? clamp(cam.y, hy - m, MH() - hy + m) : MH() / 2;
 }
 function focoTela() {
   const hud = $('#hud').getBoundingClientRect(), p = $('#painel');
@@ -480,7 +482,8 @@ function montarObstaculos() {
   OBSTACULOS = r;
 }
 function bloqueado(x, y) {
-  if (x < 8 || x > 446 || y < 24 || y > 952) return true;     // borda + rio (x > 446)
+  if (x < 8 || x > MW() - 8 || y < 24 || y > MH() - 8) return true;   // borda do mapa
+  if (x > 446 && x < 510) return true;                                // rio (ainda sem ponte)
   for (const [ox, oy, w, h] of OBSTACULOS) if (x > ox && x < ox + w && y > oy && y < oy + h) return true;
   return false;
 }

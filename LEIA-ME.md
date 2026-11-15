@@ -2,7 +2,7 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
-**Episódio 5: leia primeiro o `RELATORIO_PARA_EP5.md`** (577 seguidores, prefeitura, mapa lota em 610, 32 moradores com nome, Dona Joana em destaque).
+**Episódio 6: leia primeiro o `RELATORIO_PARA_EP6.md`** (617 seguidores, marco 600, MAPA LOTADO — crescer só pra baixo ou pra direita, 39 moradores com nome, cristiano Ronaldo em destaque).
 
 **Ep. 5 pronto** (577 seguidores): casas 47–58 na rua D, PREFEITURA + ruas calçadas (marco 500, vira cidadezinha), teaser do prefeito e do nome, domingo à noite com show na praça. Próximo: casa 58 (575→580). Só sobram lotes das casas 59–61 (lota em 610) e o marco 600 ainda não tem lote: decidir pra onde o mapa cresce.
 
