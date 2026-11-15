@@ -1,5 +1,71 @@
 [
  {
+  "id": 1,
+  "casa": 1,
+  "chegou_no_ep": 1,
+  "nome": "Heitox",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "coque",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 10,
+   "estampa": "lisa",
+   "cor_baixo": 5,
+   "cor_cabelo": 7,
+   "cor_chapeu": 8
+  },
+  "bio": null
+ },
+ {
+  "id": 2,
+  "casa": 1,
+  "chegou_no_ep": 1,
+  "nome": "Didi",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": true,
+   "cabelo": "raspado",
+   "camisa": 3,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 4,
+   "estampa": "regata",
+   "cor_baixo": 0,
+   "cor_cabelo": 0,
+   "cor_chapeu": 5
+  },
+  "bio": null
+ },
+ {
+  "id": 3,
+  "casa": 1,
+  "chegou_no_ep": 1,
+  "nome": "João Pedro",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "listrada",
+   "cor_baixo": 3,
+   "cor_cabelo": 7,
+   "cor_chapeu": 3
+  },
+  "bio": null
+ },
+ {
   "id": 6,
   "casa": 1,
   "chegou_no_ep": 1,
@@ -18,7 +84,8 @@
    "cor_baixo": 0,
    "cor_cabelo": 5,
    "cor_chapeu": 9
-  }
+  },
+  "bio": null
  },
  {
   "id": 11,
@@ -39,7 +106,30 @@
    "cor_baixo": 2,
    "cor_cabelo": 4,
    "cor_chapeu": 11
-  }
+  },
+  "bio": null
+ },
+ {
+  "id": 23,
+  "casa": 3,
+  "chegou_no_ep": 1,
+  "nome": "INGRID DO GRAU",
+  "aparencia": {
+   "pele": 4,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 5,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 2,
+   "estampa": "duas_cores",
+   "cor_baixo": 4,
+   "cor_cabelo": 7,
+   "cor_chapeu": 9
+  },
+  "bio": null
  },
  {
   "id": 24,
@@ -60,7 +150,8 @@
    "cor_baixo": 0,
    "cor_cabelo": 2,
    "cor_chapeu": 8
-  }
+  },
+  "bio": null
  },
  {
   "id": 34,
@@ -81,7 +172,30 @@
    "cor_baixo": 2,
    "cor_cabelo": 2,
    "cor_chapeu": 1
-  }
+  },
+  "bio": null
+ },
+ {
+  "id": 45,
+  "casa": 5,
+  "chegou_no_ep": 1,
+  "nome": "Gazinho",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "duas_cores",
+   "cor_baixo": 0,
+   "cor_cabelo": 1,
+   "cor_chapeu": 9
+  },
+  "bio": null
  },
  {
   "id": 67,
@@ -97,12 +211,13 @@
    "chapeu": null,
    "oculos": false,
    "sapato": 0,
-   "camisa2": 10,
+   "camisa2": 9,
    "estampa": "lisa",
    "cor_baixo": 0,
    "cor_cabelo": 0,
    "cor_chapeu": 6
-  }
+  },
+  "bio": "O que posso dizer além de six seven (67)? Objetivo: ser o maior farmador de aura da vila"
  },
  {
   "id": 83,
@@ -123,7 +238,8 @@
    "cor_baixo": 0,
    "cor_cabelo": 2,
    "cor_chapeu": 6
-  }
+  },
+  "bio": null
  },
  {
   "id": 88,
@@ -144,7 +260,8 @@
    "cor_baixo": 2,
    "cor_cabelo": 2,
    "cor_chapeu": 4
-  }
+  },
+  "bio": null
  },
  {
   "id": 150,
@@ -165,7 +282,8 @@
    "cor_baixo": 0,
    "cor_cabelo": 0,
    "cor_chapeu": 1
-  }
+  },
+  "bio": null
  },
  {
   "id": 154,
@@ -186,7 +304,30 @@
    "cor_baixo": 2,
    "cor_cabelo": 6,
    "cor_chapeu": 7
-  }
+  },
+  "bio": null
+ },
+ {
+  "id": 168,
+  "casa": 17,
+  "chegou_no_ep": 1,
+  "nome": "Mesi",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 4,
+   "estampa": "duas_cores",
+   "cor_baixo": 0,
+   "cor_cabelo": 2,
+   "cor_chapeu": 0
+  },
+  "bio": null
  },
  {
   "id": 171,
@@ -207,14 +348,16 @@
    "cor_baixo": 2,
    "cor_cabelo": 3,
    "cor_chapeu": 1
-  }
+  },
+  "bio": null
  },
  {
   "id": 181,
   "casa": 19,
   "chegou_no_ep": 1,
   "nome": "Victor",
-  "aparencia": null
+  "aparencia": null,
+  "bio": null
  },
  {
   "id": 193,
@@ -235,7 +378,8 @@
    "cor_baixo": 5,
    "cor_cabelo": 1,
    "cor_chapeu": 1
-  }
+  },
+  "bio": "Jesus Saves - Fundador da Vila"
  },
  {
   "id": 212,
@@ -256,7 +400,30 @@
    "cor_baixo": 0,
    "cor_cabelo": 7,
    "cor_chapeu": 2
-  }
+  },
+  "bio": null
+ },
+ {
+  "id": 223,
+  "casa": 23,
+  "chegou_no_ep": 1,
+  "nome": "BSF_gamer01",
+  "aparencia": {
+   "pele": 4,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 1,
+   "estampa": "listrada",
+   "cor_baixo": 0,
+   "cor_cabelo": 1,
+   "cor_chapeu": 1
+  },
+  "bio": null
  },
  {
   "id": 229,
@@ -277,7 +444,96 @@
    "cor_baixo": 0,
    "cor_cabelo": 1,
    "cor_chapeu": 0
-  }
+  },
+  "bio": null
+ },
+ {
+  "id": 236,
+  "casa": 24,
+  "chegou_no_ep": 1,
+  "nome": "Ronaldo gaucho",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 2,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 3,
+   "estampa": "duas_cores",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 1
+  },
+  "bio": null
+ },
+ {
+  "id": 272,
+  "casa": 28,
+  "chegou_no_ep": 2,
+  "nome": "Zé",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": true,
+   "cabelo": "careca",
+   "camisa": 9,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 1,
+   "estampa": "duas_cores",
+   "cor_baixo": 3,
+   "cor_cabelo": 6,
+   "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
+  "id": 281,
+  "casa": 29,
+  "chegou_no_ep": 2,
+  "nome": "cristiano Ronaldo",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 3,
+   "estampa": "duas_cores",
+   "cor_baixo": 5,
+   "cor_cabelo": 1,
+   "cor_chapeu": 6
+  },
+  "bio": null
+ },
+ {
+  "id": 290,
+  "casa": 29,
+  "chegou_no_ep": 2,
+  "nome": "♥︎Dona Joana♥︎",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "coque",
+   "camisa": 5,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 8,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 6,
+   "cor_chapeu": 2
+  },
+  "bio": "Amiga de quase todos e considera todo mundo como neto♥︎"
  },
  {
   "id": 302,
@@ -298,14 +554,38 @@
    "cor_baixo": 2,
    "cor_cabelo": 5,
    "cor_chapeu": 3
-  }
+  },
+  "bio": null
  },
  {
   "id": 322,
   "casa": 33,
   "chegou_no_ep": 3,
   "nome": "Rafael",
-  "aparencia": null
+  "aparencia": null,
+  "bio": null
+ },
+ {
+  "id": 325,
+  "casa": 33,
+  "chegou_no_ep": 3,
+  "nome": "Jean",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 3,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 2,
+   "estampa": "regata",
+   "cor_baixo": 1,
+   "cor_cabelo": 2,
+   "cor_chapeu": 1
+  },
+  "bio": null
  },
  {
   "id": 347,
@@ -326,6 +606,73 @@
    "cor_baixo": 0,
    "cor_cabelo": 1,
    "cor_chapeu": 6
-  }
+  },
+  "bio": null
+ },
+ {
+  "id": 348,
+  "casa": 35,
+  "chegou_no_ep": 3,
+  "nome": "Neymar",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "rabo",
+   "camisa": 3,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 2,
+   "estampa": "duas_cores",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 2
+  },
+  "bio": null
+ },
+ {
+  "id": 412,
+  "casa": 42,
+  "chegou_no_ep": 4,
+  "nome": "Dudu",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "vestido",
+   "barba": true,
+   "cabelo": "curto",
+   "camisa": 8,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 5,
+   "estampa": "duas_cores",
+   "cor_baixo": 4,
+   "cor_cabelo": 4,
+   "cor_chapeu": 5
+  },
+  "bio": null
+ },
+ {
+  "id": 441,
+  "casa": 45,
+  "chegou_no_ep": 4,
+  "nome": "Theogoleiro",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 7,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 9,
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 7,
+   "cor_chapeu": 10
+  },
+  "bio": null
  }
 ]

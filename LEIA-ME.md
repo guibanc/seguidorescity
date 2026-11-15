@@ -2,6 +2,8 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
+**Episódio 5: leia primeiro o `RELATORIO_PARA_EP5.md`** (577 seguidores, prefeitura, mapa lota em 610, 32 moradores com nome, Dona Joana em destaque).
+
 **Ep. 4 pronto** (460 seguidores): escola, casas 38–46, rua D aberta, primeira pessoa e sábado de mercadinho. Próximo: casa 47 (465→470) no lote 104,420,a; marco 500 = prefeitura (lotes reservados na rua D).
 
 ## Pastas
