@@ -239,7 +239,10 @@ const cv = $('#mapa'), ctx = cv.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 const cam = { x: 264, y: 490, s: 2 };
 // tamanho do mapa vem do vila.json (o mapa pode crescer nos próximos episódios)
-const MW = () => (VILA && VILA.mapa && VILA.mapa.largura) || 540, MH = () => (VILA && VILA.mapa && VILA.mapa.altura) || 960;
+const MW = () => ISO() ? VILA.iso.largura : (VILA && VILA.mapa && VILA.mapa.largura) || 540;
+const MH = () => ISO() ? VILA.iso.altura : (VILA && VILA.mapa && VILA.mapa.altura) || 960;
+// limites do MUNDO (mapa de cima), usados pelo boneco controlado
+const MUNDO_W = () => (VILA && VILA.mapa && VILA.mapa.largura) || 540, MUNDO_H = () => (VILA && VILA.mapa && VILA.mapa.altura) || 960;
 function minS() { return Math.min(W / MW(), H / MH()) * 0.92; }
 function ajustarTela() {
   DPR = Math.min(devicePixelRatio || 1, 2); W = innerWidth; H = innerHeight;
@@ -266,15 +269,50 @@ function zoomEm(sx, sy, novo) {
   cam.x = m.x - (sx - W / 2) / cam.s; cam.y = m.y - (sy - H / 2) / cam.s; limitarCam();
 }
 
+// ---------------------------------------------------------------------
+// VISÃO: isométrica (ep. 6+) ou de cima. A rotina, os caminhos e o controle
+// usam sempre as coordenadas "do mundo" (as do mapa de cima, em px do vila.json);
+// proj() converte pra imagem de fundo da visão atual.
+// ---------------------------------------------------------------------
+let VISTA = (() => { try { return localStorage.getItem('vila_vista') || 'iso'; } catch { return 'iso'; } })();
+const ISO = () => VISTA === 'iso' && !!(VILA && VILA.iso && IMG.iso);
+const ESC = () => (VILA && VILA.mapa && VILA.mapa.escala_logica) || 2;
+function proj(x, y) {
+  if (!ISO()) return { x, y };
+  const o = VILA.iso.origem, lx = x / ESC(), ly = y / ESC();
+  return { x: o[0] + (lx - ly) * 2, y: o[1] + (lx + ly) };
+}
+function desproj(X, Y) {
+  if (!ISO()) return { x: X, y: Y };
+  const o = VILA.iso.origem, a = (X - o[0]) / 2, b = Y - o[1];        // a = lx - ly, b = lx + ly
+  return { x: (a + b) / 2 * ESC(), y: (b - a) / 2 * ESC() };
+}
+const mundoPraTela = (x, y) => { const p = proj(x, y); return mapaPraTela(p.x, p.y); };
+function trocarVista(nova) {
+  if (nova === VISTA) return;
+  const centro = desproj(cam.x, cam.y);                               // mantém o mesmo lugar no centro
+  VISTA = nova; try { localStorage.setItem('vila_vista', nova); } catch {}
+  const p = proj(centro.x, centro.y); cam.x = p.x; cam.y = p.y;
+  cam.s = clamp(cam.s, minS(), 6); limitarCam(); atualizarBotaoVista();
+}
+function atualizarBotaoVista() {
+  const b = $('#btnVista'); if (!b) return;
+  b.hidden = !(VILA && VILA.iso && IMG.iso);
+  b.textContent = ISO() ? '🗺️' : '🧊';
+  b.title = b.ariaLabel = ISO() ? 'Ver de cima' : 'Ver em isométrico';
+}
+$('#btnVista').onclick = () => trocarVista(ISO() ? 'cima' : 'iso');
+
 let ultimoNoite = 0, encontrosAvisados = new Set();
 function desenhar(agoraReal) {
-  const ms = simMs(), t = br(ms), nf = noiteFator(t.min), noite = nf > 0.5;
+  const ms = simMs(), t = br(ms), nf = noiteFator(t.min), noite = nf > 0.5, iso = ISO();
   estados = MORADORES.map(m => estado(m, ms));
   if (ctrl.ativo && EU) estados[EU.morador - 1] = { ...estados[EU.morador - 1], vis: true, x: ctrl.x, y: ctrl.y, dir: ctrl.dir, anda: ctrl.anda, onde: 'controle', faz: 'controlado por você' };
+  for (const e of estados) { const p = proj(e.x, e.y); e.px = p.x; e.py = p.y; }
   // câmera segue
   if (seguindo) {
     const e = estados[seguindo - 1], f = focoTela();
-    const alvoX = e.x - (f.x - W / 2) / cam.s, alvoY = e.y - (f.y - H / 2) / cam.s;
+    const alvoX = e.px - (f.x - W / 2) / cam.s, alvoY = e.py - (f.y - H / 2) / cam.s;
     cam.x += (alvoX - cam.x) * 0.12; cam.y += (alvoY - cam.y) * 0.12; limitarCam();
   }
   ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -282,50 +320,60 @@ function desenhar(agoraReal) {
   const k = DPR * cam.s, tx = Math.round(DPR * (W / 2 - cam.x * cam.s)), ty = Math.round(DPR * (H / 2 - cam.y * cam.s));
   ctx.setTransform(k, 0, 0, k, tx, ty);
   ctx.imageSmoothingEnabled = false;
-  if (nf < 1) ctx.drawImage(IMG.dia, 0, 0);
-  if (nf > 0) { ctx.globalAlpha = nf; ctx.drawImage(IMG.noite, 0, 0); ctx.globalAlpha = 1; }
+  if (iso) {
+    ctx.drawImage(IMG.iso, 0, 0);
+    if (nf > 0) {                                                        // noite: tinta azulada por cima
+      ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = nf;
+      ctx.fillStyle = 'rgb(97,115,184)'; ctx.fillRect(0, 0, IMG.iso.width, IMG.iso.height);
+      ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
+    }
+  } else {
+    if (nf < 1) ctx.drawImage(IMG.dia, 0, 0);
+    if (nf > 0) { ctx.globalAlpha = nf; ctx.drawImage(IMG.noite, 0, 0); ctx.globalAlpha = 1; }
+  }
 
   // quem aparece: seguido, eu, amigos, registrados, depois sorteio fixo — máx. MAX_BONECOS
   const v0 = telaPraMapa(0, 0), v1 = telaPraMapa(W, H);
   const prio = id => id === seguindo || id === selecionado ? 0 : (EU && id === EU.morador) ? 1 : amigoMeu(id) ? 2 : ocupado(id) ? 3 : 4;
-  desenhados = estados.filter(e => e.vis && e.x > v0.x - 16 && e.x < v1.x + 16 && e.y > v0.y - 24 && e.y < v1.y + 24)
+  desenhados = estados.filter(e => e.vis && e.px > v0.x - 16 && e.px < v1.x + 16 && e.py > v0.y - 24 && e.py < v1.y + 24)
     .sort((a, b) => prio(a.id) - prio(b.id) || hashId(a.id) - hashId(b.id)).slice(0, MAX_BONECOS)
-    .sort((a, b) => a.y - b.y);
+    .sort((a, b) => a.py - b.py);                                        // mais ao fundo primeiro (vale nas duas visões)
 
-  const quadro = Math.floor(agoraReal / 125) % 4;
+  const quadro = Math.floor(agoraReal / 125) % 4, topo = iso ? 17 : 14;
   for (const e of desenhados) {
-    const x = Math.round(e.x), y = Math.round(e.y);
+    const x = Math.round(e.px), y = Math.round(e.py);
+    if (iso) { ctx.fillStyle = 'rgba(0,30,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y, 4, 1.6, 0, 0, Math.PI * 2); ctx.fill(); }
     if (e.id === selecionado || e.id === seguindo) {
       ctx.strokeStyle = '#f6c836'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.ellipse(x, y + 3, 7, 3, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.ellipse(x, y + (iso ? 0 : 3), 7, iso ? 3.5 : 3, 0, 0, Math.PI * 2); ctx.stroke();
     }
     const f = fonteSprite(e.id, noite), fr = e.anda ? (quadro + e.id) % 4 : 0;
-    ctx.drawImage(f.img, f.ox + fr * 12, f.oy + DIRI[e.dir || 'down'] * 18, 12, 18, x - 6, y - 14, 12, 18);
+    ctx.drawImage(f.img, f.ox + fr * 12, f.oy + DIRI[e.dir || 'down'] * 18, 12, 18, x - 6, y - topo, 12, 18);
   }
 
   // textos em escala de tela
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
-  const alvo = selecionado || seguindo;
+  const alvo = selecionado || seguindo, acima = (e, d) => mapaPraTela(e.px, e.py - d);
   if (cam.s >= 2) {
     ctx.font = '700 11px Nunito, system-ui, sans-serif';
     for (const e of desenhados) {
       if (e.id === alvo || !ocupado(e.id) || !nomeDe(e.id)) continue;
-      const p = mapaPraTela(e.x, e.y - 16), n = nomeDe(e.id), w = ctx.measureText(n).width + 10;
+      const p = acima(e, topo + 2), n = nomeDe(e.id), w = ctx.measureText(n).width + 10;
       const meu = EU && e.id === EU.morador, am = amigoMeu(e.id);
       ctx.fillStyle = meu ? 'rgba(246,200,54,.95)' : am ? 'rgba(255,214,222,.95)' : 'rgba(30,24,36,.72)';
       pilula(p.x - w / 2, p.y - 8, w, 15, 7); ctx.fill();
       ctx.fillStyle = meu || am ? '#1e1824' : '#fff8e7'; ctx.fillText(n, p.x, p.y);
     }
   }
-  // corações: meu morador perto de um amigo
+  // corações: meu morador perto de um amigo (distância medida no mundo)
   if (EU && MEUS.segue.size) {
     const eu = estados[EU.morador - 1];
     if (eu.vis) for (const id of MEUS.segue) {
       const o = estados[id - 1];
       if (!o || !o.vis || Math.hypot(o.x - eu.x, o.y - eu.y) > 28) continue;
       const pulso = 1 + Math.sin(agoraReal / 180) * 0.12;
-      for (const q of [eu, o]) coracao(mapaPraTela(q.x, q.y - 22 - (alvo === q.id ? 10 : 0)), 7 * pulso);
+      for (const q of [eu, o]) coracao(acima(q, topo + 8 + (alvo === q.id ? 10 : 0)), 7 * pulso);
       const chave = id + ':' + t.dia + ':' + o.onde;
       if (!encontrosAvisados.has(chave)) { encontrosAvisados.add(chave); toast(`❤ ${rotulo(EU.morador)} encontrou ${rotulo(id)} ${LUGAR[o.onde] ? LUGAR[o.onde].em : 'na rua'}!`); }
     }
@@ -333,9 +381,9 @@ function desenhar(agoraReal) {
   // plaquinha vermelha do morador seguido/selecionado (igual ao vídeo)
   if (alvo) {
     const e = estados[alvo - 1];
-    const p = mapaPraTela(e.x, e.y - (e.vis ? 17 : 4));
+    const p = acima(e, e.vis ? topo + 3 : 4);
     let txt = rotulo(alvo);
-    if (!e.vis) txt += ' · ' + (LUGAR[e.onde] ? LUGAR[e.onde].em.replace('em casa', 'em casa') : 'dentro');
+    if (!e.vis) txt += ' · ' + (LUGAR[e.onde] ? LUGAR[e.onde].em : 'dentro');
     ctx.font = '700 13px "Pixelify Sans", Nunito, sans-serif';
     const w = ctx.measureText(txt).width + 16, y = p.y - 16 - Math.abs(Math.sin(agoraReal / 300)) * 3;
     ctx.fillStyle = '#1e1824'; pilula(p.x - w / 2 - 2, y - 13, w + 4, 26 + 2, 7); ctx.fill();
@@ -415,10 +463,11 @@ function tocar(sx, sy) {
   const m = telaPraMapa(sx, sy), tol = Math.max(7, 16 / cam.s);
   let melhor = null, md = 1e9;
   for (const e of desenhados) {
-    const cx = e.x, cy = e.y - 6, d = Math.hypot((m.x - cx) / tol, (m.y - cy) / Math.max(11, 20 / cam.s));
+    const cx = e.px, cy = e.py - 6, d = Math.hypot((m.x - cx) / tol, (m.y - cy) / Math.max(11, 20 / cam.s));
     if (d < 1 && d < md) { md = d; melhor = e; }
   }
   if (melhor) return escolherNoMapa(melhor.id);
+  const chao = desproj(m.x, m.y); m.x = chao.x; m.y = chao.y;
   const casa = CASAS.find(c => m.x >= c.lote[0] && m.x <= c.lote[0] + c.tamanho[0] && m.y >= c.lote[1] && m.y <= c.lote[1] + c.tamanho[1]);
   if (casa) return mostrar('casa', { n: casa.casa });
   if (selecionado && !seguindo) { selecionado = null; }
@@ -477,12 +526,13 @@ function montarObstaculos() {
   const r = [], P = VILA.pontos;
   for (const c of CASAS) if (!c.hospedado) r.push([c.lote[0] + 2, c.lote[1] + 12, 38, 34]);
   for (const k of ['mercadinho', 'vendinha']) if (P[k]) r.push([P[k].porta[0] - 20, P[k].porta[1] - 46, 40, 42]);
-  for (const k of ['escola', 'prefeitura', 'prefeitura_reservada']) if (P[k] && P[k].lotes) for (const l of P[k].lotes) r.push([l[0] + 2, l[1] + 12, 38, 34]);
+  if (P.mercadinho2 && P.mercadinho2.lote) r.push([P.mercadinho2.lote[0] + 2, P.mercadinho2.lote[1] + 12, 38, 34]);
+  for (const k of ['escola', 'prefeitura', 'prefeitura_reservada', 'posto']) if (P[k] && P[k].lotes) for (const l of P[k].lotes) r.push([l[0] + 2, l[1] + 12, 38, 34]);
   if (P.igreja) r.push([P.igreja.porta[0] - 34, P.igreja.porta[1] - 80, 70, 76]);
   OBSTACULOS = r;
 }
 function bloqueado(x, y) {
-  if (x < 8 || x > MW() - 8 || y < 24 || y > MH() - 8) return true;   // borda do mapa
+  if (x < 8 || x > MUNDO_W() - 8 || y < 24 || y > MUNDO_H() - 8) return true;   // borda do mapa
   if (x > 446 && x < 510) return true;                                // rio (ainda sem ponte)
   for (const [ox, oy, w, h] of OBSTACULOS) if (x > ox && x < ox + w && y > oy && y < oy + h) return true;
   return false;
@@ -519,11 +569,12 @@ function passoControle(dt) {
   const mag = Math.hypot(ix, iy);
   if (mag < 0.15) { ctrl.anda = false; return; }
   if (mag > 1) { ix /= mag; iy /= mag; }
-  const passo = VEL_CONTROLE * dt;
+  const passo = VEL_CONTROLE * dt, sx = ix, sy = iy;
+  if (ISO()) { const mx = (sx + 2 * sy) / 2, my = (2 * sy - sx) / 2, n = Math.hypot(mx, my) || 1, f = Math.min(1, Math.hypot(sx, sy)); ix = mx / n * f; iy = my / n * f; }
   const nx = ctrl.x + ix * passo, ny = ctrl.y + iy * passo;
   if (!bloqueado(nx, ctrl.y)) ctrl.x = nx;            // desliza na parede: tenta x e y separados
   if (!bloqueado(ctrl.x, ny)) ctrl.y = ny;
-  ctrl.dir = Math.abs(ix) > Math.abs(iy) ? (ix > 0 ? 'right' : 'left') : (iy > 0 ? 'down' : 'up');
+  ctrl.dir = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : (sy > 0 ? 'down' : 'up');   // virado pra onde anda na tela
   ctrl.anda = true;
   seguindo = EU.morador;                              // voltou a andar: câmera volta a seguir
 }
@@ -557,7 +608,7 @@ addEventListener('blur', () => ctrl.teclas.clear());
 
 // barrinha de vida em cima do meu boneco (tela)
 function desenharVidaNoBoneco(e) {
-  const p = mapaPraTela(e.x, e.y - 17), w = 30, h = 5, x = Math.round(p.x - w / 2), y = Math.round(p.y - 8);
+  const p = mapaPraTela(e.px, e.py - (ISO() ? 20 : 17)), w = 30, h = 5, x = Math.round(p.x - w / 2), y = Math.round(p.y - 8);
   ctx.fillStyle = '#1e1824'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
   ctx.fillStyle = '#5a1f2a'; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = VIDA <= 25 ? '#ff4d4d' : VIDA <= 60 ? '#f6c836' : '#40c463';
@@ -1245,6 +1296,8 @@ async function iniciar() {
     carregarImg('img/vila_dia.png'), carregarImg('img/vila_noite.png'), carregarImg('img/moradores.png')]);
   VILA = v; MORADORES = m; IMG.dia = dia; IMG.noite = noite; IMG.atlas = atlas;
   IMG.atlasNoite = tingir(atlas, atlas.width, atlas.height);
+  if (VILA.iso && VILA.iso.imagem) { try { IMG.iso = await carregarImg(VILA.iso.imagem); } catch (e) { console.warn('sem imagem isométrica', e); } }
+  atualizarBotaoVista();
   for (const k of Object.keys(VILA.ruas)) if (k !== 'principal') RY[k] = VILA.ruas[k].de[1];
   CASAS = montarCasas();
   montarObstaculos();
@@ -1260,7 +1313,8 @@ async function iniciar() {
   cam.s = PC() ? 2.2 : 2;
   const q = Number(new URLSearchParams(location.search).get('m'));
   estados = MORADORES.map(mm => estado(mm, simMs()));
-  if (q >= 1 && q <= MORADORES.length) { const e = estados[q - 1]; cam.x = e.x; cam.y = e.y; seguir(q); mostrar('ficha', { id: q }); }
+  { const p = proj(264, 490); cam.x = p.x; cam.y = p.y; limitarCam(); }   // começa na praça
+  if (q >= 1 && q <= MORADORES.length) { const e = estados[q - 1], p = proj(e.x, e.y); cam.x = p.x; cam.y = p.y; seguir(q); mostrar('ficha', { id: q }); }
   $('#carregando').classList.add('some');
   setTimeout(() => { $('#carregando').hidden = true; }, 450);
   requestAnimationFrame(loop);

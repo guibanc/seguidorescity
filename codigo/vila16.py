@@ -17,8 +17,11 @@ def L2(x, y): return int(round(x*S)), int(round(y*S))
 REGLOOK = {i: (dict(r['aparencia'], seed=i) if r.get('aparencia') else None) for i, r in REG.items()}
 
 # ---------------- cenário estático (pré-desenhado 1x) ----------------
-def _static(lit, rd=True, pv=False):
-    g, river = make_ground16((ROADD,) if rd else (), pv)
+def _static(lit, rd=True, pv=False, big=False):
+    if big:   # ep. 6: mapa de 680 (ruas E e F)
+        from world16 import make_ground16_h
+        g, river = make_ground16_h(MH6, (ROADD, ROADE, ROADF), True)
+    else: g, river = make_ground16((ROADD,) if rd else (), pv)
     img = Image.fromarray(g).convert('RGBA'); d = ImageDraw.Draw(img)
     # placa da entrada
     sx, sy = L2(*SIGN)
@@ -28,7 +31,7 @@ def _static(lit, rd=True, pv=False):
     for y in range(sy+3, sy+12, 3): d.line([sx+1, y, sx+26, y], fill=(194, 152, 96, 255))
     d.line([sx, sy, sx+27, sy], fill=(236, 204, 150, 255))
     # árvores da borda
-    for tr_ in trees:
+    for tr_ in (TREES6 if big else trees):
         im, (ax, ay) = TREE16(tr_['r'], tr_['k'], tr_['x'] % 3)
         img.paste(im, (tr_['x']*S-ax, tr_['y']*S-ay), im)
     # praça: canteiros, bancos, poço
@@ -52,7 +55,9 @@ def _static(lit, rd=True, pv=False):
     for x in (cx-10, cx+9): d.rectangle([x, cy-11, x+1, cy+1], fill=(100, 60, 30, 255))
     d.line([cx, cy-11, cx, cy-6], fill=(90, 90, 96, 255)); d.rectangle([cx-2, cy-6, cx+2, cy-3], fill=(140, 100, 60, 255))
     # postes
-    for (lx, ly) in _lamps(rd):
+    lamps_ = [(x, y) for y in range(124, MH6-10, 34) for x in (123, 140) if not (205 < y < 285) and
+              all(not (r_-26 < y < r_+16) for r_ in (ROADA, ROADC, ROADD, ROADE, ROADF))] if big else _lamps(rd)
+    for (lx, ly) in lamps_:
         X, Y = L2(lx, ly)
         d.rectangle([X-1, Y-9, X+1, Y+1], fill=OUT + (255,)); d.line([X, Y-8, X, Y], fill=(80, 84, 96, 255))
         d.rectangle([X-2, Y-12, X+2, Y-9], fill=OUT + (255,))
@@ -68,6 +73,10 @@ def TREE16(r, k, v):
     if (r, k, v) not in TREE_C: TREE_C[(r, k, v)] = tree16(r, k, r*100+k*10+v)
     return TREE_C[(r, k, v)]
 _ST = {}
+_SB = {}
+def static_big(lit):
+    if lit not in _SB: _SB[lit] = _static(lit, True, True, True)
+    return _SB[lit]
 def static(lit, rd=True, pv=False):
     if (lit, rd, pv) not in _ST: _ST[(lit, rd, pv)] = _static(lit, rd, pv)
     return _ST[(lit, rd, pv)]

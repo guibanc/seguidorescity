@@ -11,7 +11,7 @@ from PIL import Image
 from world import W, H, ROADA, ROADB, ROADC, MAINX0, MAINX1
 from world16 import npc_sprite, npc_look, S
 import vila16 as V
-from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, lot, C1, EP
+from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, ROADE, ROADF, MERCADO2, POSTO, CAMPO, MH6, lot, C1, EP
 
 out = sys.argv[1] if len(sys.argv) > 1 else '../site'
 os.makedirs(f'{out}/img', exist_ok=True); os.makedirs(f'{out}/dados', exist_ok=True)
@@ -19,10 +19,20 @@ N = C1
 
 # ---------- mapa sem moradores ----------
 def mapa(lit):
-    base, _ = V.static(lit, True, True)                     # ruas calçadas (marco 500)
+    base, _ = V.static_big(lit)                              # mapa de 680 (ep. 6), ruas calçadas
     img = base.copy(); objs = []
     from PIL import ImageDraw
+    from world16 import posto16
+    from font import draw_text
     dd = ImageDraw.Draw(img)
+    # campo de futebol reservado (marco 700)
+    cx0, cy0 = V.L2(*lot(*CAMPO[0])); cx1 = cx0+42*4
+    dd.rectangle([cx0+2, cy0+4, cx1, cy0+96], fill=(150, 120, 76))
+    for fx in range(cx0+2, cx1+1, 4): dd.point((fx, cy0+4), fill=(250, 250, 250)); dd.point((fx, cy0+96), fill=(250, 250, 250))
+    for fy in range(cy0+4, cy0+97, 4): dd.point((cx0+2, fy), fill=(250, 250, 250)); dd.point((cx1, fy), fill=(250, 250, 250))
+    draw_text(dd, "700", (cx0+cx1)//2, cy0+44, 2, (255, 214, 70, 255))
+    x, y = V.L2(*lot(*POSTO[0])); objs.append((y, posto16(lit), x))                     # posto de saúde (600)
+    x, y = V.L2(*lot(*MERCADO2)); objs.append((y, V.MERC(lit), x))                      # 2º mercadinho (600)
     for i, l in enumerate(house_lots):                       # lotes livres (estacas)
         if house_p(i, C1) <= 0: V.draw_stakes(dd, l)
     x, y = V.L2(*lot(*PREFEITURA[0])); objs.append((y, V.PREF(1, lit, 0), x))   # prefeitura (500)
@@ -73,6 +83,9 @@ pontos = {
     'entrada': {'placa': P(149, 446), 'rua': P(131.5, 470)},
     'escola': {'porta': P(lot(*ESCOLA[0])[0]+21, ROADC+3), 'rua': P(lot(*ESCOLA[0])[0]+21, ROADC+6), 'lotes': [P(*lot(*l)) for l in ESCOLA]},
     'prefeitura': {'porta': P(lot(*PREFEITURA[0])[0]+21, ROADD+3), 'rua': P(lot(*PREFEITURA[0])[0]+21, ROADD+6), 'lotes': [P(*lot(*l)) for l in PREFEITURA]},
+    'mercadinho2': {'porta': P(lot(*MERCADO2)[0]+9.5, ROADE+3), 'rua': P(lot(*MERCADO2)[0]+9.5, ROADE+6), 'lote': P(*lot(*MERCADO2))},
+    'posto': {'porta': P(lot(*POSTO[0])[0]+21, ROADE+3), 'rua': P(lot(*POSTO[0])[0]+21, ROADE+6), 'lotes': [P(*lot(*l)) for l in POSTO]},
+    'campo_reservado': {'lotes': [P(*lot(*l)) for l in CAMPO], 'marco': 700},
 }
 ruas = {
     'principal': {'de': P(131.5, 104), 'ate': P(131.5, 480)},
@@ -80,8 +93,10 @@ ruas = {
     'B': {'de': P(16, ROADB+5), 'ate': P(217, ROADB+5)},
     'C': {'de': P(16, ROADC+5), 'ate': P(217, ROADC+5)},
     'D': {'de': P(16, ROADD+5), 'ate': P(217, ROADD+5)},
+    'E': {'de': P(16, ROADE+5), 'ate': P(217, ROADE+5)},
+    'F': {'de': P(16, ROADF+5), 'ate': P(217, ROADF+5)},
 }
-RUAS = {ROADA: 'A', ROADB: 'B', ROADC: 'C', ROADD: 'D'}
+RUAS = {ROADA: 'A', ROADB: 'B', ROADC: 'C', ROADD: 'D', ROADE: 'E', ROADF: 'F'}
 casas = []
 for i, l in enumerate(house_lots[:NH]):
     x, y = lot(*l)
@@ -89,8 +104,8 @@ for i, l in enumerate(house_lots[:NH]):
                   'ponto_na_rua': P(x+10, l[1]+5), 'moradores': list(range(i*10+1, min(N, i*10+10)+1))})
 lotes_livres = [{'casa': NH+k+1, 'lote': P(*lot(*l)), 'rua': RUAS[l[1]], 'comeca_em': 10*(NH+k)+5, 'pronta_em': 10*(NH+k+1)}
                 for k, l in enumerate(house_lots[NH:])]
-vila = {'episodio': EP, 'seguidores': N, 'casas': NH, 'estilo': '16 bits', 'mapa': {'largura': W*S, 'altura': H*S, 'escala_logica': S},
-        'proximo_marco': {'seguidores': 600, 'construcao': '2º mercadinho + posto de saúde'}, 'nome_vila': None,
+vila = {'episodio': EP, 'seguidores': N, 'casas': NH, 'estilo': '16 bits', 'mapa': {'largura': W*S, 'altura': MH6*S, 'escala_logica': S},
+        'proximo_marco': {'seguidores': 700, 'construcao': 'campo de futebol'}, 'nome_vila': None,
         'pontos': pontos, 'ruas': ruas, 'lista_casas': casas, 'lotes_livres': lotes_livres,
         'atlas': {'arquivo': 'img/moradores.png', 'por_linha': cols, 'celula': [CW, CH], 'quadro': [12, 18],
                   'direcoes': DIRS, 'quadros_por_direcao': 4, 'ancora_pes': [6, 14]}}
@@ -140,7 +155,7 @@ moradores = []
 for k in range(N):
     mid = k+1
     ag, dom = agenda(mid)
-    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5,
+    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6,
                       'aparencia': npc_look(mid), 'atlas': {'col': k % cols, 'lin': k//cols},
                       'velocidade': round(random.Random(mid).uniform(0.85, 1.15), 2), 'agenda': ag, 'domingo': dom})
 json.dump(moradores, open(f'{out}/dados/moradores.json', 'w'), ensure_ascii=False)
@@ -152,3 +167,17 @@ with open(f'{out}/dados/novos_moradores.sql', 'w') as f:
     f.write(",\n".join(f"({m['id']}, {m['casa']}, {m['chegou_no_ep']})" for m in moradores))
     f.write("\non conflict (id) do nothing;\n")
 print('ok', N, 'moradores', NH, 'casas')
+
+# ---------- isométrico (ep. 6): imagem da cidade + fórmula pra posicionar moradores ----------
+import iso
+from scene import DUR
+img_iso, (iox, ioy) = iso.imagem_completa(DUR)
+img_iso.save(f'{out}/img/vila_iso.png')
+v = json.load(open(f'{out}/dados/vila.json'))
+v['estilo'] = 'isométrico (ep. 6) — vila_dia.png continua valendo como mapa de cima'
+v['iso'] = {'imagem': 'img/vila_iso.png', 'largura': img_iso.width, 'altura': img_iso.height,
+            'origem': [iox, ioy],
+            'formula': 'com (x, y) LÓGICOS (os do vila.json divididos por escala_logica): tela_x = origem[0] + (x - y) * 2 ; tela_y = origem[1] + (x + y). O pé do boneco fica nesse ponto; desenhe primeiro quem tem (x + y) menor.',
+            'obs': 'imagem em pixel art: escale por inteiro (2x, 3x) com image-rendering: pixelated'}
+json.dump(v, open(f'{out}/dados/vila.json', 'w'), ensure_ascii=False)
+print('iso', img_iso.size, (iox, ioy))

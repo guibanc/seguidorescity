@@ -119,10 +119,10 @@ def make_ground16(extra_roads=(), paved=False):
         for _ in range((X1-X0)*(Y1-Y0)//60):
             x, y = rr.randint(X0+2, X1-2), rr.randint(Y0+2, Y1-2)
             a[y, x] = (222, 196, 150); a[y+1, x] = DIRT[0]
-    road(MAINX0, 104, MAINX1+1, 480, True)
+    road(MAINX0, 104, MAINX1+1, H, True)
     for ry in (ROADA, ROADB, ROADC)+tuple(extra_roads): road(14, ry, 219, ry+10, False)
     if paved:   # marco 500: ruas calçadas (paralelepípedo + calçada), mesmas coordenadas
-        rects = [(MAINX0, 104, MAINX1+1, 480)] + [(14, ry, 219, ry+10) for ry in (ROADA, ROADB, ROADC)+tuple(extra_roads)]
+        rects = [(MAINX0, 104, MAINX1+1, H)] + [(14, ry, 219, ry+10) for ry in (ROADA, ROADB, ROADC)+tuple(extra_roads)]
         rm = np.zeros((H2, W2), bool)
         for (x0, y0, x1, y1) in rects: rm[y0*S:y1*S, x0*S:x1*S] = True
         side = np.zeros_like(rm)
@@ -833,3 +833,35 @@ def prefeitura_placa(d, x, y):
     from font import draw_text
     d.rectangle([x-33, y, x+33, y+10], fill=A(OUT)); d.rectangle([x-32, y+1, x+32, y+9], fill=(250, 250, 244, 255))
     draw_text(d, "PREFEITURA", x+1, y+2, 1, (40, 60, 130, 255), outline=None)
+
+
+def make_ground16_h(hh, extra_roads=(), paved=False):
+    """chão com o mapa mais alto (ep. 6: o mapa cresceu pra baixo). Coordenadas antigas não mudam."""
+    g = globals(); old = (g['H'], g['H2'])
+    g['H'], g['H2'] = hh, hh*S
+    try: return make_ground16(extra_roads, paved)
+    finally: g['H'], g['H2'] = old
+
+
+# ---------------- posto de saúde (marco 600, ep. 6) — 2 lotes, visto de cima ----------------
+def posto16(lit=False):
+    im = Image.new('RGBA', (86, 50), (0, 0, 0, 0)); d = ImageDraw.Draw(im)
+    X0, X1, RY, WY, BY = 3, 82, 8, 30, 42
+    d.rectangle([X0-1, RY-1, X1+1, WY], fill=A(OUT))
+    d.rectangle([X0, RY, X1, WY-1], fill=(206, 210, 214, 255))
+    for x in range(X0+2, X1, 6): d.line([x, RY+1, x, WY-2], fill=(196, 200, 204, 255))
+    d.rectangle([X0, RY, X1, RY+1], fill=(232, 236, 240, 255))
+    cx, cy = (X0+X1)//2, (RY+WY)//2                                      # cruz verde no telhado
+    d.rectangle([cx-3, cy-8, cx+3, cy+8], fill=(40, 160, 90, 255)); d.rectangle([cx-8, cy-3, cx+8, cy+3], fill=(40, 160, 90, 255))
+    d.rectangle([cx-2, cy-7, cx+2, cy+7], fill=(250, 250, 250, 255)); d.rectangle([cx-7, cy-2, cx+7, cy+2], fill=(250, 250, 250, 255))
+    d.rectangle([X0, WY, X1, BY], fill=(250, 250, 248, 255))
+    d.rectangle([X0, WY+5, X1, WY+7], fill=(40, 160, 90, 255))
+    d.line([X0, WY, X0, BY], fill=A(OUT)); d.line([X1, WY, X1, BY], fill=A(OUT))
+    g = LITW[0] if lit else (150, 206, 236)
+    for wx in (X0+5, X0+17, X1-25, X1-13):
+        d.rectangle([wx, WY+1, wx+7, WY+4], fill=A(g))
+    d.rectangle([cx-8, WY+1, cx+8, BY], fill=(150, 206, 236, 255)); d.line([cx, WY+1, cx, BY], fill=(240, 246, 250, 255))
+    d.rectangle([cx-10, WY-2, cx+10, WY], fill=(40, 160, 90, 255))
+    d.line([X0, BY, X1, BY], fill=(180, 180, 176, 255))
+    for y in range(RY, BY+2): im.putpixel((X1+2, y), (0, 0, 0, 70))
+    return im

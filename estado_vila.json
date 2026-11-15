@@ -1,14 +1,14 @@
 {
  "serie": "A Cidade dos Seguidores",
- "seguidores": 577,
+ "seguidores": 617,
  "regras": {
   "1 seguidor": "1 morador",
   "10 seguidores": "1 casa (casa i fica pronta com 10*(i+1) seguidores; construção começa em 10*i+5)",
-  "marcos": "cada marco abaixo ganha uma construção nova; marcos já feitos: 300 = mercadinho, 400 = escola, 500 = prefeitura + ruas calçadas"
+  "marcos": "cada marco abaixo ganha uma construção nova; marcos já feitos: 300 = mercadinho, 400 = escola, 500 = prefeitura + ruas calçadas, 600 = 2º mercadinho + posto de saúde"
  },
- "casas_prontas": 57,
+ "casas_prontas": 61,
  "construcoes": [
-  "ruas calçadas (paralelepípedo + calçada + meio-fio) desde o ep. 5: principal (x 127-136), A (y 330), B (y 240), C (y 150), D (y 420) — mesmas coordenadas de antes",
+  "ruas calçadas: principal (x 127-136, até y 680), A (y 330), B (y 240), C (y 150), D (y 420), E (y 510, ep. 6), F (y 600, ep. 6)",
   "praça com poço, árvore e bancos",
   "igreja no topo da rua principal",
   "vendinha (lote 82,240,a)",
@@ -18,7 +18,11 @@
   "ep. 3: vila inteira redesenhada em 16 bits (casas com telha, floreira, chaminé de tijolo; moradores únicos gerados por seed = id)",
   "ESCOLA (lotes 162,150,a + 184,150,a) — marco 400, ep. 4: paredes amarelas, telhado laranja, torre com sino, placa ESCOLA, mastro com bandeira (escola16 em world16.py)",
   "ep. 4: a pilha de madeira da entrada foi usada pra abrir a rua D; lotes da rua D marcados com estacas",
-  "PREFEITURA (lotes 140,420,a + 162,420,a) — marco 500, ep. 5: prédio branco, telhado de ardósia, frontão com relógio, 4 colunas, escadaria, 2 bandeiras (prefeitura16 em world16.py)"
+  "PREFEITURA (lotes 140,420,a + 162,420,a) — marco 500, ep. 5: prédio branco, telhado de ardósia, frontão com relógio, 4 colunas, escadaria, 2 bandeiras (prefeitura16 em world16.py)",
+  "2º MERCADINHO (lote 104,510,a) — marco 600, ep. 6 (toldo azul)",
+  "POSTO DE SAÚDE (lotes 140,510,a + 162,510,a) — marco 600, ep. 6: cruz verde, ambulância",
+  "CAMPO DE FUTEBOL reservado (lotes 140|162|184|206,600,b) — marco 700",
+  "ep. 6: a cidade virou ISOMÉTRICA no vídeo (codigo/iso.py), com campo infinito em volta"
  ],
  "lotes_casas": [
   [
@@ -325,16 +329,185 @@
    16,
    420,
    "b"
+  ],
+  [
+   104,
+   510,
+   "b"
+  ],
+  [
+   140,
+   510,
+   "b"
+  ],
+  [
+   82,
+   510,
+   "a"
+  ],
+  [
+   82,
+   510,
+   "b"
+  ],
+  [
+   162,
+   510,
+   "b"
+  ],
+  [
+   60,
+   510,
+   "a"
+  ],
+  [
+   60,
+   510,
+   "b"
+  ],
+  [
+   184,
+   510,
+   "a"
+  ],
+  [
+   184,
+   510,
+   "b"
+  ],
+  [
+   38,
+   510,
+   "a"
+  ],
+  [
+   38,
+   510,
+   "b"
+  ],
+  [
+   206,
+   510,
+   "a"
+  ],
+  [
+   206,
+   510,
+   "b"
+  ],
+  [
+   16,
+   510,
+   "a"
+  ],
+  [
+   16,
+   510,
+   "b"
+  ],
+  [
+   104,
+   600,
+   "a"
+  ],
+  [
+   104,
+   600,
+   "b"
+  ],
+  [
+   140,
+   600,
+   "a"
+  ],
+  [
+   82,
+   600,
+   "a"
+  ],
+  [
+   82,
+   600,
+   "b"
+  ],
+  [
+   162,
+   600,
+   "a"
+  ],
+  [
+   60,
+   600,
+   "a"
+  ],
+  [
+   60,
+   600,
+   "b"
+  ],
+  [
+   184,
+   600,
+   "a"
+  ],
+  [
+   38,
+   600,
+   "a"
+  ],
+  [
+   38,
+   600,
+   "b"
+  ],
+  [
+   206,
+   600,
+   "a"
+  ],
+  [
+   16,
+   600,
+   "a"
+  ],
+  [
+   16,
+   600,
+   "b"
   ]
  ],
  "lotes_livres": [
-  "casa 58: lote 206,420,a",
-  "casa 59: lote 206,420,b",
-  "casa 60: lote 16,420,a",
-  "casa 61: lote 16,420,b"
+  "casa 62: lote 104,510,b",
+  "casa 63: lote 140,510,b",
+  "casa 64: lote 82,510,a",
+  "casa 65: lote 82,510,b",
+  "casa 66: lote 162,510,b",
+  "casa 67: lote 60,510,a",
+  "casa 68: lote 60,510,b",
+  "casa 69: lote 184,510,a",
+  "casa 70: lote 184,510,b",
+  "casa 71: lote 38,510,a",
+  "casa 72: lote 38,510,b",
+  "casa 73: lote 206,510,a",
+  "casa 74: lote 206,510,b",
+  "casa 75: lote 16,510,a",
+  "casa 76: lote 16,510,b",
+  "casa 77: lote 104,600,a",
+  "casa 78: lote 104,600,b",
+  "casa 79: lote 140,600,a",
+  "casa 80: lote 82,600,a",
+  "casa 81: lote 82,600,b",
+  "casa 82: lote 162,600,a",
+  "casa 83: lote 60,600,a",
+  "casa 84: lote 60,600,b",
+  "casa 85: lote 184,600,a",
+  "casa 86: lote 38,600,a",
+  "casa 87: lote 38,600,b",
+  "casa 88: lote 206,600,a",
+  "casa 89: lote 16,600,a",
+  "casa 90: lote 16,600,b"
  ],
  "proximos_marcos": {
-  "600": "2º mercadinho (a vila fica com 2) + posto de saúde",
   "700": "campo de futebol",
   "800": "padaria/lanchonete",
   "900": "torre de internet",
@@ -347,27 +520,28 @@
   "50000": "aeroporto",
   "100000": "arranha-céu símbolo"
  },
- "ultimo_episodio_publicado": 5,
+ "ultimo_episodio_publicado": 6,
  "nome_vila": null,
  "proxima_casa": {
-  "numero": 58,
-  "comeca_em": 575,
-  "pronta_em": 580,
+  "numero": 62,
+  "comeca_em": 615,
+  "pronta_em": 620,
   "lote": [
-   206,
-   420,
-   "a"
+   104,
+   510,
+   "b"
   ]
  },
- "proximo_episodio": 6,
- "estilo_visual": "16 bits desde o ep. 3 (vila16.py / world16.py); 8 bits só no arquivo (vila8.py); primeira pessoa em fp.py",
+ "proximo_episodio": 7,
+ "estilo_visual": "ISOMÉTRICO desde o ep. 6 (iso.py: sprites em cache, terreno infinito, câmera em px da tela iso); 16 bits (vila16.py) só no começo do ep. 6 e no site (mapa de cima)",
  "status_ep3": "vídeo gerado (78 s), sincronizado com a narração",
  "site": "pasta site/: SITE_ESPEC.md + img/ + dados/ (gerar com codigo/exportar_site.py)",
  "moradores_renderizados_max": 50,
  "marcos_feitos": {
   "300": "mercadinho",
   "400": "escola",
-  "500": "prefeitura + ruas calçadas (vira cidadezinha)"
+  "500": "prefeitura + ruas calçadas (vira cidadezinha)",
+  "600": "2º mercadinho + posto de saúde"
  },
  "prefeitura": {
   "lotes": [
@@ -385,6 +559,57 @@
   "prefeito": null,
   "obs": "mecânica de prefeito vem em breve (anunciado no ep. 5)"
  },
- "mapa_lotando": "só sobram os lotes das casas 59, 60 e 61 (lota em 610); marco 600 ainda sem lote — decidir pra onde o mapa cresce (sugestão: pra baixo, passando a entrada, sem mudar coordenadas antigas)",
- "status_ep5": "vídeo gerado (78,0 s) com a narração: casas 47-58, prefeitura, calçamento, teaser prefeito/nome, domingo à noite com show na praça"
+ "mapa": {
+  "largura": 270,
+  "altura": 680,
+  "obs": "ep. 6: o mapa cresceu pra baixo (480 -> 680). Coordenadas antigas não mudaram. Só cresce pra baixo/direita."
+ },
+ "reservados": {
+  "mercadinho2": [
+   104,
+   510,
+   "a"
+  ],
+  "posto": [
+   [
+    140,
+    510,
+    "a"
+   ],
+   [
+    162,
+    510,
+    "a"
+   ]
+  ],
+  "campo_700": [
+   [
+    140,
+    600,
+    "b"
+   ],
+   [
+    162,
+    600,
+    "b"
+   ],
+   [
+    184,
+    600,
+    "b"
+   ],
+   [
+    206,
+    600,
+    "b"
+   ]
+  ]
+ },
+ "capacidade": "90 lotes de casa → dá até 900 inscritos sem crescer o mapa de novo",
+ "ganchos": [
+  "prefeito (em breve)",
+  "nome da cidade (em breve)",
+  "minigames no site (logo logo)"
+ ],
+ "status_ep6": "vídeo gerado (77 s) com a narração: casas 58-61, marco 600, mapa cresce (ruas E/F), virada pro isométrico, obras, casa 62, campo 700, ganchos, minigames"
 }
