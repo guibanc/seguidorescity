@@ -262,6 +262,28 @@ p { line-height: 1.45; }
 #dicaTeclas kbd { font-family: var(--fonte-px); background: var(--papel); color: var(--texto); border-radius: 4px; padding: 0 5px; margin-right: 2px; border-bottom: 2px solid var(--papel-3); }
 @media (min-width: 900px) { #btnJogar { bottom: 20px; left: 20px; } #dicaTeclas { bottom: 78px; left: 20px; } }
 
+/* modo jogo (movimentação ligada): tela limpa — em cima só relógio + vida; embaixo só Parar e Eu */
+body.jogando { --menu-h: 0px; }
+body.jogando .hud-titulo, body.jogando .hud-numeros, body.jogando #hudMarco, body.jogando #zoom { display: none !important; }
+body.jogando #hud { background: none; }
+body.jogando .hud-linha:first-child { justify-content: center; }
+body.jogando #menu button:not([data-aba="eu"]) { display: none; }
+body.jogando #menu {
+  top: auto; left: auto; right: 12px; bottom: calc(12px + var(--seguro-baixo)); height: auto; width: auto; padding: 4px;
+  border: 2px solid var(--tinta); border-radius: 14px; box-shadow: var(--sombra);
+}
+body.jogando #menu button { flex-direction: row; gap: 6px; padding: 8px 16px; font-size: 14px; border-radius: 10px; min-height: 44px; }
+body.jogando #menu button::before { display: none; }
+body.jogando .badge { position: static; margin-left: 2px; }
+body.jogando #btnJogar { bottom: calc(12px + var(--seguro-baixo)); }
+body.jogando #joystick { bottom: calc(76px + var(--seguro-baixo)); }
+body.jogando #dicaTeclas { bottom: calc(70px + var(--seguro-baixo)); }
+@media (min-width: 900px) {
+  body.jogando #menu { top: calc(env(safe-area-inset-top, 0px) + 12px); bottom: auto; }
+  body.jogando #btnJogar { bottom: 20px; }
+  body.jogando #dicaTeclas { bottom: 78px; }
+}
+
 /* ---------------- bio ---------------- */
 .bio { margin: 12px 0 0; font-size: 15px; font-style: italic; color: var(--texto); background: var(--papel-2); border-left: 4px solid var(--amarelo); border-radius: 0 10px 10px 0; padding: 8px 12px; }
 .bio small { display: block; font-style: normal; font-size: 11.5px; color: var(--texto-2); margin-top: 2px; }
