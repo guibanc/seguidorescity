@@ -268,6 +268,7 @@ let ultimoNoite = 0, encontrosAvisados = new Set();
 function desenhar(agoraReal) {
   const ms = simMs(), t = br(ms), nf = noiteFator(t.min), noite = nf > 0.5;
   estados = MORADORES.map(m => estado(m, ms));
+  if (ctrl.ativo && EU) estados[EU.morador - 1] = { ...estados[EU.morador - 1], vis: true, x: ctrl.x, y: ctrl.y, dir: ctrl.dir, anda: ctrl.anda, onde: 'controle', faz: 'controlado por você' };
   // câmera segue
   if (seguindo) {
     const e = estados[seguindo - 1], f = focoTela();
@@ -341,6 +342,7 @@ function desenhar(agoraReal) {
     ctx.fillStyle = '#d63838'; ctx.fill(); ctx.strokeStyle = '#1e1824'; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.fillText(txt, p.x, y);
   }
+  if (EU) { const eu = estados[EU.morador - 1]; if (eu && eu.vis && desenhados.includes(eu)) desenharVidaNoBoneco(eu); }
   if (Math.abs(nf - ultimoNoite) > 0.01 || !$('#hudHora').textContent.startsWith(fmt(t.min))) atualizarRelogio(t, nf);
   ultimoNoite = nf;
 }
@@ -355,7 +357,9 @@ let ultimoQuadro = 0;
 function loop(now) {
   requestAnimationFrame(loop);
   if (now - ultimoQuadro < 31) return;          // ~30 fps
+  const dt = Math.min(0.1, (now - ultimoQuadro) / 1000);
   ultimoQuadro = now;
+  passoControle(dt);
   desenhar(now);
 }
 
@@ -438,6 +442,126 @@ function seguir(id) {
 }
 
 // ---------------------------------------------------------------------
+// CONTROLE do meu morador (só logado): analógico no celular, WASD/setas no PC.
+// O movimento é local (só na tela de quem joga); os outros veem a rotina.
+// ---------------------------------------------------------------------
+const VEL_CONTROLE = 72;                 // px do mapa por segundo
+const ctrl = { ativo: false, x: 0, y: 0, dir: 'down', anda: false, teclas: new Set(), joy: { x: 0, y: 0 } };
+const tocaTela = matchMedia('(pointer: coarse)').matches;
+
+// vida (minigames vão mexer aqui depois). Guarda por morador neste aparelho.
+const vidaChave = () => EU ? 'vila_vida_' + EU.morador : null;
+function lerVida() { try { const v = Number(localStorage.getItem(vidaChave())); return Number.isFinite(v) && localStorage.getItem(vidaChave()) !== null ? clamp(v, 0, 100) : 100; } catch { return 100; } }
+let VIDA = 100;
+function mudarVida(v) {
+  VIDA = clamp(Math.round(v), 0, 100);
+  try { if (vidaChave()) localStorage.setItem(vidaChave(), VIDA); } catch {}
+  atualizarVida();
+}
+function atualizarVida() {
+  const box = $('#vida'), btn = $('#btnJogar');
+  box.hidden = !EU; btn.hidden = !EU;
+  if (!EU) { if (ctrl.ativo) pararControle(); return; }
+  $('#vidaNome').textContent = EU.nome;
+  $('#vidaPct').textContent = VIDA + '%';
+  const b = $('#vidaEnche'); b.style.width = VIDA + '%';
+  b.className = 'vida-enche' + (VIDA <= 25 ? ' baixa' : VIDA <= 60 ? ' media' : '');
+  pintar($('#vidaAvatar'), lookDe(EU.morador));
+}
+
+// o que não dá pra atravessar: casas, prédios, igreja, rio e a borda do mapa
+let OBSTACULOS = [];
+function montarObstaculos() {
+  const r = [], P = VILA.pontos;
+  for (const c of CASAS) if (!c.hospedado) r.push([c.lote[0] + 2, c.lote[1] + 12, 38, 34]);
+  for (const k of ['mercadinho', 'vendinha']) if (P[k]) r.push([P[k].porta[0] - 20, P[k].porta[1] - 46, 40, 42]);
+  for (const k of ['escola', 'prefeitura', 'prefeitura_reservada']) if (P[k] && P[k].lotes) for (const l of P[k].lotes) r.push([l[0] + 2, l[1] + 12, 38, 34]);
+  if (P.igreja) r.push([P.igreja.porta[0] - 34, P.igreja.porta[1] - 80, 70, 76]);
+  OBSTACULOS = r;
+}
+function bloqueado(x, y) {
+  if (x < 8 || x > 446 || y < 24 || y > 952) return true;     // borda + rio (x > 446)
+  for (const [ox, oy, w, h] of OBSTACULOS) if (x > ox && x < ox + w && y > oy && y < oy + h) return true;
+  return false;
+}
+
+function iniciarControle() {
+  if (!EU) return;
+  const m = MORADORES[EU.morador - 1], e = estado(m, simMs());
+  let x = e.x, y = e.y;
+  if (!e.vis || bloqueado(x, y)) { const c = CASAS[m.casa - 1]; x = c.ponto_na_rua[0]; y = c.ponto_na_rua[1]; }   // sai pela rua da casa
+  Object.assign(ctrl, { ativo: true, x, y, dir: 'down', anda: false });
+  ctrl.teclas.clear(); ctrl.joy.x = ctrl.joy.y = 0;
+  fecharPainel();
+  seguindo = selecionado = EU.morador;
+  if (cam.s < 3) cam.s = PC() ? 3.4 : 3;
+  $('#btnJogar').classList.add('ativo'); $('#btnJogar').innerHTML = '✋ Parar';
+  $('#joystick').hidden = !tocaTela; $('#dicaTeclas').hidden = tocaTela;
+  document.body.classList.add('jogando');
+  toast(tocaTela ? '🎮 Use o analógico pra andar' : '🎮 Use WASD ou as setas pra andar');
+}
+function pararControle() {
+  ctrl.ativo = false; ctrl.anda = false; ctrl.teclas.clear(); ctrl.joy.x = ctrl.joy.y = 0;
+  $('#btnJogar').classList.remove('ativo'); $('#btnJogar').innerHTML = '🎮 Mover meu boneco';
+  $('#joystick').hidden = true; $('#dicaTeclas').hidden = true;
+  document.body.classList.remove('jogando');
+}
+$('#btnJogar').onclick = () => ctrl.ativo ? pararControle() : iniciarControle();
+
+function passoControle(dt) {
+  if (!ctrl.ativo) return;
+  const k = ctrl.teclas;
+  let ix = ctrl.joy.x + ((k.has('d') || k.has('arrowright')) ? 1 : 0) - ((k.has('a') || k.has('arrowleft')) ? 1 : 0);
+  let iy = ctrl.joy.y + ((k.has('s') || k.has('arrowdown')) ? 1 : 0) - ((k.has('w') || k.has('arrowup')) ? 1 : 0);
+  const mag = Math.hypot(ix, iy);
+  if (mag < 0.15) { ctrl.anda = false; return; }
+  if (mag > 1) { ix /= mag; iy /= mag; }
+  const passo = VEL_CONTROLE * dt;
+  const nx = ctrl.x + ix * passo, ny = ctrl.y + iy * passo;
+  if (!bloqueado(nx, ctrl.y)) ctrl.x = nx;            // desliza na parede: tenta x e y separados
+  if (!bloqueado(ctrl.x, ny)) ctrl.y = ny;
+  ctrl.dir = Math.abs(ix) > Math.abs(iy) ? (ix > 0 ? 'right' : 'left') : (iy > 0 ? 'down' : 'up');
+  ctrl.anda = true;
+  seguindo = EU.morador;                              // voltou a andar: câmera volta a seguir
+}
+
+// teclado (PC)
+const TECLAS = ['w', 'a', 's', 'd', 'arrowup', 'arrowdown', 'arrowleft', 'arrowright'];
+addEventListener('keydown', e => {
+  if (!ctrl.ativo || /input|textarea|select/i.test(e.target.tagName)) return;
+  const t = e.key.toLowerCase();
+  if (TECLAS.includes(t)) { ctrl.teclas.add(t); e.preventDefault(); }
+  if (t === 'escape') pararControle();
+});
+addEventListener('keyup', e => ctrl.teclas.delete(e.key.toLowerCase()));
+addEventListener('blur', () => ctrl.teclas.clear());
+
+// analógico (celular)
+(() => {
+  const base = $('#joyBase'), pino = $('#joyPino'); let id = null;
+  const mover = e => {
+    const r = base.getBoundingClientRect(), raio = r.width / 2;
+    let dx = e.clientX - (r.left + raio), dy = e.clientY - (r.top + raio);
+    const d = Math.hypot(dx, dy); if (d > raio) { dx *= raio / d; dy *= raio / d; }
+    pino.style.transform = `translate(${dx}px, ${dy}px)`;
+    ctrl.joy.x = dx / raio; ctrl.joy.y = dy / raio;
+  };
+  const soltar = () => { id = null; pino.style.transform = ''; ctrl.joy.x = ctrl.joy.y = 0; };
+  base.addEventListener('pointerdown', e => { id = e.pointerId; base.setPointerCapture(id); mover(e); e.preventDefault(); });
+  base.addEventListener('pointermove', e => { if (e.pointerId === id) mover(e); });
+  base.addEventListener('pointerup', soltar); base.addEventListener('pointercancel', soltar);
+})();
+
+// barrinha de vida em cima do meu boneco (tela)
+function desenharVidaNoBoneco(e) {
+  const p = mapaPraTela(e.x, e.y - 17), w = 30, h = 5, x = Math.round(p.x - w / 2), y = Math.round(p.y - 8);
+  ctx.fillStyle = '#1e1824'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
+  ctx.fillStyle = '#5a1f2a'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = VIDA <= 25 ? '#ff4d4d' : VIDA <= 60 ? '#f6c836' : '#40c463';
+  ctx.fillRect(x, y, Math.round(w * VIDA / 100), h);
+}
+
+// ---------------------------------------------------------------------
 // topo: relógio e números
 // ---------------------------------------------------------------------
 function atualizarRelogio(t, nf) {
@@ -477,6 +601,8 @@ function atualizarHud() {
   $('#menuEuTxt').textContent = EU ? 'Eu' : 'Entrar';
   $('#menuRegTxt').textContent = EU ? 'Meu boneco' : 'Registrar';
   $('#zoomMeu').hidden = !EU;
+  if (EU) VIDA = lerVida();
+  atualizarVida();
 }
 $('#hudMarco').onclick = () => mostrar('regras', {}, false);
 $('#btnRelogio').onclick = () => {
@@ -1118,6 +1244,7 @@ async function iniciar() {
   IMG.atlasNoite = tingir(atlas, atlas.width, atlas.height);
   for (const k of Object.keys(VILA.ruas)) if (k !== 'principal') RY[k] = VILA.ruas[k].de[1];
   CASAS = montarCasas();
+  montarObstaculos();
   await Promise.all([carregarPublicos(), atualizarContador()]);
   setInterval(() => { if (!document.hidden) atualizarContador(); }, 60000);
   document.addEventListener('visibilitychange', () => { if (!document.hidden) atualizarContador(); });
