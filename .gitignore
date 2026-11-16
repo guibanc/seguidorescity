@@ -10,3 +10,5 @@ __pycache__/
 .claude/
 # pasta de troca com a IA do vídeo (zip e cópia do projeto)
 proximoEP/
+# páginas de teste locais
+site/_teste*.html
