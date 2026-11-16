@@ -35,7 +35,9 @@ Se não abrir, libere o Node no Firewall do Windows quando ele perguntar.
    Depois rode também `supabase/3_contador.sql` (contador de seguidores ao vivo no topo do site).
    Pra atualizar o número à mão: `update contador set seguidores = 381, atualizado_em = now() where id = 1;`
 
-   Por último `supabase/5_bio_e_pedidos.sql` (frase de bio de cada morador + botão Recusar nos pedidos de amizade).
+   Depois `supabase/6_chat_online_casa.sql` (chat, online, mudar de casa) e `supabase/7_32bits_eleicao.sql`
+   (opções novas de visual 32 bits + eleição pra prefeito).
+   Antes desses dois, o `supabase/5_bio_e_pedidos.sql` (frase de bio de cada morador + botão Recusar nos pedidos de amizade).
 
 ### Contador automático pelo YouTube (a cada 10 min)
 1. **Chave do Google:** console.cloud.google.com → crie um projeto (ex. "cidade-seguidores") →
@@ -129,3 +131,15 @@ insert into palavras_bloqueadas values ('palavra');
   rotinas se cruzaram, "hoje vocês estão juntos na praça às 10:20", e corações no mapa quando
   seu morador encontra um amigo.
 - Link direto: `seusite/?m=205` abre seguindo o morador 205.
+
+## 6. Eleição pra prefeito (SQL Editor)
+
+```sql
+-- abrir a votação (fecha as candidaturas)
+update eleicao set fase = 'votacao', atualizado_em = now() where id = 1;
+-- encerrar e eleger o mais votado
+select encerrar_eleicao();
+-- começar uma eleição nova
+delete from votos; delete from candidaturas;
+update eleicao set fase = 'candidaturas', prefeito = null, atualizado_em = now() where id = 1;
+```

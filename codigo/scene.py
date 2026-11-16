@@ -4,34 +4,42 @@ from world import *
 from font import draw_text, text_width
 
 # =====================================================================
-#  EPISÓDIO 6  (577 -> 617 seguidores)
-#  Casas 58-61 (rua D lota), marco 600 (2º mercadinho + posto de saúde),
-#  o MAPA CRESCE pra baixo (480 -> 680, ruas E e F) e a cidade EVOLUI pro
-#  isométrico (iso.py). Campo (700) reservado, aviso dos minigames.
-#  Tempos sincronizados com a narração (narracao_ep6.wav, 74,8 s).
+#  EPISÓDIO 7  (617 -> 647 seguidores)
+#  A cidade ganha nome: PINDAMONHANGABA (placa feita em mutirão), fogos,
+#  EVOLUÇÃO 32 BITS (iso.K = 2), provador, casas 62-64, montagem do site,
+#  candidatura a prefeito, teaser de profissões/dinheiro, campo (700).
+#  Tempos sincronizados com a narração (narracao_ep7.wav, com 1,3 s de
+#  respiro pro rufar de tambor depois de "o mais curtido foi...").
 # =====================================================================
-EP=6; C0=577; C1=617
-MH6=680                                   # altura nova do mapa (largura continua 270)
+EP=7; C0=617; C1=647
+NOME_CIDADE="PINDAMONHANGABA"
+MH6=680
 T=dict(
-    titulo=(0.0,6.1), recap=(6.1,10.9),        # "três lotes" 9.5
-    cresce1=(10.9,15.2),       # casa 58 12.6 / 59 13.1 / 60 13.7 / 61 14.3
-    marco=(15.2,20.8),         # 600 16.3 / mercadinho 18.6 / posto 19.6
-    lotado=(20.8,24.3),        # onde? 21.1 / nenhum lote 22.4
-    cresce=(24.3,30.8),        # cresceu 26.1 / pra baixo 27.2 / duas ruas 29.1
-    evolui=(30.8,40.4),        # isométrica 33.2 / telhado 35.5 / lateral 38.1
-    obras=(40.4,44.2),         # mercadinho 41.9 / posto 43.2
-    casa62=(44.2,48.0),
-    campo=(48.0,54.5),         # 700 48.3 / campo 49.8 / jogador 50.9
-    prefeito=(54.5,59.3),      # prefeito 54.8 / chegando 56.7 / fica de olho 58.2
-    minigame=(59.3,64.9),      # minigame 60.7 / jogar 63.0
-    resumo=(64.9,71.1),        # 617 65.8 / 61 casas 67.6 / mapa 69.1 / visual 70.0
-    cta=(71.1,77.0),           # controle 73.6
+    abertura=(0.0,7.35),       # placa vazia 0.1-4.9 / "hoje ela ganha um nome" 5.5-7.2
+    titulo=(7.35,11.2),
+    votos=(11.2,14.75),        # comentários
+    tambor=(14.75,16.5),       # rufar
+    nome=(16.5,18.1),          # PINDAMONHANGABA! 16.57
+    mutirao=(18.1,25.4),       # serraram 19.8 / pintaram 21.2 / levantaram 22.9-25.1
+    fogos=(25.4,29.1),
+    nuvens=(29.1,33.0),        # "visual à altura" 30.6
+    bits32=(33.0,42.7),        # 32 bits 33.8 / luz 35.5 / sombra 36.5 / casa 37.5 / telhado 38.8 / varanda 39.7 / jardim 40.5 / varal 41.4
+    provador=(42.7,51.3),      # roupa 45.7 / cabelo 47.1 / chapéu 48.1 / acessório 48.5 / teu jeito 50.0
+    casas=(51.3,59.3),         # 62 53.6 / 63 55.1 / 64 56.1 / 65 obra 57.3
+    site=(59.3,73.0),
+    prefeito=(73.0,79.1),      # candidatar 74.4 / primeiro 77.6
+    economia=(79.1,84.6),      # profissões 80.4 / dinheiro 81.4 / economia 82.2
+    campo=(84.6,90.6),         # goleiro 86.0 / falta o campo 87.1 / faltam 53 88.1
+    resumo=(90.6,97.4),        # 647 91.6 / 64 casas 93.7 / nome 95.2 / visual 96.1
+    cta=(97.4,105.5),          # candidata 100.0 / te espera 101.2
 )
-DUR=77.0
-ISO_T=33.0                                 # a partir daqui o vídeo é isométrico
+DUR=105.5
+EVOL_T=32.6                                 # daqui pra frente é 32 bits
+SITE_CUTS=[(59.3,61.35,'virou'),(61.35,62.45,'chat'),(62.45,64.55,'online'),(64.55,66.0,'casa'),(66.0,67.45,'geladeira'),
+           (67.45,68.75,'mercadinho'),(68.75,69.85,'banco'),(69.85,71.35,'fonte'),(71.35,73.0,'mudanca')]
 
 # ---------- contador ----------
-CK=[(0,C0),(11.6,C0),(12.6,580),(13.1,590),(13.7,600),(14.3,610),(15.2,612),(16.3,615),(30.0,615),(46.3,C1)]
+CK=[(0,C0),(52.8,C0),(54.0,620),(55.3,630),(56.3,640),(57.6,645),(58.4,C1)]
 def count_at(t):
     if t>=CK[-1][0]: return CK[-1][1]
     if t<CK[0][0]: return C0
@@ -112,12 +120,19 @@ def pave_f(t): return 1.0
 def night_f(t): return 0.0
 SHOW0=1e9; SHOWWIN=(1e9,1e9); STAGE=(0,0,0,0); BANDA=[]; PLATEIA=[]
 def plateia_state(c,t): return None
-GROW=(26.1,30.4)                            # mapa "desenrolando" pra baixo
-def grow_f(t): return interp(t,[(GROW[0],0.0),(GROW[1],1.0)])
-M2_KEYS=[(40.9,0.0),(41.9,0.3),(42.6,0.7),(43.3,1.0)]
-PO_KEYS=[(41.6,0.0),(42.6,0.3),(43.3,0.7),(44.0,1.0)]
-def merc2_p(t): return interp(t,M2_KEYS)
-def posto_p(t): return interp(t,PO_KEYS)
+def grow_f(t): return 1.0
+def merc2_p(t): return 1.0
+def posto_p(t): return 1.0
+# ---------- a placa nova (mutirão) ----------
+PLACA_X0,PLACA_X1,PLACA_Y=121.0,143.0,466.0      # pórtico novo sobre a rua principal, na entrada
+def placa_velha(t): return t<18.6            # a vazia sai quando o mutirão começa
+def placa_estado(t):
+    """(letras pintadas, ângulo 0=deitada..1=em pé) ou None antes de existir"""
+    if t<19.9: return None
+    n=int(clamp((t-21.2)/1.5)*len(NOME_CIDADE)) if t<22.8 else len(NOME_CIDADE)
+    ang=smooth(clamp((t-22.9)/2.1))
+    return (n,ang)
+def eleicao(t): return t>=73.6               # faixas "VOTE" na prefeitura
 
 # ---------- árvores ----------
 trees=[]
@@ -213,13 +228,5 @@ def nome_tela(n):
     s_=''.join(c for c in n.upper() if c in G or c in ACC or c==' ')
     return ' '.join(s_.split())
 
-# ---------- câmera 16 bits (até a virada pro isométrico) ----------
-WIDE=(135,240,270)
-CAM=[(0,(131,300,150)),(4.6,(131,300,150)),(6.1,WIDE),(8.2,WIDE),(9.0,(105,346,150)),(T['cresce1'][1],(105,346,150)),
-     (T['marco'][0]+0.8,WIDE),(T['lotado'][1],WIDE),(T['cresce'][0]+0.6,(130,380,200)),(99,(130,380,200))]
-def cam_at(t):
-    for (a,va),(b,vb) in zip(CAM,CAM[1:]):
-        if a<=t<b:
-            f=smooth((t-a)/(b-a)); return tuple(va[i]+(vb[i]-va[i])*f for i in range(3))
-    return CAM[-1][1]
+def cam_at(t): return (135,240,270)
 def hour_at(t): return None

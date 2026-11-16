@@ -16,6 +16,43 @@ OX, OY = MH*2+40, TOP
 IW, IH = (MW+MH)*2+80, MW+MH+TOP+60
 _ox, _oy = OX, OY
 d = None
+K = 1          # 1 = isométrico 16 bits (ep. 6) · 2 = 32 bits (ep. 7): tudo com o dobro de resolução
+
+class _SD:
+    """ImageDraw que multiplica as coordenadas por K (linhas continuam com 1 px => mais detalhe)"""
+    def __init__(self, dr, k, im): self.dr, self.k, self.im = dr, k, im
+    def _s(self, xy):
+        k = self.k
+        if isinstance(xy, (list, tuple)) and xy and isinstance(xy[0], (list, tuple)): return [(p[0]*k, p[1]*k) for p in xy]
+        return [v*k for v in xy]
+    def polygon(self, xy, **kw): self.dr.polygon(self._s(xy), **kw)
+    def line(self, xy, fill=None, width=1, **kw): self.dr.line(self._s(xy), fill=fill, width=(width*self.k if width > 1 else 1), **kw)
+    def rectangle(self, xy, **kw):
+        a = self._s(xy); k = self.k
+        if len(a) == 2: a = [a[0][0], a[0][1], a[1][0], a[1][1]]
+        self.dr.rectangle([a[0], a[1], a[2]+k-1, a[3]+k-1], **kw)
+    def ellipse(self, xy, **kw):
+        a = self._s(xy)
+        if len(a) == 2: a = [a[0][0], a[0][1], a[1][0], a[1][1]]
+        self.dr.ellipse(a, **kw)
+    def point(self, xy, fill=None):
+        if isinstance(xy[0], (int, float, np.floating, np.integer)): a = [(xy[0]*self.k, xy[1]*self.k)]
+        else: a = self._s(xy)
+        self.dr.point(a, fill=fill)
+    def rounded_rectangle(self, xy, radius=0, **kw):
+        a = self._s(xy); self.dr.rounded_rectangle(a, radius=radius*self.k, **kw)
+    def paste_quad(self, tex, pts):
+        """cola a textura tex (RGBA) no quadrilátero pts (ordem: sup-esq, sup-dir, inf-dir, inf-esq)"""
+        q = self._s(pts); w, h = tex.size
+        src = [(0, 0), (w, 0), (w, h), (0, h)]
+        A = []; B = []
+        for (X, Y), (u, v) in zip(q, src):
+            A.append([X, Y, 1, 0, 0, 0, -u*X, -u*Y]); B.append(u)
+            A.append([0, 0, 0, X, Y, 1, -v*X, -v*Y]); B.append(v)
+        try: co = np.linalg.solve(np.array(A, float), np.array(B, float))
+        except np.linalg.LinAlgError: return
+        out = tex.transform(self.im.size, Image.PERSPECTIVE, tuple(co), Image.NEAREST)
+        self.im.alpha_composite(out)
 def P(x, y, z=0): return (_ox+(x-y)*2, _oy+(x+y)-z)
 def PW(x, y, z=0): return (OX+(x-y)*2, OY+(x+y)-z)          # coordenada global na tela iso
 def sh(c, f):
@@ -123,6 +160,34 @@ def house(l, var, p=1.0, venda=False):
             u = 1+k*2.1
             quad([P(x0+u, y1, 11), P(x0+u+2.1, y1, 11), P(x0+u+2.1, y1+3, 8), P(x0+u, y1+3, 8)], aw[k % 2])
         d.line([P(x0+1, y1+3, 8), P(x0+17.8, y1+3, 8)], fill=OUT)
+    if K >= 2:   # ---- 32 bits: mais detalhe ----
+        for z in np.arange(3.5, H_, 2.0):                                   # ripas na parede
+            d.line([P(x0+0.3, y1, z), P(x1-0.3, y1, z)], fill=sh(wc, 0.95)); d.line([P(x1, y0+0.3, z), P(x1, y1-0.3, z)], fill=sh(wc, 0.74))
+        ym_ = (y0+y1)/2
+        for k_ in range(1, 12):                                               # telha mais fina
+            f = (k_+0.5)/12; yk = y1+1.4+(ym_-(y1+1.4))*f; zk = H_-1+11*f
+            d.line([P(x0-1.4, yk, zk), P(x1+1.4, yk, zk)], fill=sh(ramp[2], 1.08))
+        d.line([P(x0-1.4, y1+1.5, H_-1.4), P(x1+1.4, y1+1.5, H_-1.4)], fill=(150, 150, 156))   # calha
+        if front:   # varanda com telhadinho + luz na porta
+            for u in (6.4, 12.1):
+                d.line([P(x0+u, y1+3, 0), P(x0+u, y1+3, 8.5)], fill=(250, 248, 240)); d.line([P(x0+u+0.4, y1+3, 0), P(x0+u+0.4, y1+3, 8.5)], fill=(210, 206, 196))
+            quad([P(x0+5.8, y1, 9.5), P(x0+12.7, y1, 9.5), P(x0+12.7, y1+3.4, 8.5), P(x0+5.8, y1+3.4, 8.5)], ramp[2])
+            d.line([P(x0+5.8, y1+3.4, 8.5), P(x0+12.7, y1+3.4, 8.5)], fill=OUT)
+            d.point(P(x0+11.3, y1, 10.4), fill=(255, 226, 130))
+        rr = random.Random(var*31+int(x0*7+y0))
+        flores = [(240, 80, 100), (250, 220, 70), (240, 140, 200), (250, 250, 250), (150, 120, 240)]
+        for u in np.arange(0.6, 18.5, 0.9):                                   # jardim
+            if front and 5.4 < u < 13.2: continue
+            yy_ = y1+2.6+rr.uniform(0, 0.9)
+            d.point(P(x0+u, yy_, 0.6), fill=(46, 120, 50)); d.point(P(x0+u+0.3, yy_, 1.2), fill=rr.choice(flores))
+        if var % 3 == 2:                                                      # varal com roupa
+            p0, p1 = (x1+1.2, y0+2), (x1+1.2, y1-1)
+            for (px_, py_) in (p0, p1): d.line([P(px_, py_, 0), P(px_, py_, 9)], fill=(120, 86, 56))
+            d.line([P(*p0, 8.6), P(*p1, 8.6)], fill=(230, 230, 230))
+            cores = [(230, 70, 70), (70, 130, 230), (250, 220, 80), (250, 250, 250), (120, 200, 120)]
+            for j_ in range(4):
+                v = y0+3+j_*2.6
+                quad([P(x1+1.2, v, 8.6), P(x1+1.2, v+1.6, 8.6), P(x1+1.2, v+1.6, 5.4), P(x1+1.2, v, 5.4)], cores[(var+j_) % 5])
     # cerquinha
     if var % 3 == 1 and front:
         for u in np.arange(0, 19, 1.5):
@@ -242,6 +307,17 @@ def tree(x, y, r):
         a = rr.uniform(0, 6.28); q = rr.uniform(0, r*0.8)
         px_, py_ = int(bx+math.cos(a)*q-2), int(cy_+math.sin(a)*q*0.8-2)
         d.point((px_, py_), fill=(140, 204, 104))
+    if K >= 2:   # 32 bits: folhas miúdas, luz e sombra dentro da copa, casca no tronco
+        for (cx, cy, rad) in blobs:
+            for _ in range(int(rad*5)):
+                a = rr.uniform(0, 6.28); q = rr.uniform(0, rad)
+                px_, py_ = cx+math.cos(a)*q, cy+math.sin(a)*q
+                lit = (math.cos(a) < 0 and math.sin(a) < 0.3)
+                d.point((px_, py_), fill=(118, 190, 92) if lit else (36, 98, 48))
+                d.point((px_+0.5, py_), fill=(70, 150, 66))
+        d.line([bx-0.5, by-r, bx-0.5, by-1], fill=(130, 92, 58)); d.point((bx, by-r*0.5), fill=(70, 46, 30))
+        for _ in range(3):
+            d.point((bx+rr.uniform(-r*0.4, r*0.4), cy_+rr.uniform(-r*0.6, -r*0.2)), fill=(190, 230, 150))
     if rr.random() < 0.4:
         for _ in range(4):
             d.point((int(bx+rr.uniform(-r*0.7, r*0.7)), int(cy_+rr.uniform(-r*0.6, r*0.5))), fill=(220, 50, 50))
@@ -341,18 +417,18 @@ def construcao(x0, y0, x1, y1, p, final, hfin=15, col=(250, 250, 246)):
 
 # ---------------- cache de sprites ----------------
 def sprite(fn, x0, y0, x1, y1, hz, pad=24):
-    """desenha fn() num sprite próprio. Devolve (img, bx0, by0) em coordenadas globais da tela iso"""
+    """desenha fn() num sprite próprio. Devolve (img, bx0, by0) em coordenadas da tela iso (já multiplicadas por K)"""
     global d, _ox, _oy
     bx0 = int(PW(x0, y1)[0])-pad-int(hz*0.6); bx1 = int(PW(x1, y0)[0])+pad+int(hz*0.6)
     by0 = int(PW(x0, y0)[1])-hz-pad; by1 = int(PW(x1, y1)[1])+pad
-    im = Image.new('RGBA', (bx1-bx0, by1-by0), (0, 0, 0, 0))
+    im = Image.new('RGBA', ((bx1-bx0)*K, (by1-by0)*K), (0, 0, 0, 0))
     od, oox, ooy = d, _ox, _oy
-    d = ImageDraw.Draw(im, 'RGBA'); _ox, _oy = OX-bx0, OY-by0
+    d = _SD(ImageDraw.Draw(im, 'RGBA'), K, im); _ox, _oy = OX-bx0, OY-by0
     try: fn()
     finally: d, _ox, _oy = od, oox, ooy
     bb = im.getbbox()
     if bb is None: return None
-    return (im.crop(bb), bx0+bb[0], by0+bb[1])
+    return (im.crop(bb), bx0*K+bb[0], by0*K+bb[1])
 
 # ---------------- terreno infinito em volta da cidade ----------------
 _G = None
@@ -372,11 +448,15 @@ FIELDS = [(-150, 90, -30, 200, 'arado'), (-160, 300, -40, 430, 'trigo'), (-140, 
           (262, 330, 390, 470, 'arado'), (262, 560, 380, 700, 'trigo'), (20, -140, 110, -40, 'arado'), (150, -150, 228, -30, 'trigo')]
 from world import river_x
 def terreno(vx0, vy0, w, h):
-    """chão (cor por pixel) da janela da tela iso [vx0, vx0+w) x [vy0, vy0+h)"""
+    """chão (cor por pixel) da janela da tela iso [vx0, vx0+w) x [vy0, vy0+h) — em px de K"""
     yy, xx = np.mgrid[vy0:vy0+h, vx0:vx0+w].astype(np.float32)
-    a_ = (xx-OX)/2; b_ = yy-OY
+    a_ = (xx/K-OX)/2; b_ = yy/K-OY
     lx = (a_+b_)/2; ly = (b_-a_)/2
-    return Image.fromarray(terreno_l(lx, ly)).convert('RGBA')
+    c = terreno_l(lx, ly)
+    if K > 1:   # 32 bits: grão fino na grama/chão
+        n = ((xx.astype(np.int64)*73856093 ^ yy.astype(np.int64)*19349663) % 97)/97.0
+        c = np.clip(c.astype(np.float32)*(0.95+0.1*n[:, :, None]), 0, 255).astype(np.uint8)
+    return Image.fromarray(c).convert('RGBA')
 def terreno_l(lx, ly):
     """cor do chão pra cada ponto lógico (lx, ly) — dentro do mapa é o mapa, fora é campo infinito"""
     G, T2, RD = ground()
@@ -412,11 +492,11 @@ def terreno_l(lx, ly):
 
 _TV = {}
 def tree_var(k, r):
-    """sprite de árvore genérico (variação k) ancorado no ponto lógico (0,0)"""
-    if (k, r) not in _TV:
-        _TV[(k, r)] = sprite(lambda: tree(k*0.37, 0, r), k*0.37-8, -8, k*0.37+8, 8, 34)
-    im, bx, by = _TV[(k, r)]; ax, ay = PW(k*0.37, 0)
-    return im, bx-ax, by-ay
+    """sprite de árvore genérico (variação k) ancorado no ponto lógico (0,0) — offsets em px de K"""
+    if (k, r, K) not in _TV:
+        _TV[(k, r, K)] = sprite(lambda: tree(k*0.37, 0, r), k*0.37-8, -8, k*0.37+8, 8, 34)
+    im, bx, by = _TV[(k, r, K)]; ax, ay = PW(k*0.37, 0)
+    return im, bx-ax*K, by-ay*K
 def arvores_fora(lx0, ly0, lx1, ly1, cell=10):
     """árvores do terreno de fora (determinísticas por célula)"""
     out = []
@@ -440,6 +520,7 @@ def sky(w, h, y0):
     a = np.repeat(c[:, None, :], w, axis=1).reshape(h, w, 3)
     return Image.fromarray(np.dstack([a.astype(np.uint8), np.full((h, w), 255, np.uint8)]), 'RGBA')
 def spr(key, fn, box_, hz):
+    key = (key, K)
     if key not in _SPR: _SPR[key] = sprite(fn, *box_, hz)
     return _SPR[key]
 
@@ -474,7 +555,17 @@ def objetos(t, C):
     for k, (x, y) in enumerate(LAMPS6): out.append((x+y, spr(('lp', k), lambda x=x, y=y: lamp(x, y), (x-2, y-2, x+2, y+2), 24)))
     out.append((132+245, spr('fonte', fonte, (122, 237, 142, 253), 20)))
     for k, (x, y) in enumerate(((111, 265), (151, 265), (111, 221))): out.append((x+y, spr(('bc', k), lambda x=x, y=y: banco(x, y), (x-4, y-2, x+4, y+3), 8)))
-    out.append((142+446, spr('placa', lambda: placa(), (140, 444, 158, 450), 20)))
+    if getattr(SC, 'placa_velha', lambda t: True)(t):
+        out.append((142+446, spr('placa', lambda: placa(), (140, 444, 158, 450), 20)))
+    est = getattr(SC, 'placa_estado', lambda t: None)(t)
+    if est is not None:
+        n, ang = est
+        box_ = (SC.PLACA_X0-3, SC.PLACA_Y-15, SC.PLACA_X1+3, SC.PLACA_Y+3)
+        if n >= len(SC.NOME_CIDADE) and ang >= 1: s_ = spr('placa_nova', lambda: placa_nova(n, 1.0), box_, 70)
+        else: s_ = spr(('placa_nova', n, round(ang, 3)), lambda n=n, ang=ang: placa_nova(n, ang), box_, 70)
+        out.append((SC.PLACA_X1+SC.PLACA_Y, s_))
+    if getattr(SC, 'eleicao', lambda t: False)(t):
+        out.append((181+421, spr('eleicao', eleicao_deco, (138, 400, 186, 428), 40)))
     return out
 
 LAMPS6 = [(x, y) for y in range(124, MH-10, 34) for x in (123, 140) if not (205 < y < 285) and
@@ -484,60 +575,187 @@ def person_sprite(pid, dr, fr, carry=None, uniform=None):
     import vila16 as V
     return V.NPC(pid, dr, fr, uniform, carry=carry) if carry else V.NPC(pid, dr, fr, uniform)
 
+def _render(t, cam, people_list, extra, pop, kr):
+    global K
+    oldK = K; K = kr
+    try:
+        cx, cy, Z = cam; z = Z/kr
+        cxk, cyk = cx*kr, cy*kr
+        vw, vh = 1080/z, 1920/z
+        vx0, vy0 = int(cxk-vw/2), int(cyk-vh/2); vw_i, vh_i = int(math.ceil(vw))+2, int(math.ceil(vh))+2
+        view = terreno(vx0, vy0, vw_i, vh_i)
+        C = SC.count_at(t)
+        objs = [o for o in objetos(t, C) if o[1] is not None]
+        for (x, y, sf) in people_list: objs.append((x+y+0.5, ('p', x, y, sf)))
+        corners = [(vx0/kr, vy0/kr), ((vx0+vw_i)/kr, vy0/kr), (vx0/kr, (vy0+vh_i)/kr), ((vx0+vw_i)/kr, (vy0+vh_i)/kr)]
+        L = [(((X-OX)/2+(Y-OY))/2, ((Y-OY)-(X-OX)/2)/2) for X, Y in corners]
+        lxs = [p[0] for p in L]; lys = [p[1] for p in L]
+        for (x, y, k, r) in arvores_fora(min(lxs)-10, min(lys)-10, max(lxs)+10, max(lys)+40):
+            im, ox_, oy_ = tree_var(k, r); X0, Y0 = PW(x, y)
+            objs.append((x+y, (im, int(X0*kr+ox_), int(Y0*kr+oy_))))
+        if extra: objs += extra
+        objs.sort(key=lambda o: o[0])
+        vd = ImageDraw.Draw(view, 'RGBA')
+        for dep, o in objs:
+            if o[0] == 'p':
+                _, x, y, sf = o; bx, by = PW(x, y)
+                X, Y = int(bx*kr-vx0), int(by*kr-vy0)
+                if -30 < X < vw_i+30 and -50 < Y < vh_i+30:
+                    s_ = sf(kr)
+                    vd.ellipse([X-4*kr, Y-1*kr, X+4*kr, Y+2*kr], fill=(0, 30, 0, 80))
+                    view.paste(s_, (X-s_.width//2, Y-s_.height+kr), s_)
+                continue
+            if o[0] == 'fn':
+                o[1](vd, vx0, vy0, kr); continue
+            if o[0] == 'spr':
+                o = o[1]
+                if o is None: continue
+            im, bx, by = o
+            X, Y = bx-vx0, by-vy0
+            if X > vw_i or Y > vh_i or X+im.width < 0 or Y+im.height < 0: continue
+            if pop is not None:
+                s_ = pop(dep, bx, by)
+                if s_ <= 0.01: continue
+                if s_ < 0.999:
+                    nh = max(1, int(im.height*s_)); im2 = im.resize((im.width, nh), Image.NEAREST)
+                    view.paste(im2, (X, Y+im.height-nh), im2); continue
+            view.paste(im, (X, Y), im)
+        out = view.resize((int(vw_i*z), int(vh_i*z)), Image.NEAREST if z >= 1 else Image.BILINEAR)
+        ox_, oy_ = int((cxk-vw/2-vx0)*z), int((cyk-vh/2-vy0)*z)
+        return out.crop((ox_, oy_, ox_+1080, oy_+1920)).convert('RGB')
+    finally:
+        K = oldK
+
 def render_view(t, cam, people_list, extra=None, pop=None):
-    """cam = (cx, cy, zoom) em px da tela iso. people_list: [(x, y, sprite)]. Devolve imagem 1080x1920."""
-    cx, cy, z = cam
-    vw, vh = 1080/z, 1920/z
-    vx0, vy0 = int(cx-vw/2), int(cy-vh/2); vw_i, vh_i = int(math.ceil(vw))+2, int(math.ceil(vh))+2
-    view = terreno(vx0, vy0, vw_i, vh_i)
-    C = SC.count_at(t)
-    objs = [o for o in objetos(t, C) if o[1] is not None]
-    for (x, y, s) in people_list: objs.append((x+y+0.5, ('p', x, y, s)))
-    # árvores do terreno de fora (só as que caem na janela)
-    cs = [((vx0-OX)/2+(vy0-OY))/1, 0]
-    corners = [(vx0, vy0), (vx0+vw_i, vy0), (vx0, vy0+vh_i), (vx0+vw_i, vy0+vh_i)]
-    L = [(((X-OX)/2+(Y-OY))/2, ((Y-OY)-(X-OX)/2)/2) for X, Y in corners]
-    lxs = [p[0] for p in L]; lys = [p[1] for p in L]
-    for (x, y, k, r) in arvores_fora(min(lxs)-10, min(lys)-10, max(lxs)+10, max(lys)+40):
-        im, ox_, oy_ = tree_var(k, r); X0, Y0 = PW(x, y)
-        objs.append((x+y, (im, int(X0+ox_), int(Y0+oy_))))
-    if extra: objs += extra
-    objs.sort(key=lambda o: o[0])
-    vd = ImageDraw.Draw(view, 'RGBA')
-    for dep, o in objs:
-        if o[0] == 'p':
-            _, x, y, s = o; bx, by = PW(x, y)
-            X, Y = int(bx-vx0), int(by-vy0)
-            if -20 < X < vw_i+20 and -30 < Y < vh_i+20:
-                vd.ellipse([X-4, Y-1, X+4, Y+2], fill=(0, 30, 0, 80)); view.alpha_composite(s, (X-6, Y-17)) if 0 <= X-6 and 0 <= Y-17 and X+6 < vw_i and Y+1 < vh_i else view.paste(s, (X-6, Y-17), s)
-            continue
-        if o[0] == 'fn':
-            o[1](vd, vx0, vy0); continue
-        im, bx, by = o
-        X, Y = bx-vx0, by-vy0
-        if X > vw_i or Y > vh_i or X+im.width < 0 or Y+im.height < 0: continue
-        if pop is not None:
-            s_ = pop(dep, bx, by)
-            if s_ <= 0.01: continue
-            if s_ < 0.999:
-                nh = max(1, int(im.height*s_)); im2 = im.resize((im.width, nh), Image.NEAREST)
-                view.paste(im2, (X, Y+im.height-nh), im2); continue
-        view.paste(im, (X, Y), im)
-    out = view.resize((int(vw_i*z), int(vh_i*z)), Image.NEAREST if z >= 1 else Image.BILINEAR)
-    ox_, oy_ = int((cx-vw/2-vx0)*z), int((cy-vh/2-vy0)*z)
-    return out.crop((ox_, oy_, ox_+1080, oy_+1920)).convert('RGB')
+    """cam = (cx, cy, Z): centro em px da tela iso (K=1) e zoom de saída. Com K=2, perto usa os sprites 32 bits
+    e de longe os de 1x (com uma transição suave entre os dois)."""
+    Z = cam[2]
+    if K == 1: return _render(t, cam, people_list, extra, pop, 1)
+    if Z >= 1.7: return _render(t, cam, people_list, extra, pop, 2)
+    if Z < 1.3: return _render(t, cam, people_list, extra, pop, 1)
+    w = (Z-1.3)/0.4
+    a = _render(t, cam, people_list, extra, pop, 1); b = _render(t, cam, people_list, extra, pop, 2)
+    return Image.blend(a, b, w)
 
 def imagem_completa(t, margem=40):
-    """a cidade inteira em isométrico (sem moradores) + um pouco de campo em volta. Pro site."""
+    """a cidade inteira em isométrico (sem moradores) + campo em volta. Pro site. Usa o K atual (1 ou 2).
+    Fórmula: tela = origem + K*((x-y)*2, (x+y))."""
     x0 = int(PW(-margem, MH+margem)[0]); x1 = int(PW(MW+margem, -margem)[0])
     y0 = int(PW(-margem, -margem)[1])-90; y1 = int(PW(MW+margem, MH+margem)[1])+10
-    w, h = x1-x0, y1-y0
-    view = terreno(x0, y0, w, h)
+    w, h = (x1-x0)*K, (y1-y0)*K
+    view = terreno(x0*K, y0*K, w, h)
     objs = [o for o in objetos(t, SC.count_at(t)) if o[1] is not None]
-    L = [(-margem-20, -margem-20), (MW+margem+20, MH+margem+20)]
     for (x, y, k, r) in arvores_fora(-margem-20, -margem-20, MW+margem+20, MH+margem+20):
         im, ox_, oy_ = tree_var(k, r); X0, Y0 = PW(x, y)
-        objs.append((x+y, (im, int(X0+ox_), int(Y0+oy_))))
+        objs.append((x+y, (im, int(X0*K+ox_), int(Y0*K+oy_))))
     objs.sort(key=lambda o: o[0])
-    for _, (im, bx, by) in objs: view.paste(im, (bx-x0, by-y0), im)
-    return view.convert('RGB'), (OX-x0, OY-y0)
+    for _, (im, bx, by) in objs: view.paste(im, (bx-x0*K, by-y0*K), im)
+    if getattr(SC, 'placa_estado', None) and SC.placa_estado(t):
+        view = texto_placa(view, x0*K, y0*K)
+    return view.convert('RGB'), ((OX-x0)*K, (OY-y0)*K)
+
+def texto_placa(view, vx0, vy0):
+    """pinta o nome da cidade no pórtico (em alta), numa imagem da tela iso em px de K"""
+    nome = SC.NOME_CIDADE
+    zb, ztop, ytop = 26.0, 38.0, SC.PLACA_Y
+    def O(x, y, z): px, py = PW(x, y, z); return (px*K-vx0, py*K-vy0)
+    m = 0.06; xa, xb = SC.PLACA_X0+(SC.PLACA_X1-SC.PLACA_X0)*m, SC.PLACA_X1-(SC.PLACA_X1-SC.PLACA_X0)*m
+    za, zc = ztop-(ztop-zb)*0.18, zb+(ztop-zb)*0.18
+    q = [O(xa, ytop, za), O(xb, ytop, za), O(xb, ytop, zc), O(xa, ytop, zc)]
+    tw = text_width(nome, 4)+8
+    tex = Image.new('RGBA', (tw, 44), (0, 0, 0, 0)); dd = ImageDraw.Draw(tex)
+    draw_text(dd, nome, tw//2, 6, 4, (255, 236, 140, 255), outline=(70, 40, 20, 255))
+    w, h = tex.size
+    A_ = []; B_ = []
+    for (X, Y), (u, v) in zip(q, [(0, 0), (w, 0), (w, h), (0, h)]):
+        A_.append([X, Y, 1, 0, 0, 0, -u*X, -u*Y]); B_.append(u); A_.append([0, 0, 0, X, Y, 1, -v*X, -v*Y]); B_.append(v)
+    co = np.linalg.solve(np.array(A_, float), np.array(B_, float))
+    lay = tex.transform(view.size, Image.PERSPECTIVE, tuple(co), Image.BILINEAR)
+    view = view.convert('RGBA'); view.alpha_composite(lay)
+    return view
+
+# ---------------- ep. 7: a placa PINDAMONHANGABA ----------------
+def _tex_placa(n):
+    nome = SC.NOME_CIDADE
+    tw = text_width(nome, 1)+10
+    im = Image.new('RGBA', (tw, 20), (0, 0, 0, 0)); dd = ImageDraw.Draw(im)
+    dd.rectangle([0, 0, tw-1, 19], fill=(176, 122, 70, 255))
+    for y in (5, 10, 15): dd.line([0, y, tw-1, y], fill=(140, 94, 52, 255))
+    for x in range(3, tw, 17): dd.point((x, 2), fill=(120, 80, 44, 255)); dd.point((x+8, 12), fill=(120, 80, 44, 255))
+    dd.rectangle([0, 0, tw-1, 19], outline=(96, 62, 34, 255))
+    if n > 0:
+        vis = nome[:n]+' '*(len(nome)-n)
+        draw_text(dd, vis, tw//2, 6, 1, (255, 236, 140, 255), outline=(70, 40, 20, 255))
+    return im
+_TP = {}
+def placa_nova(n, ang):
+    x0, x1, y = SC.PLACA_X0, SC.PLACA_X1, SC.PLACA_Y
+    th = ang*math.pi/2; hb = 12.0
+    zb = 26.0*ang; ztop = zb+hb*math.sin(th); ytop = y-hb*math.cos(th)
+    # postes (aparecem já fincados)
+    for px_ in (x0+0.6, x1-0.6):
+        box(px_-0.8, y-0.8, px_+0.8, y+0.8, 40, (130, 86, 48), (100, 64, 36))
+        top(px_-0.8, y-0.8, px_+0.8, y+0.8, 40, (160, 112, 66))
+    pts = [P(x0, ytop, ztop), P(x1, ytop, ztop), P(x1, y, zb), P(x0, y, zb)]
+    quad(pts, (150, 100, 56))
+    if (0, ) not in _TP: _TP[(0,)] = _tex_placa(0)          # o texto é pintado em alta no render
+    d.paste_quad(_TP[(0,)], pts)
+    d.line([pts[0], pts[1], pts[2], pts[3], pts[0]], fill=(80, 50, 28))
+    if ang >= 1:
+        quad([P(x0-0.6, y, zb+hb+0.6), P(x1+0.6, y, zb+hb+0.6), P(x1+0.6, y+1.2, zb+hb), P(x0-0.6, y+1.2, zb+hb)], (120, 80, 44))
+
+def eleicao_deco():
+    x0, x1, y1 = 141, 181.5, 416
+    cores = [(214, 50, 50), (40, 90, 190), (40, 150, 80), (240, 180, 40)]
+    for k, u in enumerate((3.5, 9.5, 29.5, 35.5)):
+        quad([P(x0+u, y1+0.3, 15), P(x0+u+3, y1+0.3, 15), P(x0+u+3, y1+0.3, 5.5), P(x0+u+1.5, y1+0.3, 4), P(x0+u, y1+0.3, 5.5)], cores[k])
+        cx_, cy_ = P(x0+u+1.5, y1+0.3, 11)
+        for j_, ch in enumerate("VOTE"):
+            draw_text(d, ch, cx_+0.5, cy_-6+j_*3.2, 1, (255, 255, 255, 255), outline=None) if False else None
+        d.line([P(x0+u+0.4, y1+0.3, 12), P(x0+u+2.6, y1+0.3, 12)], fill=(255, 255, 255)); d.line([P(x0+u+0.4, y1+0.3, 9), P(x0+u+2.6, y1+0.3, 9)], fill=(255, 255, 255))
+    # urna na frente
+    ux, uy = 157.5, 423
+    box(ux, uy, ux+3, uy+2.5, 6, (250, 250, 250), (210, 210, 214)); top(ux, uy, ux+3, uy+2.5, 6, (236, 236, 240))
+    d.line([P(ux+0.8, uy+1.2, 6), P(ux+2.2, uy+1.2, 6)], fill=(30, 30, 30))
+    quad([P(ux+0.4, uy+2.5, 2.5), P(ux+2.6, uy+2.5, 2.5), P(ux+2.6, uy+2.5, 4.2), P(ux+0.4, uy+2.5, 4.2)], (40, 150, 80))
+
+
+# ---------------- interior de casa (ep. 7, montagem do site) ----------------
+def interior(fridge_open=0.0):
+    W_, D_ = 30, 22
+    for gx in range(0, W_, 2):                     # piso xadrez
+        for gy in range(0, D_, 2):
+            c = (214, 196, 160) if (gx//2+gy//2) % 2 else (196, 176, 140)
+            quad([P(gx, gy), P(gx+2, gy), P(gx+2, gy+2), P(gx, gy+2)], c)
+    quad([P(0, 0, 0), P(W_, 0, 0), P(W_, 0, 22), P(0, 0, 22)], (236, 214, 170))      # parede do fundo
+    quad([P(0, 0, 0), P(0, D_, 0), P(0, D_, 22), P(0, 0, 22)], (214, 192, 150))      # parede da esquerda
+    for z in range(4, 22, 4): d.line([P(0.2, 0, z), P(W_, 0, z)], fill=(226, 202, 160))
+    quad([P(0, 0, 0), P(W_, 0, 0), P(W_, 0, 2), P(0, 0, 2)], (150, 100, 60)); quad([P(0, 0, 0), P(0, D_, 0), P(0, D_, 2), P(0, 0, 2)], (130, 86, 52))
+    quad([P(9, 0, 9), P(15, 0, 9), P(15, 0, 17), P(9, 0, 17)], (250, 250, 246)); quad([P(9.5, 0, 9.5), P(14.5, 0, 9.5), P(14.5, 0, 16.5), P(9.5, 0, 16.5)], (150, 206, 242))
+    d.line([P(12, 0, 9.5), P(12, 0, 16.5)], fill=(250, 250, 246))
+    quad([P(1, 8, 0), P(7, 8, 0), P(7, 16, 0), P(1, 16, 0)], (200, 60, 70))         # tapete
+    # beliche
+    for z0 in (0, 9):
+        box(1, 1, 7, 5, 3, (140, 96, 60), (110, 74, 46), z0=z0+1); top(1, 1, 7, 5, z0+4, (90, 140, 220))
+        top(1.3, 1.3, 2.6, 4.7, z0+4.6, (250, 250, 250))
+    for (px_, py_) in ((1, 5), (7, 5)): d.line([P(px_, py_, 0), P(px_, py_, 16)], fill=(110, 74, 46))
+    # TV na estante
+    box(16, 0.5, 21, 2.5, 5, (150, 104, 66), (120, 82, 50)); top(16, 0.5, 21, 2.5, 5, (176, 124, 80))
+    quad([P(16.5, 1.4, 6), P(20.5, 1.4, 6), P(20.5, 1.4, 11), P(16.5, 1.4, 11)], (30, 30, 40))
+    quad([P(17, 1.4, 6.5), P(20, 1.4, 6.5), P(20, 1.4, 10.5), P(17, 1.4, 10.5)], (70, 130, 220))
+    # fogão e geladeira
+    box(22, 0.5, 25.5, 3.5, 6, (240, 240, 244), (200, 200, 206)); top(22, 0.5, 25.5, 3.5, 6, (60, 60, 64))
+    for (bx, by) in ((23, 1.5), (24.5, 1.5), (23, 2.7), (24.5, 2.7)): d.point(P(bx, by, 6), fill=(250, 120, 40))
+    box(26, 0.5, 29.5, 3.5, 17, (250, 250, 252), (210, 212, 218)); top(26, 0.5, 29.5, 3.5, 17, (236, 238, 242))
+    d.line([P(26, 3.5, 11), P(29.5, 3.5, 11)], fill=(180, 182, 188))
+    if fridge_open > 0:
+        quad([P(26.2, 3.5, 1), P(29.3, 3.5, 1), P(29.3, 3.5, 10.6), P(26.2, 3.5, 10.6)], (255, 250, 220))
+        for k_, c in enumerate([(230, 70, 60), (250, 200, 60), (120, 200, 90)]):
+            quad([P(26.6+k_*0.9, 3.5, 3+k_*2), P(27.3+k_*0.9, 3.5, 3+k_*2), P(27.3+k_*0.9, 3.5, 4.4+k_*2), P(26.6+k_*0.9, 3.5, 4.4+k_*2)], c)
+        a = fridge_open*1.4
+        quad([P(26, 3.5, 1), P(26-math.sin(a)*3.4, 3.5+math.cos(a)*3.4*0+3.4*math.sin(a)*0.9, 1), P(26-math.sin(a)*3.4, 3.5+3.4*math.sin(a)*0.9, 10.6), P(26, 3.5, 10.6)], (236, 238, 242))
+    # sofá e mesa
+    box(10, 15, 19, 18, 4, (60, 120, 180), (44, 92, 140)); box(10, 17, 19, 18, 8, (70, 132, 196), (50, 100, 150))
+    top(10, 15, 19, 17, 4, (90, 150, 210))
+    box(21, 12, 27, 17, 6, (150, 104, 66), (120, 82, 50)); top(21, 12, 27, 17, 6, (190, 136, 88))
+    box(23, 13.5, 24.5, 15, 7.5, (250, 250, 250), (220, 220, 220), z0=6)

@@ -13,8 +13,10 @@ const Sprites = require('./site/js/sprites.js');
 
 const moradores = JSON.parse(fs.readFileSync(path.join(SITE, 'dados', 'moradores.json'), 'utf8'));
 const existe = new Set(moradores.map(m => m.id));
-let db = { registros: {}, sessoes: {}, amizades: [], chat: [] };
+let db = { registros: {}, sessoes: {}, amizades: [], chat: [], eleicao: { fase: 'candidaturas', prefeito: null }, candidaturas: {}, votos: {} };
 try { db = Object.assign(db, JSON.parse(fs.readFileSync(BANCO, 'utf8'))); } catch {}
+// fase da eleição pra testar: ELEICAO=votacao node servidor_local.js
+if (process.env.ELEICAO) db.eleicao.fase = process.env.ELEICAO;
 const salvar = () => fs.writeFileSync(BANCO, JSON.stringify(db, null, 1));
 
 // mesma lista e mesma regra do Supabase (gerada por: npm run palavras)
@@ -148,8 +150,46 @@ const RPC = {
     for (const a of db.amizades) { if (a.para === -1) a.para = mid; }
     for (const sess of Object.values(db.sessoes)) if (sess.morador === mid) sess.morador = novo;
     for (const c of db.chat) if (c.morador_id === mid) c.morador_id = novo;
+    if (db.candidaturas[mid]) { db.candidaturas[novo] = db.candidaturas[mid]; delete db.candidaturas[mid]; }
+    if (db.votos[mid] != null) { db.votos[novo] = db.votos[mid]; delete db.votos[mid]; }
+    for (const k of Object.keys(db.votos)) if (db.votos[k] === mid) db.votos[k] = novo;
+    if (db.eleicao.prefeito === mid) db.eleicao.prefeito = novo;
     salvar();
     return { ok: true, morador: novo, casa: p_casa, antigo: mid };
+  },
+  eleicao_info() {
+    const contar = m => Object.values(db.votos).filter(c => c === m).length;
+    const pr = db.eleicao.prefeito && db.registros[db.eleicao.prefeito];
+    return { fase: db.eleicao.fase, prefeito: pr ? db.eleicao.prefeito : null, prefeito_nome: pr ? pr.nome : null,
+      candidatos: Object.entries(db.candidaturas).filter(([m]) => db.registros[m]).map(([m, c]) => ({ m: Number(m), nome: db.registros[m].nome, slogan: c.slogan,
+        votos: db.eleicao.fase === 'candidaturas' ? null : contar(Number(m)), t: c.criado_em }))
+        .sort((a, b) => (b.votos || 0) - (a.votos || 0) || a.t.localeCompare(b.t)).map(({ t, ...c }) => c) };
+  },
+  candidatar({ p_token, p_slogan }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    if (db.eleicao.fase !== 'candidaturas') return erro('As candidaturas estão fechadas');
+    const t = limpaNome(p_slogan);
+    if (t.length < 3 || t.length > 80) return erro('O slogan precisa ter de 3 a 80 letras');
+    if (!nomePermitido(t)) return erro('Esse slogan não é permitido');
+    db.candidaturas[mid] = { slogan: t, criado_em: (db.candidaturas[mid] || {}).criado_em || new Date().toISOString() }; salvar();
+    return { ok: true };
+  },
+  retirar_candidatura({ p_token }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    if (db.eleicao.fase === 'encerrada') return erro('A eleição já acabou');
+    delete db.candidaturas[mid]; for (const k of Object.keys(db.votos)) if (db.votos[k] === mid) delete db.votos[k]; salvar();
+    return { ok: true };
+  },
+  votar({ p_token, p_candidato }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    if (db.eleicao.fase !== 'votacao') return erro(db.eleicao.fase === 'candidaturas' ? 'A votação ainda não começou' : 'A eleição já acabou');
+    if (!db.candidaturas[p_candidato]) return erro('Esse morador não é candidato');
+    db.votos[mid] = p_candidato; salvar();
+    return { ok: true };
+  },
+  meu_voto({ p_token }) {
+    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
+    return { ok: true, candidato: db.votos[mid] ?? null, candidato_eu: !!db.candidaturas[mid] };
   },
   buscar({ p_texto }) {
     const t = String(p_texto || '').toLowerCase(), u = limpaUser(t);

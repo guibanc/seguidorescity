@@ -71,7 +71,7 @@
   const impl = sb ? supabase() : localSSE();
   window.Rt = {
     modo: sb ? 'supabase' : 'local',
-    conectar(handlers) { H = handlers || {}; impl.conectar().catch(e => console.warn('tempo real indisponível', e)); },
+    conectar(handlers) { H = handlers || {}; Promise.resolve().then(() => impl.conectar()).catch(e => console.warn('tempo real indisponível', e)); },
     presenca(p) { perfil = p || null; impl.rastrear(); },
     pos(d) { impl.pos(d); },
   };

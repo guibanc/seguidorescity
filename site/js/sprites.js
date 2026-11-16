@@ -189,16 +189,26 @@
     return out;
   }
 
+  // ep. 7 (32 bits): opções novas. O desenho de 16 bits ignora o que não conhece (cabelo vira o padrão,
+  // chapéu/acessório não aparecem); o de 32 bits (char32.js) desenha tudo.
+  const HAIRSTYLES_32 = [...HAIRSTYLES, 'moicano', 'trancas', 'cacheado', 'topete'];
+  const ESTAMPAS_32 = [...ESTAMPAS, 'xadrez', 'time'];
+  const CHAPEUS_32 = [...CHAPEUS, 'boina', 'coroa', 'bandana'];
+  const ACESSORIOS = [null, 'mochila', 'cachecol', 'colar', 'fone', 'oculos_sol'];
   function normalizar(l) {
     const n = (v, max, d) => (Number.isInteger(v) && v >= 0 && v < max) ? v : d;
-    return {
-      pele: n(l.pele, 6, 0), cabelo: HAIRSTYLES.includes(l.cabelo) ? l.cabelo : 'curto', cor_cabelo: n(l.cor_cabelo, 8, 0),
-      camisa: n(l.camisa, 12, 0), estampa: ESTAMPAS.includes(l.estampa) ? l.estampa : 'lisa', camisa2: n(l.camisa2, 12, 0),
+    const out = {
+      pele: n(l.pele, 6, 0), cabelo: HAIRSTYLES_32.includes(l.cabelo) ? l.cabelo : 'curto', cor_cabelo: n(l.cor_cabelo, 8, 0),
+      camisa: n(l.camisa, 12, 0), estampa: ESTAMPAS_32.includes(l.estampa) ? l.estampa : 'lisa', camisa2: n(l.camisa2, 12, 0),
       baixo: BAIXOS.includes(l.baixo) ? l.baixo : 'calca', cor_baixo: n(l.cor_baixo, 6, 0), sapato: n(l.sapato, 4, 0),
-      oculos: !!l.oculos, chapeu: CHAPEUS.includes(l.chapeu) ? l.chapeu : null, cor_chapeu: n(l.cor_chapeu, 12, 0), barba: !!l.barba,
+      oculos: !!l.oculos, chapeu: CHAPEUS_32.includes(l.chapeu) ? l.chapeu : null, cor_chapeu: n(l.cor_chapeu, 12, 0), barba: !!l.barba,
     };
+    // acessório só entra no visual quando existe (assim os visuais antigos continuam idênticos)
+    if (ACESSORIOS.includes(l.acessorio) && l.acessorio) { out.acessorio = l.acessorio; out.cor_acessorio = n(l.cor_acessorio, 12, 0); }
+    return out;
   }
 
-  const api = { desenhar, folha, normalizar, SKIN16, HAIR16, SHIRT16, PANTS16, SHOES16, HAIRSTYLES, ESTAMPAS, BAIXOS, CHAPEUS, DIRS };
+  const api = { desenhar, folha, normalizar, SKIN16, HAIR16, SHIRT16, PANTS16, SHOES16, HAIRSTYLES, ESTAMPAS, BAIXOS, CHAPEUS, DIRS,
+                HAIRSTYLES_32, ESTAMPAS_32, CHAPEUS_32, ACESSORIOS };
   if (typeof module !== 'undefined') module.exports = api; else root.Sprites = api;
 })(this);

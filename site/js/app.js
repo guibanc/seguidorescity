@@ -209,6 +209,21 @@ function folhaDe(look) {
   f = { dia: c, noite: tingir(c, 48, 72) };
   cacheFolhas.set(k, f); return f;
 }
+const cache32 = new Map(); let gerados32 = 0;
+function folha32(look) {
+  if (!window.Char32) return null;
+  const n = Sprites.normalizar(look), k = JSON.stringify(n);
+  let f = cache32.get(k);
+  if (f) { cache32.delete(k); cache32.set(k, f); return f; }       // mais recente no fim (LRU)
+  if (gerados32 >= 6) return null;                                  // no máx. 6 novos por quadro
+  gerados32++;
+  const c = document.createElement('canvas'); c.width = 128; c.height = 192;
+  c.getContext('2d').putImageData(new ImageData(Char32.folha(n), 128, 192), 0, 0);
+  f = { dia: c, noite: tingir(c, 128, 192) };
+  cache32.set(k, f);
+  if (cache32.size > 160) cache32.delete(cache32.keys().next().value);
+  return f;
+}
 function lookDe(id) {
   if (preview && preview.id === id) return preview.look;
   return (PUB[id] && PUB[id].aparencia) || MORADORES[id - 1].aparencia;
@@ -220,6 +235,15 @@ function fonteSprite(id, noite) {
   return { img: noite ? IMG.atlasNoite : IMG.atlas, ox: a.col * 48, oy: a.lin * 72 };
 }
 function pintar(canvas, look, dir = 'down', frame = 0) {
+  if (window.Char32) {                    // ep. 7: retratos em 32 bits (o canvas cresce na mesma proporção)
+    if (!canvas.dataset.c32) { canvas.dataset.c32 = '1'; canvas.width = Math.round(canvas.width * 8 / 3); canvas.height = Math.round(canvas.height * 8 / 3); }
+    const x = canvas.getContext('2d'); x.clearRect(0, 0, canvas.width, canvas.height);
+    const tmp = document.createElement('canvas'); tmp.width = 32; tmp.height = 48;
+    tmp.getContext('2d').putImageData(new ImageData(Char32.npc32(Sprites.normalizar(look), dir, frame), 32, 48), 0, 0);
+    x.imageSmoothingEnabled = false;
+    x.drawImage(tmp, Math.floor((canvas.width - 32) / 2), canvas.height >= 48 ? Math.floor((canvas.height - 48) / 2) : 0);
+    return;
+  }
   const x = canvas.getContext('2d');
   x.clearRect(0, 0, canvas.width, canvas.height);
   const tmp = document.createElement('canvas'); tmp.width = 12; tmp.height = 18;
@@ -239,8 +263,8 @@ const cv = $('#mapa'), ctx = cv.getContext('2d');
 let W = 0, H = 0, DPR = 1;
 const cam = { x: 264, y: 490, s: 2 };
 // tamanho do mapa vem do vila.json (o mapa pode crescer nos próximos episódios)
-const MW = () => ISO() ? VILA.iso.largura : (VILA && VILA.mapa && VILA.mapa.largura) || 540;
-const MH = () => ISO() ? VILA.iso.altura : (VILA && VILA.mapa && VILA.mapa.altura) || 960;
+const MW = () => ISO() ? CFG().largura : (VILA && VILA.mapa && VILA.mapa.largura) || 540;
+const MH = () => ISO() ? CFG().altura : (VILA && VILA.mapa && VILA.mapa.altura) || 960;
 // limites do MUNDO (mapa de cima), usados pelo boneco controlado
 const MUNDO_W = () => (VILA && VILA.mapa && VILA.mapa.largura) || 540, MUNDO_H = () => (VILA && VILA.mapa && VILA.mapa.altura) || 960;
 function minS() { return Math.min(W / MW(), H / MH()) * 0.92; }
@@ -275,29 +299,33 @@ function zoomEm(sx, sy, novo) {
 // proj() converte pra imagem de fundo da visão atual.
 // ---------------------------------------------------------------------
 let VISTA = (() => { try { return localStorage.getItem('vila_vista') || 'iso'; } catch { return 'iso'; } })();
-const ISO = () => VISTA === 'iso' && !!(VILA && VILA.iso && IMG.iso);
+const ISO = () => VISTA === 'iso' && !!(VILA && ((VILA.iso && IMG.iso) || (VILA.iso32 && IMG.iso32)));
+const B32 = () => ISO() && !!(VILA.iso32 && IMG.iso32 && window.Char32);    // ep. 7: cidade e moradores 32 bits
+const CFG = () => B32() ? VILA.iso32 : VILA.iso;
+const KI = () => B32() ? 2 : 1;                                             // a imagem 32 bits tem o dobro de pixels
+const ZK = () => ISO() ? KI() : 1;                                          // pra manter o tamanho na tela igual nas duas
 const ESC = () => (VILA && VILA.mapa && VILA.mapa.escala_logica) || 2;
 function proj(x, y) {
   if (!ISO()) return { x, y };
-  const o = VILA.iso.origem, lx = x / ESC(), ly = y / ESC();
-  return { x: o[0] + (lx - ly) * 2, y: o[1] + (lx + ly) };
+  const o = CFG().origem, k = KI(), lx = x / ESC(), ly = y / ESC();
+  return { x: o[0] + (lx - ly) * 2 * k, y: o[1] + (lx + ly) * k };
 }
 function desproj(X, Y) {
   if (!ISO()) return { x: X, y: Y };
-  const o = VILA.iso.origem, a = (X - o[0]) / 2, b = Y - o[1];        // a = lx - ly, b = lx + ly
+  const o = CFG().origem, k = KI(), a = (X - o[0]) / (2 * k), b = (Y - o[1]) / k;        // a = lx - ly, b = lx + ly
   return { x: (a + b) / 2 * ESC(), y: (b - a) / 2 * ESC() };
 }
 const mundoPraTela = (x, y) => { const p = proj(x, y); return mapaPraTela(p.x, p.y); };
 function trocarVista(nova) {
   if (nova === VISTA) return;
-  const centro = desproj(cam.x, cam.y);                               // mantém o mesmo lugar no centro
+  const centro = desproj(cam.x, cam.y), z0 = ZK();                   // mantém o mesmo lugar no centro e o mesmo tamanho
   VISTA = nova; try { localStorage.setItem('vila_vista', nova); } catch {}
-  const p = proj(centro.x, centro.y); cam.x = p.x; cam.y = p.y;
+  const p = proj(centro.x, centro.y); cam.x = p.x; cam.y = p.y; cam.s *= z0 / ZK();
   cam.s = clamp(cam.s, minS(), 6); limitarCam(); atualizarBotaoVista();
 }
 function atualizarBotaoVista() {
   const b = $('#btnVista'); if (!b) return;
-  b.hidden = !(VILA && VILA.iso && IMG.iso);
+  b.hidden = !(VILA && ((VILA.iso && IMG.iso) || (VILA.iso32 && IMG.iso32)));
   b.textContent = ISO() ? '🗺️' : '🧊';
   b.title = b.ariaLabel = ISO() ? 'Ver de cima' : 'Ver em isométrico';
 }
@@ -324,10 +352,11 @@ function desenhar(agoraReal) {
   ctx.setTransform(k, 0, 0, k, tx, ty);
   ctx.imageSmoothingEnabled = false;
   if (iso) {
-    ctx.drawImage(IMG.iso, 0, 0);
+    const fundo = B32() ? IMG.iso32 : IMG.iso;
+    ctx.drawImage(fundo, 0, 0);
     if (nf > 0) {                                                        // noite: tinta azulada por cima
       ctx.globalCompositeOperation = 'multiply'; ctx.globalAlpha = nf;
-      ctx.fillStyle = 'rgb(97,115,184)'; ctx.fillRect(0, 0, IMG.iso.width, IMG.iso.height);
+      ctx.fillStyle = 'rgb(97,115,184)'; ctx.fillRect(0, 0, fundo.width, fundo.height);
       ctx.globalCompositeOperation = 'source-over'; ctx.globalAlpha = 1;
     }
   } else {
@@ -342,23 +371,29 @@ function desenhar(agoraReal) {
     .sort((a, b) => prio(a.id) - prio(b.id) || hashId(a.id) - hashId(b.id)).slice(0, MAX_BONECOS)
     .sort((a, b) => a.py - b.py);                                        // mais ao fundo primeiro (vale nas duas visões)
 
-  const quadro = Math.floor(agoraReal / 125) % 4, topo = iso ? 17 : 14;
+  const b32 = B32(); gerados32 = 0;
+  const quadro = Math.floor(agoraReal / 125) % 4, topo = b32 ? 46 : iso ? 17 : 14;
   for (const e of desenhados) {
     const x = Math.round(e.px), y = Math.round(e.py);
-    if (iso) { ctx.fillStyle = 'rgba(0,30,0,.3)'; ctx.beginPath(); ctx.ellipse(x, y, 4, 1.6, 0, 0, Math.PI * 2); ctx.fill(); }
+    if (iso) { ctx.fillStyle = 'rgba(0,30,0,.3)'; ctx.beginPath(); if (b32) ctx.ellipse(x, y + 1, 8, 3, 0, 0, Math.PI * 2); else ctx.ellipse(x, y, 4, 1.6, 0, 0, Math.PI * 2); ctx.fill(); }
     if (e.id === selecionado || e.id === seguindo) {
       ctx.strokeStyle = '#f6c836'; ctx.lineWidth = 1.5;
-      ctx.beginPath(); ctx.ellipse(x, y + (iso ? 0 : 3), 7, iso ? 3.5 : 3, 0, 0, Math.PI * 2); ctx.stroke();
+      ctx.lineWidth = b32 ? 2.5 : 1.5;
+      ctx.beginPath(); ctx.ellipse(x, y + (iso ? 0 : 3), b32 ? 14 : 7, b32 ? 6 : iso ? 3.5 : 3, 0, 0, Math.PI * 2); ctx.stroke();
     }
-    const f = fonteSprite(e.id, noite), fr = e.anda ? (quadro + e.id) % 4 : 0;
-    ctx.drawImage(f.img, f.ox + fr * 12, f.oy + DIRI[e.dir || 'down'] * 18, 12, 18, x - 6, y - topo, 12, 18);
+    const fr = e.anda ? (quadro + e.id) % 4 : 0, di = DIRI[e.dir || 'down'];
+    const f32 = b32 ? folha32(lookDe(e.id)) : null;
+    if (f32) { ctx.drawImage(noite ? f32.noite : f32.dia, fr * 32, di * 48, 32, 48, x - 16, y - topo, 32, 48); continue; }
+    const f = fonteSprite(e.id, noite);
+    if (b32) ctx.drawImage(f.img, f.ox + fr * 12, f.oy + di * 18, 12, 18, x - 12, y - 34, 24, 36);   // enquanto o 32 bits não ficou pronto
+    else ctx.drawImage(f.img, f.ox + fr * 12, f.oy + di * 18, 12, 18, x - 6, y - topo, 12, 18);
   }
 
   // textos em escala de tela
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   const alvo = selecionado || seguindo, acima = (e, d) => mapaPraTela(e.px, e.py - d);
-  if (cam.s >= 2) {
+  if (cam.s * ZK() >= 2) {
     ctx.font = '700 11px Nunito, system-ui, sans-serif';
     for (const e of desenhados) {
       if (e.id === alvo || !ocupado(e.id) || !nomeDe(e.id)) continue;
@@ -466,16 +501,18 @@ cv.addEventListener('wheel', e => { e.preventDefault(); zoomEm(e.clientX, e.clie
 
 function tocar(sx, sy) {
   if (INTERIOR) return tocarInterior(sx, sy);
-  const m = telaPraMapa(sx, sy), tol = Math.max(7, 16 / cam.s);
+  const m = telaPraMapa(sx, sy), kk = B32() ? 2.5 : 1, tol = Math.max(7 * kk, 16 / cam.s);
   let melhor = null, md = 1e9;
   for (const e of desenhados) {
-    const cx = e.px, cy = e.py - 6, d = Math.hypot((m.x - cx) / tol, (m.y - cy) / Math.max(11, 20 / cam.s));
+    const cx = e.px, cy = e.py - 6 * kk, d = Math.hypot((m.x - cx) / tol, (m.y - cy) / Math.max(11 * kk, 20 / cam.s));
     if (d < 1 && d < md) { md = d; melhor = e; }
   }
   if (melhor) return escolherNoMapa(melhor.id);
   const chao = desproj(m.x, m.y); m.x = chao.x; m.y = chao.y;
   const casa = CASAS.find(c => m.x >= c.lote[0] && m.x <= c.lote[0] + c.tamanho[0] && m.y >= c.lote[1] && m.y <= c.lote[1] + c.tamanho[1]);
   if (casa) return mostrar('casa', { n: casa.casa });
+  const pf = VILA.pontos.prefeitura;
+  if (pf && pf.lotes && pf.lotes.some(l => m.x >= l[0] && m.x <= l[0] + 42 && m.y >= l[1] && m.y <= l[1] + 50)) return mostrar('prefeitura', {}, false);
   if (selecionado && !seguindo) { selecionado = null; }
 }
 function escolherNoMapa(id) {
@@ -493,7 +530,7 @@ $('#zoomMenos').onclick = () => { const f = focoTela(); zoomEm(f.x, f.y, cam.s /
 $('#zoomMeu').onclick = () => { if (EU) { seguir(EU.morador); mostrar('ficha', { id: EU.morador }); } };
 function seguir(id) {
   seguindo = id; selecionado = id;
-  if (cam.s < 2.5) cam.s = PC() ? 3 : 2.6;
+  if (cam.s * ZK() < 2.5) cam.s = (PC() ? 3 : 2.6) / ZK();
   history.replaceState(null, '', '?m=' + id);
   atualizarBotaoSeguir();
 }
@@ -535,6 +572,7 @@ function montarObstaculos() {
   for (const k of ['mercadinho', 'vendinha']) if (P[k]) r.push([P[k].porta[0] - 20, P[k].porta[1] - 46, 40, 42]);
   if (P.mercadinho2 && P.mercadinho2.lote) r.push([P.mercadinho2.lote[0] + 2, P.mercadinho2.lote[1] + 12, 38, 34]);
   for (const k of ['escola', 'prefeitura', 'prefeitura_reservada', 'posto']) if (P[k] && P[k].lotes) for (const l of P[k].lotes) r.push([l[0] + 2, l[1] + 12, 38, 34]);
+  if (P.portal) for (const q of [P.portal.de, P.portal.ate]) r.push([q[0] - 3, q[1] - 3, 6, 6]);
   if (P.igreja) r.push([P.igreja.porta[0] - 34, P.igreja.porta[1] - 80, 70, 76]);
   OBSTACULOS = r;
 }
@@ -554,7 +592,7 @@ function iniciarControle() {
   ctrl.teclas.clear(); ctrl.joy.x = ctrl.joy.y = 0;
   fecharPainel();
   seguindo = selecionado = EU.morador;
-  if (cam.s < 3) cam.s = PC() ? 3.4 : 3;
+  if (cam.s * ZK() < 3) cam.s = (PC() ? 3.4 : 3) / ZK();
   $('#btnJogar').classList.add('ativo'); $('#btnJogar').innerHTML = '✋ Parar';
   $('#joystick').hidden = !tocaTela; $('#dicaTeclas').hidden = tocaTela;
   document.body.classList.add('jogando');
@@ -630,7 +668,7 @@ addEventListener('blur', () => ctrl.teclas.clear());
 
 // barrinha de vida em cima do meu boneco (tela)
 function desenharVidaNoBoneco(e) {
-  const p = mapaPraTela(e.px, e.py - (ISO() ? 20 : 17)), w = 30, h = 5, x = Math.round(p.x - w / 2), y = Math.round(p.y - 8);
+  const p = mapaPraTela(e.px, e.py - (B32() ? 50 : ISO() ? 20 : 17)), w = 30, h = 5, x = Math.round(p.x - w / 2), y = Math.round(p.y - 8);
   ctx.fillStyle = '#1e1824'; ctx.fillRect(x - 1, y - 1, w + 2, h + 2);
   ctx.fillStyle = '#5a1f2a'; ctx.fillRect(x, y, w, h);
   ctx.fillStyle = VIDA <= 25 ? '#ff4d4d' : VIDA <= 60 ? '#f6c836' : '#40c463';
@@ -742,6 +780,7 @@ function acoesPerto() {
   if (!ctrl.portaBloq) {
     for (const c of CASAS) if (!c.hospedado && distP(c.porta, x, y) < 11) { a.push({ rotulo: `🚪 Entrar na ${nomeCasa(c.casa).toLowerCase()}`, fn: () => entrarInterior('casa', c.casa) }); break; }
     if (P.mercadinho && distP(P.mercadinho.porta, x, y) < 12) a.push({ rotulo: '🛒 Entrar no mercadinho', fn: () => entrarInterior('mercadinho', 1) });
+    if (P.prefeitura && P.prefeitura.porta && distP(P.prefeitura.porta, x, y) < 14) a.push({ rotulo: '🏛️ Entrar na prefeitura', fn: () => mostrar('prefeitura', {}, false) });
     if (P.mercadinho2 && distP(P.mercadinho2.porta, x, y) < 12) a.push({ rotulo: '🛒 Entrar no mercadinho 2', fn: () => entrarInterior('mercadinho', 2) });
   }
   if (P.praca) {
@@ -1025,6 +1064,32 @@ async function mudarDeCasa(n) {
   mostrar('ficha', { id: novo }, false);
 }
 
+// =====================================================================
+// ELEIÇÃO PRA PREFEITO (ep. 7): candidaturas -> votação -> encerrada
+// =====================================================================
+let ELEICAO = null, MEU_VOTO = null;
+async function carregarEleicao() {
+  const r = await Api.rpc('eleicao_info', {});
+  ELEICAO = r && r.fase ? r : null;
+  if (ELEICAO && EU) { const v = await Api.rpc('meu_voto', { p_token: token() }); MEU_VOTO = v && v.ok ? v.candidato : null; }
+  atualizarChipEleicao();
+  if (telaAtual && telaAtual.tela === 'prefeitura') TELAS.prefeitura();
+}
+function atualizarChipEleicao() {
+  const b = $('#hudEleicao'); if (!b) return;
+  b.hidden = !ELEICAO;
+  if (!ELEICAO) return;
+  b.innerHTML = ELEICAO.fase === 'encerrada' && ELEICAO.prefeito_nome ? `👑 Prefeito(a): <b>${esc(ELEICAO.prefeito_nome)}</b>`
+    : ELEICAO.fase === 'votacao' ? '🗳️ <b>Votação aberta!</b>' : `🗳️ Eleição: <b>${ELEICAO.candidatos.length}</b> ${ELEICAO.candidatos.length === 1 ? 'candidato' : 'candidatos'}`;
+}
+const candidatoDe = id => ELEICAO && ELEICAO.candidatos.find(c => c.m === id);
+const sloganDe = id => { const c = candidatoDe(id); return c ? c.slogan : null; };
+function seloEleicao(id) {
+  if (ELEICAO && ELEICAO.prefeito === id) return '<span class="etq etq-eu">👑 Prefeito(a)</span>';
+  return candidatoDe(id) ? '<span class="etq etq-cand">🗳️ Candidato(a)</span>' : '';
+}
+$('#hudEleicao').onclick = () => mostrar('prefeitura', {}, false);
+
 // ---------------------------------------------------------------------
 // topo: relógio e números
 // ---------------------------------------------------------------------
@@ -1065,6 +1130,8 @@ function atualizarHud() {
   $('#menuEuTxt').textContent = EU ? 'Eu' : 'Entrar';
   $('#menuRegTxt').textContent = EU ? 'Meu boneco' : 'Registrar';
   $('#zoomMeu').hidden = !EU;
+  atualizarChipEleicao();
+  document.title = (VILA.nome_vila ? VILA.nome_vila + ' — ' : '') + 'A Cidade dos Seguidores';
   if (EU) VIDA = lerVida();
   atualizarVida();
 }
@@ -1228,11 +1295,12 @@ const TELAS = {
           <p class="ficha-nome">${esc(p.nome || 'Morador #' + id)}</p>
           ${p.usuario ? `<div class="ficha-user">@${esc(p.usuario)}</div>` : `<div class="texto-2" style="font-weight:700">Livre — ainda sem dono</div>`}
           <div class="etiquetas">
-            <span class="etq">#${id}</span><span class="etq">${nomeCasa(m.casa)}</span><span class="etq">Chegou no ep. ${m.chegou_no_ep}</span>
+            <span class="etq">#${id}</span><span class="etq">${nomeCasa(m.casa)}</span><span class="etq">Chegou no ep. ${m.chegou_no_ep}</span>${seloEleicao(id)}
             ${eu ? '<span class="etq etq-eu">Você</span>' : !p.ocupado ? '<span class="etq etq-livre">Livre</span>' : ''}${estaOnline(id) ? '<span class="etq etq-livre">🟢 online agora</span>' : ''}
           </div>
         </div>
       </div>
+      ${sloganDe(id) ? `<p class="slogan">🗳️ “${esc(sloganDe(id))}”</p>` : ''}
       <p class="bio">“${esc(p.bio || bioAuto(m))}”${p.bio ? '' : '<small>escrita pela vila</small>'}</p>
       <div class="agora" id="fichaAgora"></div>
       <div class="botoes">
@@ -1356,7 +1424,7 @@ const TELAS = {
     titulo(modo === 'editar' ? 'Personalizar meu morador' : 'Registrar meu morador');
     const S = Sprites, L = ed.look;
     const cores = (campo, pal) => `<div class="cores">${pal.map((c, i) => `<button class="cor ${L[campo] === i ? 'ativo' : ''}" style="background:rgb(${c})" data-campo="${campo}" data-v="${i}" aria-label="cor ${i + 1}"></button>`).join('')}</div>`;
-    const ops = (campo, lista, nomes, prev = true) => `<div class="opcoes">${lista.map((v, i) => `<button class="op ${prev ? '' : 'op-txt'} ${L[campo] === v ? 'ativo' : ''}" data-campo="${campo}" data-v='${JSON.stringify(v)}'>${prev ? `<canvas width="12" height="18" data-prev='${JSON.stringify({ [campo]: v })}'></canvas>` : ''}${nomes[i]}</button>`).join('')}</div>`;
+    const ops = (campo, lista, nomes, prev = true) => `<div class="opcoes">${lista.map((v, i) => `<button class="op ${prev ? '' : 'op-txt'} ${(L[campo] ?? null) === v ? 'ativo' : ''}" data-campo="${campo}" data-v='${JSON.stringify(v)}' ${(L[campo] ?? null) === v ? 'aria-pressed="true"' : ''}>${prev ? `<canvas width="12" height="18" data-prev='${JSON.stringify({ [campo]: v })}'></canvas>` : ''}${nomes[i]}</button>`).join('')}</div>`;
     const sujoAgora = modo === 'editar' && sujo();
     const scroll = $('#painelCorpo').scrollTop;
     const c = corpo(`
@@ -1373,19 +1441,22 @@ const TELAS = {
       ${modo === 'editar' ? `<label class="campo"><span>Nome que aparece no boneco</span><input id="edNome" maxlength="20" value="${esc(ed.nome)}"></label>
         ${TEM_BIO ? `<label class="campo"><span>Bio — uma frase sobre você</span><input id="edBio" maxlength="90" value="${esc(ed.bio)}" placeholder="${esc(bioAuto(MORADORES[id - 1]))}"><small>Até 90 letras. Vazio = a vila escreve uma frase pela sua rotina.</small></label>` : ''}` : ''}
       <div class="ed-grupo"><b>Pele</b>${cores('pele', S.SKIN16)}</div>
-      <div class="ed-grupo"><b>Cabelo</b>${ops('cabelo', S.HAIRSTYLES, ['Curto', 'Raspado', 'Longo', 'Rabo', 'Coque', 'Black', 'Careca', 'Franja'])}</div>
+      <div class="ed-grupo"><b>Cabelo</b>${ops('cabelo', S.HAIRSTYLES_32, ['Curto', 'Raspado', 'Longo', 'Rabo', 'Coque', 'Black', 'Careca', 'Franja', '✨ Moicano', '✨ Tranças', '✨ Cacheado', '✨ Topete'])}</div>
       ${L.cabelo !== 'careca' || L.barba ? `<div class="ed-grupo"><b>Cor do cabelo</b>${cores('cor_cabelo', S.HAIR16)}</div>` : ''}
       <div class="ed-grupo"><b>Rosto</b><div class="opcoes">
         <button class="op op-txt ${L.oculos ? 'ativo' : ''}" data-campo="oculos" data-v="${!L.oculos}">👓 Óculos</button>
         <button class="op op-txt ${L.barba ? 'ativo' : ''}" data-campo="barba" data-v="${!L.barba}">🧔 Barba</button></div></div>
-      <div class="ed-grupo"><b>Chapéu</b>${ops('chapeu', S.CHAPEUS, ['Nenhum', 'Boné', 'Palha', 'Gorro'])}</div>
-      ${L.chapeu === 'bone' || L.chapeu === 'gorro' ? `<div class="ed-grupo"><b>Cor do chapéu</b>${cores('cor_chapeu', S.SHIRT16)}</div>` : ''}
-      <div class="ed-grupo"><b>Roupa de cima</b>${ops('estampa', S.ESTAMPAS, ['Lisa', 'Listrada', 'Regata', 'Duas cores'])}</div>
+      <div class="ed-grupo"><b>Chapéu</b>${ops('chapeu', S.CHAPEUS_32, ['Nenhum', 'Boné', 'Palha', 'Gorro', '✨ Boina', '✨ Coroa', '✨ Bandana'])}</div>
+      ${['bone', 'gorro', 'boina', 'bandana'].includes(L.chapeu) ? `<div class="ed-grupo"><b>Cor do chapéu</b>${cores('cor_chapeu', S.SHIRT16)}</div>` : ''}
+      <div class="ed-grupo"><b>Roupa de cima</b>${ops('estampa', S.ESTAMPAS_32, ['Lisa', 'Listrada', 'Regata', 'Duas cores', '✨ Xadrez', '✨ Time'])}</div>
       <div class="ed-grupo"><b>Cor ${L.baixo === 'vestido' ? 'da roupa / vestido' : 'da camisa'}</b>${cores('camisa', S.SHIRT16)}</div>
-      ${L.estampa === 'listrada' || L.estampa === 'duas_cores' ? `<div class="ed-grupo"><b>Segunda cor</b>${cores('camisa2', S.SHIRT16)}</div>` : ''}
+      ${['listrada', 'duas_cores', 'xadrez', 'time'].includes(L.estampa) ? `<div class="ed-grupo"><b>${L.estampa === 'time' ? 'Cor do time' : 'Segunda cor'}</b>${cores('camisa2', S.SHIRT16)}</div>` : ''}
       <div class="ed-grupo"><b>Roupa de baixo</b>${ops('baixo', S.BAIXOS, ['Calça', 'Bermuda', 'Saia', 'Vestido'])}</div>
       ${L.baixo !== 'vestido' ? `<div class="ed-grupo"><b>Cor da ${L.baixo === 'calca' ? 'calça' : L.baixo}</b>${cores('cor_baixo', S.PANTS16)}</div>` : ''}
       <div class="ed-grupo"><b>Sapato</b>${cores('sapato', S.SHOES16)}</div>
+      <div class="ed-grupo"><b>✨ Acessório</b>${ops('acessorio', S.ACESSORIOS, ['Nenhum', 'Mochila', 'Cachecol', 'Colar', 'Fone', 'Óculos escuros'])}</div>
+      ${L.acessorio && L.acessorio !== 'oculos_sol' ? `<div class="ed-grupo"><b>Cor do acessório</b>${cores('cor_acessorio', S.SHIRT16)}</div>` : ''}
+      <p class="mini">✨ = novidade do 32 bits: aparece na visão isométrica (a visão de cima é mais simples).</p>
       <div class="editor-rodape" id="edRodape">
         ${modo === 'editar'
           ? `<button class="btn btn-flex" id="btnDescartar" ${sujoAgora ? '' : 'disabled'}>Descartar</button>
@@ -1410,10 +1481,10 @@ const TELAS = {
     });
     c.querySelector('#btnSortear').onclick = () => {
       const r = Math.random, S2 = Sprites, pick = a => a[Math.floor(r() * a.length)];
-      const cab = pick(S2.HAIRSTYLES);
-      mudar({ pele: Math.floor(r() * 6), cabelo: cab, cor_cabelo: Math.floor(r() * 8), camisa: Math.floor(r() * 12), estampa: pick(S2.ESTAMPAS),
+      const cab = pick(S2.HAIRSTYLES_32);
+      mudar({ pele: Math.floor(r() * 6), cabelo: cab, cor_cabelo: Math.floor(r() * 8), camisa: Math.floor(r() * 12), estampa: pick(S2.ESTAMPAS_32),
               camisa2: Math.floor(r() * 12), baixo: pick(S2.BAIXOS), cor_baixo: Math.floor(r() * 6), sapato: Math.floor(r() * 4),
-              oculos: r() < 0.25, chapeu: r() < 0.3 ? pick(['bone', 'palha', 'gorro']) : null, cor_chapeu: Math.floor(r() * 12),
+              oculos: r() < 0.25, chapeu: r() < 0.35 ? pick(S2.CHAPEUS_32.filter(Boolean)) : null, acessorio: r() < 0.4 ? pick(S2.ACESSORIOS.filter(Boolean)) : null, cor_acessorio: Math.floor(r() * 12), cor_chapeu: Math.floor(r() * 12),
               barba: r() < 0.2 && !['longo', 'coque', 'rabo'].includes(cab) });
     };
     c.querySelector('#btnOriginal').onclick = () => mudar(MORADORES[id - 1].aparencia);
@@ -1455,6 +1526,48 @@ const TELAS = {
   },
 
   // ------------------------------------------------ regras da vila
+  prefeitura() {
+    const E = ELEICAO;
+    titulo('Prefeitura' + (VILA.nome_vila ? ' de ' + VILA.nome_vila : ''));
+    if (!E) { corpo('<p class="vazio">A eleição ainda não foi aberta no banco. Volta daqui a pouco!</p>'); return; }
+    const fase = { candidaturas: '📝 Candidaturas abertas — a votação começa em breve.', votacao: '🗳️ Votação aberta! Cada morador com nome tem 1 voto (dá pra trocar).', encerrada: '🏛️ Eleição encerrada.' }[E.fase];
+    const souCand = EU && E.candidatos.some(c => c.m === EU.morador);
+    const meuSlogan = souCand ? E.candidatos.find(c => c.m === EU.morador).slogan : '';
+    const c = corpo(`
+      ${E.prefeito ? `<div class="prefeito-box">👑 <b>${esc(E.prefeito_nome)}</b> é o(a) prefeito(a)${VILA.nome_vila ? ' de ' + esc(VILA.nome_vila) : ''}!</div>` : ''}
+      <p class="mini" style="margin-top:0">${fase}</p>
+      ${EU && E.fase === 'candidaturas' ? `<div class="secao"><h3>${souCand ? 'Sua candidatura' : 'Quer ser prefeito(a)?'}</h3>
+        <label class="campo"><span>Seu slogan de campanha</span><input id="slogan" maxlength="80" value="${esc(meuSlogan)}" placeholder="Ex.: Campo de futebol pra todo mundo!"><small>De 3 a 80 letras. Passa pelo filtro de palavras.</small></label>
+        <div class="botoes"><button class="btn btn-p btn-flex" id="btnCandidatar">${souCand ? '💾 Salvar slogan' : '🗳️ Me candidatar'}</button>${souCand ? '<button class="btn btn-flex" id="btnRetirar">Retirar</button>' : ''}</div></div>`
+        : !EU ? '<div class="dica">🔒 <a href="#" id="lnkEntrarEleicao">Entre</a> pra se candidatar ou votar.</div>' : ''}
+      <div class="secao"><h3>Candidatos <small>${E.candidatos.length}</small></h3>
+        ${E.candidatos.length ? `<ul class="lista">${E.candidatos.map(cd => `<li class="cand"><button data-id="${cd.m}"><canvas width="12" height="15" data-look="${cd.m}"></canvas>
+          <span class="l-txt"><span class="l-nome">${esc(cd.nome)}${cd.m === E.prefeito ? ' 👑' : ''}</span><span class="l-sub">“${esc(cd.slogan)}”</span></span>
+          ${cd.votos != null ? `<span class="l-dir">${cd.votos} ${cd.votos === 1 ? 'voto' : 'votos'}</span>` : ''}</button>
+          ${EU && E.fase === 'votacao' ? `<button class="btn ${MEU_VOTO === cd.m ? 'btn-v' : ''} btn-votar" data-votar="${cd.m}">${MEU_VOTO === cd.m ? '✓ Seu voto' : 'Votar'}</button>` : ''}</li>`).join('')}</ul>`
+          : '<p class="vazio">Ninguém se candidatou ainda. Seja o primeiro!</p>'}
+      </div>`);
+    ligarLista(c, irPara);
+    const l = c.querySelector('#lnkEntrarEleicao'); if (l) l.onclick = e => { e.preventDefault(); mostrar('entrar'); };
+    const bc = c.querySelector('#btnCandidatar');
+    if (bc) bc.onclick = async () => {
+      bc.disabled = true; const r = await Api.rpc('candidatar', { p_token: token(), p_slogan: c.querySelector('#slogan').value });
+      bc.disabled = false; if (!r || !r.ok) return toast((r && r.erro) || 'Não deu certo');
+      toast(souCand ? '💾 Slogan salvo!' : '🗳️ Você é candidato(a)! Boa campanha.'); await carregarEleicao(); TELAS.prefeitura();
+    };
+    const br_ = c.querySelector('#btnRetirar');
+    if (br_) br_.onclick = async () => {
+      if (!confirm('Retirar sua candidatura?')) return;
+      const r = await Api.rpc('retirar_candidatura', { p_token: token() }); if (!r || !r.ok) return toast((r && r.erro) || 'Não deu certo');
+      toast('Candidatura retirada.'); await carregarEleicao(); TELAS.prefeitura();
+    };
+    c.querySelectorAll('[data-votar]').forEach(b => b.onclick = async () => {
+      const m = Number(b.dataset.votar); b.disabled = true;
+      const r = await Api.rpc('votar', { p_token: token(), p_candidato: m }); if (!r || !r.ok) { b.disabled = false; return toast((r && r.erro) || 'Não deu certo'); }
+      MEU_VOTO = m; toast(`🗳️ Voto em ${rotulo(m)} registrado!`); await carregarEleicao(); TELAS.prefeitura();
+    });
+  },
+
   regras() {
     titulo('Como a vila cresce');
     const seg = VILA.seguidores, pc = VILA.proxima_casa;
@@ -1506,6 +1619,7 @@ const TELAS = {
         <button class="btn btn-a btn-larga" id="euEditar">🎨 Personalizar visual e nome</button>
         <button class="btn btn-flex" id="euAmigos">❤ Meus amigos</button>
         <button class="btn btn-flex" id="euCasa">🏠 Minha casa</button>
+        <button class="btn btn-flex" id="euEleicao">🗳️ Eleição</button>
         <button class="btn btn-flex" id="euSair">Sair</button>
       </div>`);
     ligarLista(c, irPara);
@@ -1515,6 +1629,7 @@ const TELAS = {
     c.querySelector('#euEditar').onclick = () => mostrar('editor', { modo: 'editar' });
     c.querySelector('#euAmigos').onclick = () => mostrar('moradores', { aba: 'amigos' });
     c.querySelector('#euCasa').onclick = () => mostrar('casa', { n: MORADORES[id - 1].casa });
+    c.querySelector('#euEleicao').onclick = () => mostrar('prefeitura');
     c.querySelector('#euSair').onclick = async () => { await Api.rpc('sair', { p_token: token() }); sairConta(); fecharPainel(); toast('Você saiu.'); };
   },
 };
@@ -1707,6 +1822,16 @@ async function atualizarContador() {
     const n = AO_VIVO - antes; toast(`🎉 +${n} ${n === 1 ? 'novo seguidor' : 'novos seguidores'}! A vila tá crescendo`);
   }
 }
+async function carregarIso32() {
+  if (!VILA.iso32 || !VILA.iso32.imagem || !window.Char32) return;
+  try {
+    const img = await carregarImg(VILA.iso32.imagem);
+    const centro = desproj(cam.x, cam.y), z0 = ZK();
+    IMG.iso32 = img;
+    const p = proj(centro.x, centro.y); cam.x = p.x; cam.y = p.y; cam.s *= z0 / ZK();
+    cam.s = clamp(cam.s, minS(), 6); limitarCam(); atualizarBotaoVista();
+  } catch (e) { console.warn('sem a imagem 32 bits', e); }
+}
 const carregarImg = src => new Promise((ok, erro) => { const i = new Image(); i.onload = () => ok(i); i.onerror = erro; i.src = src; });
 async function carregarPublicos() {
   try {
@@ -1744,8 +1869,10 @@ async function iniciar() {
   $('#carregando').classList.add('some');
   setTimeout(() => { $('#carregando').hidden = true; }, 450);
   requestAnimationFrame(loop);
-  iniciarTempoReal();
-  setInterval(async () => { await carregarPublicos(); atualizarHud(); if (EU) await carregarMeusAmigos(); }, 90000);
+  try { iniciarTempoReal(); } catch (e) { console.warn('tempo real', e); }
+  carregarIso32();
+  carregarEleicao().catch(e => console.warn('eleição', e));
+  setInterval(async () => { await carregarPublicos(); await carregarEleicao(); atualizarHud(); if (EU) await carregarMeusAmigos(); }, 90000);
   // gancho de teste (só no servidor local com ?debug)
   if (Api.modo === 'local' && new URLSearchParams(location.search).has('debug')) window.__vila = { ctrl, entrarInterior, iniciarControle, chatReceber, get EU() { return EU; }, get INTERIOR() { return INTERIOR; } };
   if (Api.modo === 'local') console.info('Vila em modo LOCAL (servidor_local.js). Configure site/config.js pra usar o Supabase.');

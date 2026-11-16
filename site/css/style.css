@@ -228,7 +228,7 @@ p { line-height: 1.45; }
 .cor.ativo { outline: 3px solid var(--vermelho); outline-offset: 2px; }
 .opcoes { display: flex; flex-wrap: wrap; gap: 6px; }
 .op { border: 2px solid var(--tinta); background: #fff; border-radius: 10px; padding: 4px 8px 6px; font-size: 12px; font-weight: 800; display: flex; flex-direction: column; align-items: center; gap: 2px; min-width: 58px; }
-.op canvas { width: 36px; height: 54px; image-rendering: pixelated; }
+.op canvas { width: 32px; height: 48px; image-rendering: pixelated; }
 .op.ativo { background: var(--amarelo); }
 .op-txt { padding: 8px 12px; min-width: 0; }
 .editor-rodape { position: sticky; bottom: -18px; background: var(--papel); padding: 10px 0 18px; margin-top: 14px; border-top: 2px solid var(--papel-3); display: flex; gap: 8px; flex-wrap: wrap; }
@@ -330,6 +330,16 @@ body.interior #zoom, body.interior .hud-numeros, body.interior #hudMarco { displ
 body.interior:not(.jogando) #btnJogar { display: none; }
 body.interior #hud { background: none; }
 @media (min-width: 900px) { #interiorTopo { top: 76px; } body.interior #painel { display: none; } }
+
+/* ---------------- eleição ---------------- */
+.chip-eleicao { cursor: pointer; border-color: rgba(246,200,54,.6); color: #fff8e7; }
+.chip-eleicao b { color: var(--amarelo); }
+.etq-cand { background: #fff1b8; border-color: #e3c45a; }
+.slogan { margin: 10px 0 0; font-weight: 800; font-size: 14.5px; color: var(--vermelho-esc); }
+.prefeito-box { background: var(--amarelo); border: 2px solid var(--tinta); border-radius: 12px; padding: 10px 12px; font-size: 15px; box-shadow: 0 3px 0 var(--tinta); margin-bottom: 10px; }
+.lista li.cand { display: flex; align-items: center; gap: 6px; }
+.lista li.cand > button[data-id] { flex: 1; min-width: 0; }
+.btn-votar { min-height: 38px; padding: 6px 12px; font-size: 13.5px; flex: none; }
 
 /* ---------------- bio ---------------- */
 .bio { margin: 12px 0 0; font-size: 15px; font-style: italic; color: var(--texto); background: var(--papel-2); border-left: 4px solid var(--amarelo); border-radius: 0 10px 10px 0; padding: 8px 12px; }

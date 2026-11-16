@@ -11,7 +11,7 @@ from PIL import Image
 from world import W, H, ROADA, ROADB, ROADC, MAINX0, MAINX1
 from world16 import npc_sprite, npc_look, S
 import vila16 as V
-from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, ROADE, ROADF, MERCADO2, POSTO, CAMPO, MH6, lot, C1, EP
+from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, ROADE, ROADF, MERCADO2, POSTO, CAMPO, MH6, lot, C1, EP, NOME_CIDADE, PLACA_X0, PLACA_X1, PLACA_Y
 
 out = sys.argv[1] if len(sys.argv) > 1 else '../site'
 os.makedirs(f'{out}/img', exist_ok=True); os.makedirs(f'{out}/dados', exist_ok=True)
@@ -31,6 +31,11 @@ def mapa(lit):
     for fx in range(cx0+2, cx1+1, 4): dd.point((fx, cy0+4), fill=(250, 250, 250)); dd.point((fx, cy0+96), fill=(250, 250, 250))
     for fy in range(cy0+4, cy0+97, 4): dd.point((cx0+2, fy), fill=(250, 250, 250)); dd.point((cx1, fy), fill=(250, 250, 250))
     draw_text(dd, "700", (cx0+cx1)//2, cy0+44, 2, (255, 214, 70, 255))
+    # pórtico PINDAMONHANGABA sobre a rua principal (ep. 7)
+    px0, py0 = V.L2(110, PLACA_Y-4); px1 = px0+92
+    for xx in (V.L2(PLACA_X0, 0)[0], V.L2(PLACA_X1, 0)[0]): dd.rectangle([xx-2, py0-2, xx+1, py0+14], fill=(110, 72, 40))
+    dd.rectangle([px0, py0, px1, py0+11], fill=(40, 26, 16)); dd.rectangle([px0+1, py0+1, px1-1, py0+10], fill=(176, 122, 70))
+    draw_text(dd, NOME_CIDADE, (px0+px1)//2+1, py0+2, 1, (255, 236, 140, 255), outline=None)
     x, y = V.L2(*lot(*POSTO[0])); objs.append((y, posto16(lit), x))                     # posto de saúde (600)
     x, y = V.L2(*lot(*MERCADO2)); objs.append((y, V.MERC(lit), x))                      # 2º mercadinho (600)
     for i, l in enumerate(house_lots):                       # lotes livres (estacas)
@@ -81,6 +86,7 @@ pontos = {
     'praca': {'centro': P(132, 245), 'bancos': [P(111, 265), P(151, 265), P(111, 221)], 'area': [P(104, 216), P(160, 274)]},
     'igreja': {'porta': P(130, 105)},
     'entrada': {'placa': P(149, 446), 'rua': P(131.5, 470)},
+    'portal': {'centro': P((PLACA_X0+PLACA_X1)/2, PLACA_Y), 'de': P(PLACA_X0, PLACA_Y), 'ate': P(PLACA_X1, PLACA_Y), 'texto': NOME_CIDADE},
     'escola': {'porta': P(lot(*ESCOLA[0])[0]+21, ROADC+3), 'rua': P(lot(*ESCOLA[0])[0]+21, ROADC+6), 'lotes': [P(*lot(*l)) for l in ESCOLA]},
     'prefeitura': {'porta': P(lot(*PREFEITURA[0])[0]+21, ROADD+3), 'rua': P(lot(*PREFEITURA[0])[0]+21, ROADD+6), 'lotes': [P(*lot(*l)) for l in PREFEITURA]},
     'mercadinho2': {'porta': P(lot(*MERCADO2)[0]+9.5, ROADE+3), 'rua': P(lot(*MERCADO2)[0]+9.5, ROADE+6), 'lote': P(*lot(*MERCADO2))},
@@ -105,7 +111,7 @@ for i, l in enumerate(house_lots[:NH]):
 lotes_livres = [{'casa': NH+k+1, 'lote': P(*lot(*l)), 'rua': RUAS[l[1]], 'comeca_em': 10*(NH+k)+5, 'pronta_em': 10*(NH+k+1)}
                 for k, l in enumerate(house_lots[NH:])]
 vila = {'episodio': EP, 'seguidores': N, 'casas': NH, 'estilo': '16 bits', 'mapa': {'largura': W*S, 'altura': MH6*S, 'escala_logica': S},
-        'proximo_marco': {'seguidores': 700, 'construcao': 'campo de futebol'}, 'nome_vila': None,
+        'proximo_marco': {'seguidores': 700, 'construcao': 'campo de futebol'}, 'nome_vila': 'Pindamonhangaba',
         'pontos': pontos, 'ruas': ruas, 'lista_casas': casas, 'lotes_livres': lotes_livres,
         'atlas': {'arquivo': 'img/moradores.png', 'por_linha': cols, 'celula': [CW, CH], 'quadro': [12, 18],
                   'direcoes': DIRS, 'quadros_por_direcao': 4, 'ancora_pes': [6, 14]}}
@@ -155,7 +161,7 @@ moradores = []
 for k in range(N):
     mid = k+1
     ag, dom = agenda(mid)
-    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6,
+    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6 if mid <= 617 else 7,
                       'aparencia': npc_look(mid), 'atlas': {'col': k % cols, 'lin': k//cols},
                       'velocidade': round(random.Random(mid).uniform(0.85, 1.15), 2), 'agenda': ag, 'domingo': dom})
 json.dump(moradores, open(f'{out}/dados/moradores.json', 'w'), ensure_ascii=False)
@@ -171,13 +177,26 @@ print('ok', N, 'moradores', NH, 'casas')
 # ---------- isométrico (ep. 6): imagem da cidade + fórmula pra posicionar moradores ----------
 import iso
 from scene import DUR
+iso.K = 1
 img_iso, (iox, ioy) = iso.imagem_completa(DUR)
 img_iso.save(f'{out}/img/vila_iso.png')
+iso.K = 2                                                     # ep. 7: versão 32 bits
+img32, (o32x, o32y) = iso.imagem_completa(DUR)
+img32.save(f'{out}/img/vila_iso_32.webp', 'WEBP', quality=92, method=6)   # 17 MB em PNG -> ~4 MB (site)
+iso.K = 1
 v = json.load(open(f'{out}/dados/vila.json'))
 v['estilo'] = 'isométrico (ep. 6) — vila_dia.png continua valendo como mapa de cima'
 v['iso'] = {'imagem': 'img/vila_iso.png', 'largura': img_iso.width, 'altura': img_iso.height,
             'origem': [iox, ioy],
             'formula': 'com (x, y) LÓGICOS (os do vila.json divididos por escala_logica): tela_x = origem[0] + (x - y) * 2 ; tela_y = origem[1] + (x + y). O pé do boneco fica nesse ponto; desenhe primeiro quem tem (x + y) menor.',
             'obs': 'imagem em pixel art: escale por inteiro (2x, 3x) com image-rendering: pixelated'}
+v['iso32'] = {'imagem': 'img/vila_iso_32.webp', 'largura': img32.width, 'altura': img32.height, 'origem': [o32x, o32y], 'escala': 2,
+              'formula': 'igual ao iso, com tudo vezes 2: tela_x = origem[0] + (x - y) * 4 ; tela_y = origem[1] + (x + y) * 2',
+              'obs': 'visual 32 bits (ep. 7). O bloco "iso" (16 bits) continua igual pro site atual.'}
+v['nome_vila'] = 'Pindamonhangaba'
 json.dump(v, open(f'{out}/dados/vila.json', 'w'), ensure_ascii=False)
-print('iso', img_iso.size, (iox, ioy))
+print('iso', img_iso.size, (iox, ioy), 'iso32', img32.size, (o32x, o32y))
+
+# formas dos moradores 32 bits pro site (o site desenha igual ao char32.py)
+import subprocess
+subprocess.run([sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), 'gerar_formas32.py'), f'{out}/js/formas32.js'], check=True)
