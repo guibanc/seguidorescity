@@ -66,6 +66,28 @@
   "bio": null
  },
  {
+  "id": 4,
+  "casa": 1,
+  "chegou_no_ep": 1,
+  "nome": "João Pedro",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 5,
+   "estampa": "listrada",
+   "cor_baixo": 3,
+   "cor_cabelo": 7,
+   "cor_chapeu": 5
+  },
+  "bio": "Tem fome. E Gosta de comer tudo!"
+ },
+ {
   "id": 6,
   "casa": 1,
   "chegou_no_ep": 1,
@@ -132,6 +154,50 @@
   "bio": null
  },
  {
+  "id": 13,
+  "casa": 2,
+  "chegou_no_ep": 1,
+  "nome": "JoãoCurado",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 6,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 0,
+   "cor_chapeu": 1
+  },
+  "bio": null
+ },
+ {
+  "id": 18,
+  "casa": 2,
+  "chegou_no_ep": 1,
+  "nome": "Thales",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 3,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 10,
+   "estampa": "duas_cores",
+   "cor_baixo": 0,
+   "cor_cabelo": 7,
+   "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
   "id": 23,
   "casa": 3,
   "chegou_no_ep": 1,
@@ -184,7 +250,7 @@
    "pele": 1,
    "baixo": "calca",
    "barba": false,
-   "cabelo": "rabo",
+   "cabelo": "curto",
    "camisa": 1,
    "chapeu": null,
    "oculos": false,
@@ -195,7 +261,7 @@
    "cor_cabelo": 3,
    "cor_chapeu": 10
   },
-  "bio": null
+  "bio": "Quem é campeão também pode ser prefeito, vote blue para uma cidade melhor"
  },
  {
   "id": 34,
@@ -242,6 +308,28 @@
   "bio": null
  },
  {
+  "id": 47,
+  "casa": 5,
+  "chegou_no_ep": 1,
+  "nome": "Briel",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "coque",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 2,
+   "estampa": "listrada",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 6
+  },
+  "bio": null
+ },
+ {
   "id": 67,
   "casa": 7,
   "chegou_no_ep": 1,
@@ -252,7 +340,7 @@
    "barba": false,
    "cabelo": "curto",
    "camisa": 4,
-   "chapeu": "bone",
+   "chapeu": null,
    "oculos": false,
    "sapato": 0,
    "camisa2": 9,
@@ -262,6 +350,28 @@
    "cor_chapeu": 4
   },
   "bio": "O que posso dizer além de six seven (67)? Objetivo: ser o maior farmador de aura da vila"
+ },
+ {
+  "id": 75,
+  "casa": 8,
+  "chegou_no_ep": 1,
+  "nome": "GLEYDSON",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 9,
+   "estampa": "duas_cores",
+   "cor_baixo": 4,
+   "cor_cabelo": 0,
+   "cor_chapeu": 2
+  },
+  "bio": null
  },
  {
   "id": 83,
@@ -382,14 +492,14 @@
    "pele": 1,
    "baixo": "calca",
    "barba": false,
-   "cabelo": "franja",
-   "camisa": 9,
-   "chapeu": "bone",
+   "cabelo": "curto",
+   "camisa": 0,
+   "chapeu": null,
    "oculos": false,
    "sapato": 0,
-   "camisa2": 0,
+   "camisa2": 9,
    "estampa": "listrada",
-   "cor_baixo": 2,
+   "cor_baixo": 0,
    "cor_cabelo": 3,
    "cor_chapeu": 1
   },
@@ -401,18 +511,40 @@
   "chegou_no_ep": 1,
   "nome": "Victor",
   "aparencia": {
-   "pele": 2,
+   "pele": 1,
    "baixo": "bermuda",
    "barba": false,
    "cabelo": "curto",
-   "camisa": 9,
+   "camisa": 4,
    "chapeu": null,
    "oculos": false,
-   "sapato": 0,
+   "sapato": 1,
    "camisa2": 0,
-   "estampa": "listrada",
+   "estampa": "lisa",
+   "cor_baixo": 0,
+   "cor_cabelo": 7,
+   "cor_chapeu": 5
+  },
+  "bio": null
+ },
+ {
+  "id": 189,
+  "casa": 19,
+  "chegou_no_ep": 1,
+  "nome": "cabeludo👽",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 1,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 6,
+   "estampa": "lisa",
    "cor_baixo": 2,
-   "cor_cabelo": 5,
+   "cor_cabelo": 2,
    "cor_chapeu": 5
   },
   "bio": null
@@ -438,6 +570,28 @@
    "cor_chapeu": 1
   },
   "bio": "Jesus Saves - Fundador da Vila"
+ },
+ {
+  "id": 210,
+  "casa": 21,
+  "chegou_no_ep": 1,
+  "nome": "Batudinho",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 3,
+   "chapeu": null,
+   "oculos": true,
+   "sapato": 3,
+   "camisa2": 0,
+   "estampa": "regata",
+   "cor_baixo": 1,
+   "cor_cabelo": 2,
+   "cor_chapeu": 4
+  },
+  "bio": null
  },
  {
   "id": 212,
@@ -572,6 +726,28 @@
   "bio": "Lugar favorito da vila: casa"
  },
  {
+  "id": 257,
+  "casa": 26,
+  "chegou_no_ep": 1,
+  "nome": "Albert aisten",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 7,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "listrada",
+   "cor_baixo": 1,
+   "cor_cabelo": 3,
+   "cor_chapeu": 0
+  },
+  "bio": null
+ },
+ {
   "id": 258,
   "casa": 26,
   "chegou_no_ep": 1,
@@ -591,7 +767,7 @@
    "cor_cabelo": 0,
    "cor_chapeu": 7
   },
-  "bio": null
+  "bio": "Oi eu sou um player real e sera que algum dia o adm me nota?"
  },
  {
   "id": 272,
@@ -636,6 +812,28 @@
    "cor_chapeu": 6
   },
   "bio": "melhor jogador de bola na cidade pena que não tem campo"
+ },
+ {
+  "id": 284,
+  "casa": 29,
+  "chegou_no_ep": 2,
+  "nome": "Darrylzin",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": true,
+   "cabelo": "afro",
+   "camisa": 10,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 9,
+   "estampa": "listrada",
+   "cor_baixo": 1,
+   "cor_cabelo": 5,
+   "cor_chapeu": 8
+  },
+  "bio": null
  },
  {
   "id": 290,
@@ -686,7 +884,21 @@
   "casa": 33,
   "chegou_no_ep": 3,
   "nome": "Rafael",
-  "aparencia": null,
+  "aparencia": {
+   "pele": 4,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 10,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 11,
+   "estampa": "regata",
+   "cor_baixo": 2,
+   "cor_cabelo": 7,
+   "cor_chapeu": 11
+  },
   "bio": null
  },
  {
@@ -698,7 +910,7 @@
    "pele": 1,
    "baixo": "calca",
    "barba": false,
-   "cabelo": "curto",
+   "cabelo": "franja",
    "camisa": 3,
    "chapeu": "palha",
    "oculos": false,
@@ -756,6 +968,28 @@
   "bio": null
  },
  {
+  "id": 364,
+  "casa": 37,
+  "chegou_no_ep": 3,
+  "nome": "Antini",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "duas_cores",
+   "cor_baixo": 4,
+   "cor_cabelo": 2,
+   "cor_chapeu": 3
+  },
+  "bio": null
+ },
+ {
   "id": 412,
   "casa": 42,
   "chegou_no_ep": 4,
@@ -797,7 +1031,7 @@
    "cor_cabelo": 7,
    "cor_chapeu": 10
   },
-  "bio": null
+  "bio": "Melho goleiro da cidade 👍👍👍"
  },
  {
   "id": 442,
@@ -822,6 +1056,72 @@
   "bio": null
  },
  {
+  "id": 456,
+  "casa": 46,
+  "chegou_no_ep": 4,
+  "nome": "Artur",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 6,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 3,
+   "cor_chapeu": 0
+  },
+  "bio": null
+ },
+ {
+  "id": 473,
+  "casa": 48,
+  "chegou_no_ep": 5,
+  "nome": "DEUS",
+  "aparencia": {
+   "pele": 4,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 10,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 10,
+   "estampa": "regata",
+   "cor_baixo": 3,
+   "cor_cabelo": 7,
+   "cor_chapeu": 5
+  },
+  "bio": "DEUS melhor do Fut"
+ },
+ {
+  "id": 576,
+  "casa": 58,
+  "chegou_no_ep": 5,
+  "nome": "BachiraPro",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 1,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 9,
+   "estampa": "listrada",
+   "cor_baixo": 2,
+   "cor_cabelo": 7,
+   "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
   "id": 577,
   "casa": 58,
   "chegou_no_ep": 5,
@@ -842,5 +1142,27 @@
    "cor_chapeu": 7
   },
   "bio": null
+ },
+ {
+  "id": 614,
+  "casa": 62,
+  "chegou_no_ep": 6,
+  "nome": "Enzo Mildana",
+  "aparencia": {
+   "pele": 5,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 2,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 7,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 0,
+   "cor_chapeu": 1
+  },
+  "bio": "Outras coisas é ser Mildana"
  }
 ]

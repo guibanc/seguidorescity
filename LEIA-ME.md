@@ -2,7 +2,7 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
-**Episódio 6: leia primeiro o `RELATORIO_PARA_EP6.md`** (617 seguidores, marco 600, MAPA LOTADO — crescer só pra baixo ou pra direita, 39 moradores com nome, cristiano Ronaldo em destaque).
+**Episódio 7: leia primeiro o `RELATORIO_PARA_EP7.md`** (647 seguidores, casas 62–64, campo de futebol em 700, 53 moradores com nome, chat ao vivo no site, C4rmin em destaque).
 
 **Ep. 6 pronto** (617 seguidores): casas 58–61, marco 600 (2º mercadinho + posto de saúde), o MAPA CRESCEU pra baixo (480 → 680, ruas E e F) e a cidade virou ISOMÉTRICA (`codigo/iso.py`). Campo de futebol reservado (700). Próxima: casa 62 (615→620) na rua E. Dá até 900 inscritos sem crescer o mapa de novo.
 
