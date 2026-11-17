@@ -331,6 +331,13 @@ body.interior:not(.jogando) #btnJogar { display: none; }
 body.interior #hud { background: none; }
 @media (min-width: 900px) { #interiorTopo { top: 76px; } body.interior #painel { display: none; } }
 
+/* ---------------- celular: topo mais limpo ----------------
+   "com nome", "casas", "livres" e a barra do marco somem do topo;
+   o marco aparece numa placa em cima do terreno reservado no mapa. */
+@media (max-width: 899px) {
+  #hud .chip-casas, #hud .chip-reg, #hud .chip-livre, #hud #hudMarco { display: none !important; }
+}
+
 /* ---------------- eleição ---------------- */
 .chip-eleicao { cursor: pointer; border-color: rgba(246,200,54,.6); color: #fff8e7; }
 .chip-eleicao b { color: var(--amarelo); }

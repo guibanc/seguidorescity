@@ -22,6 +22,7 @@ let preview = null;              // {id, look} visual em edição (ainda não sa
 let escolhendo = false;          // modo "toque num morador no mapa"
 let estados = [], desenhados = [];
 let AO_VIVO = null;
+let PLACA_MARCO = null, PLACA_RECT = null;   // placa do próximo marco, em cima do terreno reservado
 let CASAS = [];                 // casas prontas + casas em obra que já têm moradores
 let TEM_BIO = false;            // banco já tem bio + recusar pedido (5_bio_e_pedidos.sql)              // seguidores agora (tabela "contador" no Supabase)
 
@@ -431,9 +432,37 @@ function desenhar(agoraReal) {
     ctx.fillStyle = '#d63838'; ctx.fill(); ctx.strokeStyle = '#1e1824'; ctx.lineWidth = 2; ctx.stroke();
     ctx.fillStyle = '#fff'; ctx.fillText(txt, p.x, y);
   }
+  desenharPlacaMarco(agoraReal);
   if (EU) { const eu = estados[EU.morador - 1]; if (eu && eu.vis && desenhados.includes(eu)) desenharVidaNoBoneco(eu); }
   if (Math.abs(nf - ultimoNoite) > 0.01 || !$('#hudHora').textContent.startsWith(fmt(t.min))) atualizarRelogio(t, nf);
   ultimoNoite = nf;
+}
+function desenharPlacaMarco(agoraReal) {
+  PLACA_RECT = null;
+  if (!PLACA_MARCO) return;
+  const L = PLACA_MARCO.lotes, cx = L.reduce((a, l) => a + l[0] + 21, 0) / L.length, cy = L.reduce((a, l) => a + l[1] + 25, 0) / L.length;
+  const p = mundoPraTela(cx, cy);
+  if (p.x < -200 || p.x > W + 200 || p.y < -80 || p.y > H + 80) return;
+  ctx.font = '700 14px "Pixelify Sans", Nunito, sans-serif';
+  const t1 = PLACA_MARCO.ico + ' ' + PLACA_MARCO.linha1, w1 = ctx.measureText(t1).width;
+  ctx.font = '700 12px Nunito, system-ui, sans-serif';
+  const w2 = ctx.measureText(PLACA_MARCO.linha2).width;
+  const w = Math.max(w1, w2, 120) + 24, h = 54, x = Math.round(p.x - w / 2), y = Math.round(p.y - h - 14 - Math.abs(Math.sin(agoraReal / 500)) * 2);
+  // poste + placa de madeira
+  ctx.fillStyle = '#1e1824'; ctx.fillRect(Math.round(p.x) - 3, y + h, 6, 16);
+  ctx.fillStyle = '#8a5a2b'; ctx.fillRect(Math.round(p.x) - 2, y + h, 4, 15);
+  ctx.fillStyle = '#1e1824'; pilula(x - 2, y - 2, w + 4, h + 4, 9); ctx.fill();
+  ctx.fillStyle = '#c99556'; pilula(x, y, w, h, 8); ctx.fill();
+  ctx.fillStyle = '#d9aa6c'; pilula(x + 3, y + 3, w - 6, h - 6, 6); ctx.fill();
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillStyle = '#2a1a10'; ctx.font = '700 14px "Pixelify Sans", Nunito, sans-serif'; ctx.fillText(t1, p.x, y + 15);
+  ctx.font = '700 12px Nunito, system-ui, sans-serif'; ctx.fillText(PLACA_MARCO.linha2, p.x, y + 31);
+  // barrinha de progresso
+  const bx = x + 12, bw = w - 24, by = y + 41;
+  ctx.fillStyle = '#1e1824'; ctx.fillRect(bx - 1, by - 1, bw + 2, 7);
+  ctx.fillStyle = '#5a3a1e'; ctx.fillRect(bx, by, bw, 5);
+  ctx.fillStyle = '#f6c836'; ctx.fillRect(bx, by, Math.round(bw * PLACA_MARCO.pct), 5);
+  PLACA_RECT = { x: x - 4, y: y - 4, w: w + 8, h: h + 24 };
 }
 function pilula(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 function coracao(p, r) {
@@ -501,6 +530,7 @@ cv.addEventListener('wheel', e => { e.preventDefault(); zoomEm(e.clientX, e.clie
 
 function tocar(sx, sy) {
   if (INTERIOR) return tocarInterior(sx, sy);
+  if (PLACA_RECT && sx >= PLACA_RECT.x && sx <= PLACA_RECT.x + PLACA_RECT.w && sy >= PLACA_RECT.y && sy <= PLACA_RECT.y + PLACA_RECT.h) return mostrar('regras', {}, false);
   const m = telaPraMapa(sx, sy), kk = B32() ? 2.5 : 1, tol = Math.max(7 * kk, 16 / cam.s);
   let melhor = null, md = 1e9;
   for (const e of desenhados) {
@@ -1127,6 +1157,16 @@ function atualizarHud() {
     $('#hudMarcoTxt').textContent = `faltam ${falta} pra ${curto(pm.construcao)} ›`;
     $('#hudMarcoBarra').style.width = clamp(100 * (seg - ant) / Math.max(1, pm.seguidores - ant), 3, 100) + '%';
   } else $('#hudMarco').hidden = true;
+  {
+    const m = liberado || pm, falta = m ? Math.max(0, m.seguidores - seg) : 0;
+    const lugar = m && Object.values(VILA.pontos).find(p => p && p.marco === m.seguidores && p.lotes);
+    PLACA_MARCO = lugar ? {
+      lotes: lugar.lotes, ico: /campo|futebol/i.test(m.construcao) ? '⚽' : '🏗️',
+      linha1: curto(m.construcao).replace(/^./, c => c.toUpperCase()),
+      linha2: liberado ? '🎉 desbloqueado! chega no próximo episódio' : `faltam ${falta} ${falta === 1 ? 'inscrito' : 'inscritos'} · ${m.seguidores}`,
+      pct: liberado ? 1 : clamp((seg - Math.max(...(VILA.marcos || []).map(x => x.seguidores).filter(x => x <= seg), 0)) / Math.max(1, m.seguidores - Math.max(...(VILA.marcos || []).map(x => x.seguidores).filter(x => x <= seg), 0)), 0, 1),
+    } : null;
+  }
   $('#menuEuTxt').textContent = EU ? 'Eu' : 'Entrar';
   $('#menuRegTxt').textContent = EU ? 'Meu boneco' : 'Registrar';
   $('#zoomMeu').hidden = !EU;
