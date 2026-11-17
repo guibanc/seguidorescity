@@ -12,7 +12,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const PORTA = Number(process.env.PORT) || 3003;
 const SITE = path.join(__dirname, 'site');
 const SQL = ['1_criar_banco.sql', '2_palavras_bloqueadas.sql', '3_contador.sql', '5_bio_e_pedidos.sql', '6_chat_online_casa.sql',
-             '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql'];   // (4 e 10 usam coisas que só o Supabase tem)
+             '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql', '11_terrenos.sql'];   // (4 e 10 usam coisas que só o Supabase tem)
 let db;
 
 async function abrirBanco() {

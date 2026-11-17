@@ -39,7 +39,7 @@ insert into itens (id, nome, tipo, ferramenta, nivel, slot_armadura, defesa, dan
 ('fibra','Fibra','material',null,0,null,0,1,0,0,64,1,null,false,13),
 ('pedra','Pedra','material',null,0,null,0,1,0,0,64,1,null,true,20),
 ('terra','Terra','material',null,0,null,0,1,0,0,64,0,null,true,21),
-('areia','Areia','material',null,0,null,0,1,0,0,64,0,null,false,22),
+('areia','Areia','material',null,0,null,0,1,0,0,64,0,3,false,22),
 ('carvao','Carvão','material',null,0,null,0,1,0,0,64,4,null,true,30),
 ('minerio_ferro','Minério de ferro','material',null,0,null,0,1,0,0,64,8,null,true,31),
 ('ferro','Barra de ferro','material',null,0,null,0,1,0,0,64,16,null,true,32),
@@ -116,24 +116,24 @@ insert into receitas (id, resultado, qtd, ingredientes, rank_min, grupo, ordem) 
 ('ouro','ouro',1,'{"minerio_ouro":1,"carvao":1}',0,'fornalha',31),
 ('carne_assada','carne_assada',1,'{"carne_crua":1,"carvao":1}',0,'fornalha',32),
 ('frango_assado','frango_assado',1,'{"frango_cru":1,"carvao":1}',0,'fornalha',33),
-('picareta_ferro','picareta_ferro',1,'{"ferro":3,"graveto":2}',1,'ferramentas',40),
-('machado_ferro','machado_ferro',1,'{"ferro":3,"graveto":2}',1,'ferramentas',41),
-('espada_ferro','espada_ferro',1,'{"ferro":2,"graveto":1}',1,'ferramentas',42),
-('picareta_cristal','picareta_cristal',1,'{"cristal":3,"ouro":1,"graveto":2}',3,'ferramentas',50),
-('machado_cristal','machado_cristal',1,'{"cristal":3,"ouro":1,"graveto":2}',3,'ferramentas',51),
-('espada_cristal','espada_cristal',1,'{"cristal":2,"ouro":1,"graveto":1}',3,'ferramentas',52),
+('picareta_ferro','picareta_ferro',1,'{"ferro":3,"graveto":2}',4,'ferramentas',40),
+('machado_ferro','machado_ferro',1,'{"ferro":3,"graveto":2}',4,'ferramentas',41),
+('espada_ferro','espada_ferro',1,'{"ferro":2,"graveto":1}',4,'ferramentas',42),
+('picareta_cristal','picareta_cristal',1,'{"cristal":3,"ouro":1,"graveto":2}',20,'ferramentas',50),
+('machado_cristal','machado_cristal',1,'{"cristal":3,"ouro":1,"graveto":2}',20,'ferramentas',51),
+('espada_cristal','espada_cristal',1,'{"cristal":2,"ouro":1,"graveto":1}',20,'ferramentas',52),
 ('capacete_couro','capacete_couro',1,'{"couro":5}',0,'armaduras',60),
 ('peitoral_couro','peitoral_couro',1,'{"couro":8}',0,'armaduras',61),
 ('calca_couro','calca_couro',1,'{"couro":7}',0,'armaduras',62),
 ('botas_couro','botas_couro',1,'{"couro":4}',0,'armaduras',63),
-('capacete_ferro','capacete_ferro',1,'{"ferro":5}',1,'armaduras',70),
-('peitoral_ferro','peitoral_ferro',1,'{"ferro":8}',1,'armaduras',71),
-('calca_ferro','calca_ferro',1,'{"ferro":7}',1,'armaduras',72),
-('botas_ferro','botas_ferro',1,'{"ferro":4}',1,'armaduras',73),
-('capacete_cristal','capacete_cristal',1,'{"cristal":5,"couro":2}',3,'armaduras',80),
-('peitoral_cristal','peitoral_cristal',1,'{"cristal":8,"couro":3}',3,'armaduras',81),
-('calca_cristal','calca_cristal',1,'{"cristal":7,"couro":2}',3,'armaduras',82),
-('botas_cristal','botas_cristal',1,'{"cristal":4,"couro":2}',3,'armaduras',83),
+('capacete_ferro','capacete_ferro',1,'{"ferro":5}',4,'armaduras',70),
+('peitoral_ferro','peitoral_ferro',1,'{"ferro":8}',4,'armaduras',71),
+('calca_ferro','calca_ferro',1,'{"ferro":7}',4,'armaduras',72),
+('botas_ferro','botas_ferro',1,'{"ferro":4}',4,'armaduras',73),
+('capacete_cristal','capacete_cristal',1,'{"cristal":5,"couro":2}',20,'armaduras',80),
+('peitoral_cristal','peitoral_cristal',1,'{"cristal":8,"couro":3}',20,'armaduras',81),
+('calca_cristal','calca_cristal',1,'{"cristal":7,"couro":2}',20,'armaduras',82),
+('botas_cristal','botas_cristal',1,'{"cristal":4,"couro":2}',20,'armaduras',83),
 ('pao','pao',1,'{"fibra":3}',0,'cozinha',90),
 ('suco','suco',1,'{"frutinha":4,"maca":1}',0,'cozinha',91)
 on conflict (id) do update set resultado = excluded.resultado, qtd = excluded.qtd, ingredientes = excluded.ingredientes,
@@ -148,13 +148,18 @@ create table if not exists ranks (
   bonus_venda int not null default 0,         -- % a mais quando vende
   cor         text not null default '#9aa'
 );
-insert into ranks values
-(0,'Morador',0,3,0,'#b8b0a0'),
-(1,'Minerador',300,5,5,'#7fb069'),
-(2,'Artesão',1200,7,10,'#4fa3d1'),
-(3,'Comerciante',4000,9,15,'#d4a72c'),
-(4,'Barão',12000,11,20,'#c9643b'),
-(5,'Magnata',35000,11,30,'#a855f7')
+-- 40 ranks: o custo cresce 22% por rank; a cada 4 ranks libera mais 1 camada da mina;
+-- cada rank dá +1,5% na venda; a cor muda a cada 5 ranks
+insert into ranks (nivel, nome, custo, camada_max, bonus_venda, cor)
+select n - 1, nome,
+       case when n = 1 then 0 else (round(300 * power(1.22, n - 2) / 50) * 50)::bigint end,
+       least(11, 3 + (n - 1) / 4), floor((n - 1) * 1.5)::int,
+       (array['#b8b0a0','#7fb069','#4fa3d1','#d4a72c','#c9643b','#e0457b','#a855f7','#f6c836'])[1 + (n - 1) / 5]
+  from unnest(array['Morador','Aprendiz','Lenhador','Catador','Minerador','Escavador','Ferreiro','Artesão','Carpinteiro','Pedreiro',
+                    'Construtor','Mercador','Comerciante','Negociante','Lojista','Empresário','Mestre de Obras','Joalheiro','Banqueiro','Investidor',
+                    'Fidalgo','Coronel','Barão','Visconde','Conde','Marquês','Duque','Arquiduque','Príncipe','Rei',
+                    'Imperador','Magnata','Milionário','Bilionário','Lenda','Mito','Titã','Colosso','Divindade','Dono da Cidade'])
+       with ordinality as t(nome, n)
 on conflict (nivel) do update set nome = excluded.nome, custo = excluded.custo, camada_max = excluded.camada_max,
   bonus_venda = excluded.bonus_venda, cor = excluded.cor;
 
@@ -174,7 +179,7 @@ insert into quebraveis values
 ('palmeira',2.5,'machado',0,360,'[{"i":"madeira","min":2,"max":4},{"i":"frutinha","min":1,"max":3,"p":0.5}]'),
 ('arbusto',0.8,null,0,180,'[{"i":"frutinha","min":1,"max":3},{"i":"fibra","min":0,"max":1}]'),
 ('capim',0.4,null,0,120,'[{"i":"fibra","min":1,"max":2,"p":0.7}]'),
-('cacto',1.2,null,0,240,'[{"i":"cacto","min":1,"max":2}]'),
+('cacto',1.2,null,0,240,'[{"i":"cacto","min":1,"max":2},{"i":"areia","min":1,"max":3}]'),
 ('rocha',3.0,'picareta',1,420,'[{"i":"pedra","min":2,"max":4},{"i":"carvao","min":1,"max":1,"p":0.2}]'),
 ('rocha_carvao',3.5,'picareta',1,600,'[{"i":"carvao","min":2,"max":3},{"i":"pedra","min":1,"max":2}]'),
 ('rocha_ferro',4.5,'picareta',2,900,'[{"i":"minerio_ferro","min":1,"max":2},{"i":"pedra","min":1,"max":1}]'),
@@ -638,6 +643,7 @@ begin
   update eleicao set prefeito = novo where prefeito = mid;
   update jogador set morador_id = novo where morador_id = mid;
   update inventario set morador_id = novo where morador_id = mid;
+  if to_regclass('public.lotes') is not null then execute 'update lotes set dono = $1 where dono = $2' using novo, mid; end if;   -- 11_terrenos.sql
   delete from registros where morador_id = mid;
   return json_build_object('ok',true,'morador',novo,'casa',p_casa,'antigo',mid);
 end $$;

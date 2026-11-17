@@ -322,6 +322,10 @@ body.jogando.toque #chat { left: 156px; bottom: calc(80px + var(--seguro-baixo))
 body.jogando #acoes { bottom: calc(24px + var(--seguro-baixo)); }
 @media (min-width: 900px) { #acoes { bottom: 20px; } }
 
+.hud-som { pointer-events: auto; flex: none; width: 34px; height: 34px; padding: 0; border-radius: 50%; border: 2px solid var(--tinta); background: var(--papel); box-shadow: 0 2px 0 var(--tinta); font-size: 16px; line-height: 1; }
+@media (min-width: 900px) { .hud-som { position: fixed; left: calc(50% + 78px); top: 15px; } }
+#btnSubir, #btnDescer { border: 2px solid var(--tinta); background: var(--amarelo); color: var(--texto); border-radius: 999px; padding: 4px 10px; font-weight: 800; font-size: 12.5px; flex: none; }
+#btnSubir[hidden], #btnDescer[hidden] { display: none; }
 /* ---------------- modo jogo (explorar, mina, inventário, lojas) ---------------- */
 #jogoTopo[hidden], #hotbar[hidden], #btnAcao[hidden] { display: none; }
 .vida-moedas { display: block; font-size: 11.5px; font-weight: 800; color: var(--amarelo); margin-top: 2px; white-space: nowrap; }

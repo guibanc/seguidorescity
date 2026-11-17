@@ -9,7 +9,7 @@ await db.exec(`create schema if not exists extensions; create extension if not e
   do $$ begin create role anon; exception when duplicate_object then null; end $$;
   do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
   create publication supabase_realtime;`);
-for (const f of ['1_criar_banco.sql', '2_palavras_bloqueadas.sql', '3_contador.sql', '5_bio_e_pedidos.sql', '6_chat_online_casa.sql', '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql'])
+for (const f of ['1_criar_banco.sql', '2_palavras_bloqueadas.sql', '3_contador.sql', '5_bio_e_pedidos.sql', '6_chat_online_casa.sql', '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql', '11_terrenos.sql'])
   await db.exec(fs.readFileSync(path.join(R, 'supabase', f), 'utf8'));
 await db.exec(fs.readFileSync(path.join(R, 'site/dados/novos_moradores.sql'), 'utf8'));
 const q1 = async (s, p) => (await db.query(s, p)).rows[0];
@@ -23,7 +23,7 @@ const tk = (await rpc('registrar', [205, 'gui', 'Gui', '583920', null])).token;
 const tk2 = (await rpc('registrar', [206, 'ana', 'Ana', '583921', null])).token;
 console.log('catálogo / jogador');
 const cat = await rpc('jogo_catalogo', []);
-ok(cat.itens.length > 50 && cat.receitas.length > 30 && cat.ranks.length === 6, 'catálogo carrega', { itens: cat.itens.length, receitas: cat.receitas.length });
+ok(cat.itens.length > 50 && cat.receitas.length > 30 && cat.ranks.length === 40, 'catálogo carrega', { itens: cat.itens.length, receitas: cat.receitas.length });
 ok((await rpc('meu_jogo', [tk])).moedas === 0, 'jogador novo com 0 moedas e mochila vazia');
 
 console.log('explorar: quebrar na mão');
@@ -74,9 +74,9 @@ r = await rpc('comprar', [tk, 'cristal', 1]); ok(!r.ok, 'mercadinho não vende c
 r = await rpc('comprar', [tk2, 'pao', 1]); ok(!r.ok && /insuficiente/.test(r.erro), 'sem dinheiro não compra', r.erro);
 r = await rpc('rankup', [tk]); ok(!r.ok && /Faltam/.test(r.erro), 'rankup pede 300 moedas', r.erro);
 await db.exec(`update jogador set moedas = 1000 where morador_id = 205`);
-r = await rpc('rankup', [tk]); ok(r.ok && r.nome === 'Minerador', 'sobe pra Minerador', r);
+r = await rpc('rankup', [tk]); ok(r.ok && r.nome === 'Aprendiz', 'sobe pra Aprendiz', r);
 ok((await rpc('meu_jogo', [tk])).moedas === 700, 'o rank custou 300');
-r = await rpc('vender', [tk, 'maca', 3, 'mercado']); ok(r.ok && r.ganhou === 6, 'bônus do rank (5%) arredonda pra baixo: 3 maçãs = 6', r);
+r = await rpc('vender', [tk, 'maca', 3, 'mercado']); ok(r.ok && r.ganhou === 6, 'bônus do rank (1%) arredonda pra baixo: 3 maçãs = 6', r);
 const rk = await rpc('ranking', []); ok(rk.ricos[0].nome === 'Gui', 'ranking dos mais ricos', rk.ricos[0]);
 
 console.log('comida e bichos');
