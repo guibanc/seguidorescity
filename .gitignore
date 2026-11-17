@@ -12,3 +12,7 @@ __pycache__/
 proximoEP/
 # páginas de teste locais
 site/_teste*.html
+
+# arquivos de terceiros (não publicar)
+geradordemundos/
+*.apk
