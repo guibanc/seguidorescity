@@ -50,6 +50,7 @@
           <div class="vida-barra" role="progressbar" aria-label="Vida" aria-valuemin="0" aria-valuemax="100"><div class="vida-enche" id="vidaEnche"></div></div>
           <b id="vidaPct">100%</b>
         </div>
+        <span class="vida-moedas" id="vidaMoedas" hidden></span>
       </div>
     </div>
   </header>
@@ -59,8 +60,17 @@
   <div id="joystick" hidden><div id="joyBase"><div id="joyPino"></div></div></div>
   <!-- ações perto do boneco (porta, banco, fonte, móveis) -->
   <div id="acoes" hidden></div>
-  <!-- dentro de uma casa / do mercadinho -->
-  <div id="interiorTopo" hidden><span id="interiorTitulo"></span><button id="btnSairInterior">✕ Sair</button></div>
+  <!-- modo jogo: topo do explorar/mina, barra rápida, botão de quebrar e a janela do inventário/lojas -->
+  <div id="jogoTopo" hidden><span id="jogoTopoTxt"></span><button id="btnCidade">🏙️ Cidade</button></div>
+  <div id="hotbar" hidden><div id="hotbarSlots"></div><button id="btnInv" aria-label="Inventário">🎒</button></div>
+  <button id="btnAcao" hidden aria-label="Quebrar / atacar">⛏️</button>
+  <div id="jogoModal" hidden>
+    <div class="jm-caixa">
+      <div class="jm-topo"><b id="jogoModalTitulo"></b><span id="jogoModalMoedas"></span><button id="jogoModalFechar" aria-label="Fechar">✕</button></div>
+      <div class="abas" id="jogoModalAbas"></div>
+      <div class="jm-corpo" id="jogoModalCorpo"></div>
+    </div>
+  </div>
   <!-- chat ao vivo -->
   <aside id="chat" hidden>
     <button id="chatToggle" aria-label="Mostrar ou esconder o chat">💬</button>
@@ -130,5 +140,6 @@
   <script src="js/api.js"></script>
   <script src="js/realtime.js"></script>
   <script src="js/app.js"></script>
+  <script src="js/jogo.js"></script>
 </body>
 </html>

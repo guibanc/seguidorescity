@@ -22,6 +22,7 @@ let preview = null;              // {id, look} visual em edição (ainda não sa
 let escolhendo = false;          // modo "toque num morador no mapa"
 let estados = [], desenhados = [];
 let AO_VIVO = null;
+const JOGO_ATIVO = () => !!(window.Jogo && Jogo.ativo());   // dentro do explorar ou da mina
 let PLACA_MARCO = null, PLACA_RECT = null;   // placa do próximo marco, em cima do terreno reservado
 let CASAS = [];                 // casas prontas + casas em obra que já têm moradores
 let TEM_BIO = false;            // banco já tem bio + recusar pedido (5_bio_e_pedidos.sql)              // seguidores agora (tabela "contador" no Supabase)
@@ -336,10 +337,10 @@ let ultimoNoite = 0, encontrosAvisados = new Set();
 function desenhar(agoraReal) {
   const ms = simMs(), t = br(ms), nf = noiteFator(t.min), noite = nf > 0.5, iso = ISO();
   estados = MORADORES.map(m => estado(m, ms));
-  if (ctrl.ativo && EU) estados[EU.morador - 1] = INTERIOR ? { ...estados[EU.morador - 1], vis: false, onde: 'casa', faz: INTERIOR.tipo === 'casa' ? 'dentro de casa' : 'no mercadinho' }
+  if (ctrl.ativo && EU) estados[EU.morador - 1] = JOGO_ATIVO() ? { ...estados[EU.morador - 1], vis: false, onde: 'casa', faz: 'explorando fora da cidade' }
     : { ...estados[EU.morador - 1], vis: true, x: ctrl.x, y: ctrl.y, dir: ctrl.dir, anda: ctrl.anda && !ctrl.sentado, onde: 'controle', faz: ctrl.sentado ? 'sentado na praça' : 'controlado por você' };
   aplicarRemotos();
-  if (INTERIOR) { desenharInterior(agoraReal, t, nf); if (!$('#hudHora').textContent.startsWith(fmt(t.min))) atualizarRelogio(t, nf); return; }
+  if (JOGO_ATIVO()) { Jogo.desenhar(agoraReal, t, nf); if (!$('#hudHora').textContent.startsWith(fmt(t.min))) atualizarRelogio(t, nf); return; }
   for (const e of estados) { const p = proj(e.x, e.y); e.px = p.x; e.py = p.y; }
   // câmera segue
   if (seguindo) {
@@ -433,6 +434,7 @@ function desenhar(agoraReal) {
     ctx.fillStyle = '#fff'; ctx.fillText(txt, p.x, y);
   }
   desenharPlacaMarco(agoraReal);
+  if (window.Jogo) Jogo.desenharNaCidade(agoraReal);
   if (EU) { const eu = estados[EU.morador - 1]; if (eu && eu.vis && desenhados.includes(eu)) desenharVidaNoBoneco(eu); }
   if (Math.abs(nf - ultimoNoite) > 0.01 || !$('#hudHora').textContent.startsWith(fmt(t.min))) atualizarRelogio(t, nf);
   ultimoNoite = nf;
@@ -529,7 +531,8 @@ cv.addEventListener('pointercancel', soltar);
 cv.addEventListener('wheel', e => { e.preventDefault(); zoomEm(e.clientX, e.clientY, cam.s * Math.exp(-e.deltaY * 0.0015)); }, { passive: false });
 
 function tocar(sx, sy) {
-  if (INTERIOR) return tocarInterior(sx, sy);
+  if (JOGO_ATIVO()) return Jogo.tocar(sx, sy);
+  if (window.Jogo && Jogo.tocarNaCidade(sx, sy)) return;
   if (PLACA_RECT && sx >= PLACA_RECT.x && sx <= PLACA_RECT.x + PLACA_RECT.w && sy >= PLACA_RECT.y && sy <= PLACA_RECT.y + PLACA_RECT.h) return mostrar('regras', {}, false);
   const m = telaPraMapa(sx, sy), kk = B32() ? 2.5 : 1, tol = Math.max(7 * kk, 16 / cam.s);
   let melhor = null, md = 1e9;
@@ -630,7 +633,7 @@ function iniciarControle() {
   ctrl.cansaco = 0; ctrl.sentado = false; ctrl.portaBloq = false; enviarPos();
 }
 function pararControle() {
-  if (INTERIOR && !INTERIOR.espectador) sairInterior();
+  if (JOGO_ATIVO()) Jogo.sairParaCidade();
   ctrl.sentado = false; enviarPos(true);
   ctrl.ativo = false; ctrl.anda = false; ctrl.teclas.clear(); ctrl.joy.x = ctrl.joy.y = 0;
   $('#btnJogar').classList.remove('ativo'); $('#btnJogar').innerHTML = '🎮 Mover meu boneco';
@@ -641,31 +644,28 @@ $('#btnJogar').onclick = () => ctrl.ativo ? pararControle() : iniciarControle();
 
 function passoControle(dt) {
   if (!ctrl.ativo) return;
-  // descansar (sentado ou deitado) recupera 1% a cada 2 s; dormir 3 s na própria cama enche a vida
-  if (ctrl.sentado || (INTERIOR && INTERIOR.deitado)) { ctrl.descanso = (ctrl.descanso || 0) + dt; if (ctrl.descanso >= 2) { ctrl.descanso = 0; if (VIDA < 100) mudarVida(VIDA + 1); } }
-  if (INTERIOR && INTERIOR.deitado && performance.now() - INTERIOR.deitado.t0 > 3000) { INTERIOR.deitado = null; mudarVida(100); toast('😴 Dormiu bem! Vida 100%'); }
+  // descansar sentado recupera 1% a cada 2 s
+  if (ctrl.sentado) { ctrl.descanso = (ctrl.descanso || 0) + dt; if (ctrl.descanso >= 2) { ctrl.descanso = 0; if (VIDA < 100) mudarVida(VIDA + 1); } }
   const k = ctrl.teclas;
   let ix = ctrl.joy.x + ((k.has('d') || k.has('arrowright')) ? 1 : 0) - ((k.has('a') || k.has('arrowleft')) ? 1 : 0);
   let iy = ctrl.joy.y + ((k.has('s') || k.has('arrowdown')) ? 1 : 0) - ((k.has('w') || k.has('arrowup')) ? 1 : 0);
   const mag = Math.hypot(ix, iy);
+  if (JOGO_ATIVO()) { Jogo.mover(ix, iy, mag, dt); return; }    // explorar/mina: o jogo.js cuida
   if (mag < 0.15) { if (ctrl.anda) { ctrl.anda = false; enviarPos(true); } return; }
   if (ctrl.sentado) levantar();
-  if (INTERIOR && INTERIOR.deitado) INTERIOR.deitado = null;
   if (mag > 1) { ix /= mag; iy /= mag; }
   const lento = VIDA <= 20 ? 0.6 : 1;
-  const passo = VEL_CONTROLE * dt * lento * (INTERIOR ? 0.6 : 1), sx = ix, sy = iy;
-  if (!INTERIOR && ISO()) { const mx = (sx + 2 * sy) / 2, my = (2 * sy - sx) / 2, n = Math.hypot(mx, my) || 1, f = Math.min(1, Math.hypot(sx, sy)); ix = mx / n * f; iy = my / n * f; }
-  const bloq = INTERIOR ? bloqueadoInterior : bloqueado;
+  const passo = VEL_CONTROLE * dt * lento, sx = ix, sy = iy;
+  if (ISO()) { const mx = (sx + 2 * sy) / 2, my = (2 * sy - sx) / 2, n = Math.hypot(mx, my) || 1, f = Math.min(1, Math.hypot(sx, sy)); ix = mx / n * f; iy = my / n * f; }
   const nx = ctrl.x + ix * passo, ny = ctrl.y + iy * passo;
-  if (!bloq(nx, ctrl.y)) ctrl.x = nx;            // desliza na parede: tenta x e y separados
-  if (!bloq(ctrl.x, ny)) ctrl.y = ny;
+  if (!bloqueado(nx, ctrl.y)) ctrl.x = nx;            // desliza na parede: tenta x e y separados
+  if (!bloqueado(ctrl.x, ny)) ctrl.y = ny;
   ctrl.dir = Math.abs(sx) > Math.abs(sy) ? (sx > 0 ? 'right' : 'left') : (sy > 0 ? 'down' : 'up');   // virado pra onde anda na tela
   // andar cansa: -1% a cada 40 s andando (nunca abaixo de 5%)
   ctrl.cansaco = (ctrl.cansaco || 0) + dt;
-  if (ctrl.cansaco > 40) { ctrl.cansaco = 0; if (VIDA > 5) mudarVida(VIDA - 1); if (VIDA <= 25 && !ctrl.avisouCansaco) { ctrl.avisouCansaco = true; toast('😮‍💨 Cansado! Come algo no mercadinho ou descansa em casa.'); } }
-  if (ctrl.portaBloq && !INTERIOR && ctrl.portaPos && distP(ctrl.portaPos, ctrl.x, ctrl.y) > 14) ctrl.portaBloq = false;
+  if (ctrl.cansaco > 40) { ctrl.cansaco = 0; if (VIDA > 5) mudarVida(VIDA - 1); if (VIDA <= 25 && !ctrl.avisouCansaco) { ctrl.avisouCansaco = true; toast('😮‍💨 Cansado! Come alguma coisa (no inventário) pra recuperar a vida.'); } }
   ctrl.anda = true;
-  if (!INTERIOR) seguindo = EU.morador;           // voltou a andar: câmera volta a seguir
+  seguindo = EU.morador;                              // voltou a andar: câmera volta a seguir
   enviarPos();
 }
 
@@ -719,7 +719,7 @@ function iniciarTempoReal() {
       for (const m of [...REMOTO.keys()]) if (!ONLINE.has(m)) REMOTO.delete(m);
       atualizarOnline();
     },
-    onPos: p => { if (!p || !p.m || (EU && p.m === EU.morador)) return; if (p.fim) REMOTO.delete(p.m); else REMOTO.set(p.m, { ...p, t: performance.now() }); },
+    onPos: p => { if (!p || !p.m || (EU && p.m === EU.morador)) return; if (p.ev) { if (window.Jogo) Jogo.evento(p); return; } if (p.fim) REMOTO.delete(p.m); else REMOTO.set(p.m, { ...p, t: performance.now() }); },
     onChat: msg => chatReceber(msg),
     onHistorico: msgs => { for (const m of msgs) chatReceber(m, true); },
   });
@@ -739,7 +739,8 @@ function enviarPos(final) {
   if (!final && agora - ultimaPosEnviada < 200) return;
   ultimaPosEnviada = agora;
   Rt.pos(final ? { m: EU.morador, fim: true }
-    : { m: EU.morador, x: Math.round(ctrl.x), y: Math.round(ctrl.y), dir: ctrl.dir, anda: ctrl.anda, dentro: !!INTERIOR });
+    : JOGO_ATIVO() ? Jogo.payload()
+    : { m: EU.morador, x: Math.round(ctrl.x), y: Math.round(ctrl.y), dir: ctrl.dir, anda: ctrl.anda, dentro: false, arm: window.Jogo ? Jogo.armadura() : null });
 }
 // aplica nos estados os bonecos que outras pessoas estão controlando agora
 function aplicarRemotos() {
@@ -763,7 +764,7 @@ function chatReceber(msg, historico) {
   el.dataset.t = historico ? String(Date.parse(msg.criado_em) || Date.now()) : String(Date.now());
   const meu = EU && msg.morador_id === EU.morador;
   el.innerHTML = `<b class="${meu ? 'eu' : ''}">${esc(msg.nome)}</b>${esc(msg.texto)}`;
-  el.querySelector('b').onclick = () => { if (!INTERIOR && MORADORES[msg.morador_id - 1]) irPara(msg.morador_id); };
+  el.querySelector('b').onclick = () => { if (!JOGO_ATIVO() && MORADORES[msg.morador_id - 1]) irPara(msg.morador_id); };
   box.appendChild(el);
   while (box.children.length > CHAT_MAX) box.firstChild.remove();
   envelhecerChat();
@@ -805,13 +806,13 @@ let acoesAtuais = [];
 const distP = (p, x, y) => Math.hypot(p[0] - x, p[1] - y);
 function acoesPerto() {
   if (!ctrl.ativo || !EU) return [];
-  if (INTERIOR) return acoesInterior();
+  if (JOGO_ATIVO()) return Jogo.acoes();
   const a = [], P = VILA.pontos, x = ctrl.x, y = ctrl.y;
-  if (!ctrl.portaBloq) {
-    for (const c of CASAS) if (!c.hospedado && distP(c.porta, x, y) < 11) { a.push({ rotulo: `🚪 Entrar na ${nomeCasa(c.casa).toLowerCase()}`, fn: () => entrarInterior('casa', c.casa) }); break; }
-    if (P.mercadinho && distP(P.mercadinho.porta, x, y) < 12) a.push({ rotulo: '🛒 Entrar no mercadinho', fn: () => entrarInterior('mercadinho', 1) });
+  if (window.Jogo) a.push(...Jogo.acoesCidade(x, y));
+  {
+    if (P.mercadinho && distP(P.mercadinho.porta, x, y) < 12) a.push({ rotulo: '🛒 Mercadinho (vender e comprar)', fn: () => Jogo.abrirLoja('mercado') });
     if (P.prefeitura && P.prefeitura.porta && distP(P.prefeitura.porta, x, y) < 14) a.push({ rotulo: '🏛️ Entrar na prefeitura', fn: () => mostrar('prefeitura', {}, false) });
-    if (P.mercadinho2 && distP(P.mercadinho2.porta, x, y) < 12) a.push({ rotulo: '🛒 Entrar no mercadinho 2', fn: () => entrarInterior('mercadinho', 2) });
+    if (P.mercadinho2 && distP(P.mercadinho2.porta, x, y) < 12) a.push({ rotulo: '🛒 Mercadinho 2 (vender e comprar)', fn: () => Jogo.abrirLoja('mercado') });
   }
   if (P.praca) {
     for (const b of P.praca.bancos) if (distP(b, x, y) < 9) { a.push(ctrl.sentado ? { rotulo: '🧍 Levantar', fn: levantar } : { rotulo: '🪑 Sentar no banco', fn: () => sentar(b[0], b[1] - 2, 'down') }); break; }
@@ -835,240 +836,15 @@ function atualizarAcoes() {
   const box = $('#acoes'), novas = acoesPerto(), chave = novas.map(a => a.rotulo).join('|');
   if (chave === box.dataset.chave) return;
   box.dataset.chave = chave; acoesAtuais = novas;
-  box.innerHTML = novas.map((a, i) => `<button data-i="${i}">${a.rotulo}${!tocaTela && i === 0 ? ' <kbd>E</kbd>' : ''}</button>`).join('');
+  box.innerHTML = novas.map((a, i) => `<button data-i="${i}">${a.rotulo}${!tocaTela && i === 0 ? (JOGO_ATIVO() ? ' <kbd>F</kbd>' : ' <kbd>E</kbd>') : ''}</button>`).join('');
   box.hidden = !novas.length;
   box.querySelectorAll('button').forEach(b => b.onclick = () => { const ac = acoesAtuais[Number(b.dataset.i)]; if (ac) ac.fn(); });
 }
 addEventListener('keydown', e => {
   if (!ctrl.ativo || /input|textarea|select/i.test(e.target.tagName)) return;
+  if (JOGO_ATIVO()) return;                         // no jogo, o E é quebrar/atacar (jogo.js)
   if (e.key.toLowerCase() === 'e' && acoesAtuais[0]) { acoesAtuais[0].fn(); e.preventDefault(); }
 });
-
-// =====================================================================
-// INTERIORES: casas (sorteadas por número, sempre iguais) e mercadinho
-// =====================================================================
-let INTERIOR = null;   // { tipo, n, cena, volta, espectador, tv, sacola, deitado, portaPos }
-const ICV = document.createElement('canvas'); const ic = ICV.getContext('2d');
-const COR = { tinta: '#1e1824', paredes: ['#e8d9b5', '#d7e3f0', '#f0d8d8', '#dfe9d2', '#f1e4c4', '#e4d6ea'], pisos: [['#b98a56', '#a97a48'], ['#d9d2c3', '#cfc7b6'], ['#c9a97a', '#b8986a'], ['#9fb7c9', '#8fa7b9']],
-  sofas: ['#c0392b', '#2f6db5', '#3e8e5a', '#8e5aa3', '#d4883a'], tapetes: [['#c86b5c', '#e4958a'], ['#4e7fb3', '#7faad6'], ['#6f9d5a', '#9fc78a'], ['#c9a227', '#e3c45a']], cobertas: ['#d8584f', '#3f79c4', '#52a05c', '#d2912b', '#8f63b8', '#2fa3a7'] };
-const PRODUTOS = ['Maçã', 'Pão', 'Leite', 'Suco', 'Chocolate', 'Banana', 'Queijo', 'Refri', 'Biscoito', 'Café'];
-const LOOK_ATENDENTE = Sprites.normalizar({ pele: 2, cabelo: 'coque', cor_cabelo: 1, camisa: 3, estampa: 'lisa', camisa2: 3, baixo: 'calca', cor_baixo: 2, sapato: 0, oculos: true, chapeu: null, cor_chapeu: 0, barba: false });
-
-function gerarCena(tipo, n) {
-  const r = rng(tipo === 'casa' ? n * 7919 + 101 : 500000 + n), pick = a => a[Math.floor(r() * a.length)];
-  const c = { tipo, n, w: 192, h: 144, paredeY: 28, parede: pick(COR.paredes), piso: pick(COR.pisos), moveis: [], bloq: [], camas: [], assentos: [], passeios: [], janelas: [],
-              porta: { cx: 96, w: 24 }, spawn: { x: 96, y: 128 } };
-  const add = (m, bloqueia = true) => { c.moveis.push(m); if (bloqueia) c.bloq.push([m.x, m.y, m.w, m.h]); return m; };
-  if (tipo === 'casa') {
-    c.tapete = pick(COR.tapetes); c.sofaCor = pick(COR.sofas); c.coberta = pick(COR.cobertas); c.cortina = pick(COR.sofas);
-    // parede: janelas, quadro, relógio
-    const jx = pick([[60, 120], [72], [52, 116], [86]]); for (const x of jx) c.janelas.push({ x, y: 6, w: 22, h: 16 });
-    c.relogio = { x: jx.includes(120) ? 150 : 128, y: 8 }; c.quadro = r() < 0.7 ? { x: jx[0] - 20 > 30 ? jx[0] - 18 : 160, y: 8 } : null;
-    // fila encostada na parede (base y = 30)
-    add({ tipo: 'estante', x: 6, y: 8, w: 20, h: 26 }); c.bloq.pop(); c.bloq.push([6, 24, 20, 10]);
-    if (r() < 0.85) { add({ tipo: 'tv', x: 36, y: 12, w: 24, h: 22 }); c.bloq.pop(); c.bloq.push([36, 26, 24, 8]); c.temTV = true; }
-    const cozinha = [['pia', 18], ['fogao', 16], ['geladeira', 16]]; if (r() < 0.5) cozinha.reverse();
-    let cx = 122; for (const [t, w] of cozinha) { add({ tipo: t, x: cx, y: t === 'geladeira' ? 8 : 20, w, h: t === 'geladeira' ? 26 : 14 }); c.bloq.pop(); c.bloq.push([cx, 24, w, 10]); cx += w + 4; }
-    // beliches na parede da esquerda
-    const nb = 2 + Math.floor(r() * 2);
-    for (let i = 0; i < nb; i++) { const y = 44 + i * 30; add({ tipo: 'beliche', x: 6, y, w: 20, h: 26 }); c.camas.push({ x: 16, y: y + 12, cima: true }, { x: 16, y: y + 24 }); }
-    // sofá de frente pra TV, mesa com cadeiras, tapete, planta, luminária
-    if (c.temTV) { add({ tipo: 'sofa', x: 34, y: 48, w: 28, h: 14 }); c.assentos.push({ x: 42, y: 60, dir: 'up' }, { x: 54, y: 60, dir: 'up' }); }
-    const my = c.temTV ? 84 : 66; c.tapeteR = { x: 62, y: my - 14, w: 72, h: 46 };
-    add({ tipo: 'mesa', x: 78, y: my, w: 40, h: 18 });
-    add({ tipo: 'cadeira', x: 68, y: my + 4, w: 8, h: 10, dir: 'right' }, false); c.assentos.push({ x: 72, y: my + 14, dir: 'right' });
-    add({ tipo: 'cadeira', x: 120, y: my + 4, w: 8, h: 10, dir: 'left' }, false); c.assentos.push({ x: 124, y: my + 14, dir: 'left' });
-    add({ tipo: 'planta', x: 176, y: 118, w: 10, h: 16 });
-    if (r() < 0.7) add({ tipo: 'luminaria', x: 68, y: 40, w: 8, h: 20 }, false);
-    if (r() < 0.5) add({ tipo: 'planta', x: 150, y: 44, w: 10, h: 16 });
-    c.passeios = [{ x: 100, y: 124, A: 28 }, { x: 150, y: 70, A: 14 }, { x: 60, y: 120, A: 14 }, { x: 150, y: 100, A: 16 }];
-  } else {
-    c.parede = '#f3e9d2'; c.piso = ['#e6e1d6', '#dcd6ca'];
-    for (let i = 0; i < 3; i++) {
-      const y = 50 + i * 28, prods = [pick(PRODUTOS), pick(PRODUTOS), pick(PRODUTOS)].filter((p, k, a) => a.indexOf(p) === k);
-      add({ tipo: 'gondola', x: 44, y, w: 100, h: 12, prods, seed: r() });
-      c.passeios.push({ x: 94, y: y + 24, A: 40 });
-    }
-    add({ tipo: 'freezer', x: 168, y: 36, w: 18, h: 76 });
-    add({ tipo: 'caixa', x: 14, y: 116, w: 40, h: 14 });
-    add({ tipo: 'cestas', x: 124, y: 126, w: 12, h: 12 });
-    c.janelas.push({ x: 30, y: 6, w: 22, h: 16 }, { x: 140, y: 6, w: 22, h: 16 }); c.relogio = { x: 92, y: 6 };
-    c.passeios.push({ x: 160, y: 124, A: 12 });
-  }
-  return c;
-}
-function bloqueadoInterior(x, y) {
-  const c = INTERIOR.cena;
-  if (x < 4 || x > c.w - 4 || y < c.paredeY + 8) return true;
-  if (y > c.h - 3 && Math.abs(x - c.porta.cx) > c.porta.w / 2) return true;
-  if (y > c.h) return true;
-  for (const [bx, by, bw, bh] of c.bloq) if (x > bx - 1 && x < bx + bw + 1 && y - 2 > by && y - 2 < by + bh) return true;
-  return false;
-}
-function entrarInterior(tipo, n, espectador) {
-  const cena = gerarCena(tipo, n);
-  const portaPos = tipo === 'casa' ? CASAS[n - 1].porta : (n === 2 ? VILA.pontos.mercadinho2 : VILA.pontos.mercadinho).porta;
-  INTERIOR = { tipo, n, cena, espectador: !!espectador || !ctrl.ativo, tv: false, sacola: [], deitado: null, portaPos, volta: { x: ctrl.x, y: ctrl.y } };
-  if (!INTERIOR.espectador) { ctrl.x = cena.spawn.x; ctrl.y = cena.spawn.y; ctrl.dir = 'up'; ctrl.sentado = false; ctrl.anda = false; }
-  document.body.classList.add('interior'); $('#interiorTopo').hidden = false; fecharPainel();
-  atualizarTituloInterior(); enviarPos(true); enviarPos();
-}
-function sairInterior() {
-  if (!INTERIOR) return;
-  const I = INTERIOR; INTERIOR = null;
-  if (!I.espectador) { ctrl.x = I.portaPos[0]; ctrl.y = I.portaPos[1] + 5; ctrl.dir = 'down'; ctrl.sentado = false; ctrl.portaBloq = true; ctrl.portaPos = I.portaPos; }
-  document.body.classList.remove('interior'); $('#interiorTopo').hidden = true;
-  enviarPos(true); enviarPos();
-}
-$('#btnSairInterior').onclick = sairInterior;
-function moradoresDentro() {
-  const I = INTERIOR;
-  if (I.tipo === 'casa') return MORADORES.filter(m => m.casa === I.n && estados[m.id - 1] && !estados[m.id - 1].vis && estados[m.id - 1].onde === 'casa' && !(EU && m.id === EU.morador && !I.espectador));
-  const lista = estados.filter(e => !e.vis && e.onde === 'mercadinho' && !(EU && e.id === EU.morador && !I.espectador)).map(e => MORADORES[e.id - 1]);
-  return I.n === 2 ? lista.filter((_, i) => i % 2 === 1).slice(0, 10) : lista.filter((_, i) => i % 2 === 0).slice(0, 10);
-}
-function atualizarTituloInterior() {
-  if (!INTERIOR) return;
-  const n = moradoresDentro().length, I = INTERIOR;
-  $('#interiorTitulo').textContent = (I.tipo === 'casa' ? nomeCasa(I.n) : 'Mercadinho' + (I.n === 2 ? ' 2' : '')) + ` · ${n} ${n === 1 ? 'pessoa' : 'pessoas'} aqui dentro`
-    + (I.sacola.length ? ` · 🛍️ ${I.sacola.length}` : '');
-}
-function posicoesDentro(seg) {
-  const c = INTERIOR.cena, dorm = [], acord = [];
-  for (const m of moradoresDentro()) ((estados[m.id - 1].faz === 'dormindo') ? dorm : acord).push(m);
-  const out = [];
-  dorm.forEach((m, i) => { const s = c.camas[i]; out.push(s ? { m, x: s.x, y: s.y, dir: 'down', dorme: true } : { m, x: 40 + (i % 6) * 14, y: 126, dir: 'down', dorme: true }); });
-  acord.forEach((m, i) => {
-    const a = c.assentos[i];
-    if (a) { out.push({ m, x: a.x, y: a.y, dir: a.dir, sentado: true }); return; }
-    const L = c.passeios[(i - c.assentos.length) % c.passeios.length], v = vaivem({ A: L.A, v: 3, pausa: 3 + (m.id % 5), seed: m.id * 3 + INTERIOR.n }, seg);
-    out.push({ m, x: L.x + v.dx, y: L.y + ((m.id % 3) - 1) * 3, dir: v.dir, anda: v.anda });
-  });
-  return out;
-}
-function acoesInterior() {
-  const I = INTERIOR, c = I.cena, x = ctrl.x, y = ctrl.y, a = [], minha = I.tipo === 'casa' && EU && MORADORES[EU.morador - 1].casa === I.n;
-  const perto = m => x > m.x - 9 && x < m.x + m.w + 9 && y > m.y - 6 && y < m.y + m.h + 12;
-  if (I.deitado) return [{ rotulo: '🙂 Levantar', fn: () => { I.deitado = null; } }];
-  if (y > c.h - 9 && Math.abs(x - c.porta.cx) < 12) a.push({ rotulo: '🚪 Sair', fn: sairInterior });
-  for (const m of c.moveis) {
-    if (!perto(m)) continue;
-    if (m.tipo === 'geladeira') a.push({ rotulo: '🧃 Pegar um lanche', fn: () => {
-      if (!minha) return toast('😅 Essa geladeira não é sua!');
-      if (ctrl.lancheT && performance.now() - ctrl.lancheT < 60000) return toast('🧃 Já comeu agora há pouco. Espera um minuto.');
-      ctrl.lancheT = performance.now(); mudarVida(VIDA + 5); toast('🧃 Lanchinho! +5 de vida'); } });
-    else if (m.tipo === 'tv') a.push({ rotulo: I.tv ? '📺 Desligar a TV' : '📺 Ligar a TV', fn: () => { I.tv = !I.tv; } });
-    else if (m.tipo === 'beliche') a.push({ rotulo: '😴 Descansar', fn: () => {
-      if (!minha) return toast('😅 Essa cama não é sua!');
-      const cama = c.camas.find(k => k.y > m.y + 20) || c.camas[0]; I.deitado = { x: cama.x, y: cama.y, t0: performance.now() }; ctrl.anda = false; } });
-    else if (m.tipo === 'sofa') a.push(ctrl.sentado ? { rotulo: '🧍 Levantar', fn: levantar } : { rotulo: '🛋️ Sentar no sofá', fn: () => sentar(m.x + 14, m.y + 12, 'up') });
-    else if (m.tipo === 'gondola') { const p = m.prods[Math.min(m.prods.length - 1, Math.floor((x - m.x) / (m.w / m.prods.length)))];
-      a.push({ rotulo: `🛒 Pegar ${p}`, fn: () => { if (I.sacola.length >= 4) return toast('🛍️ A sacola está cheia (4 itens). Passa no caixa!'); I.sacola.push(p); atualizarTituloInterior(); toast(`🛍️ ${p} na sacola (${I.sacola.length}/4)`); } }); }
-    else if (m.tipo === 'caixa') a.push({ rotulo: I.sacola.length ? `💳 Pagar ${I.sacola.length} ${I.sacola.length === 1 ? 'item' : 'itens'}` : '💳 Caixa (sacola vazia)', fn: () => {
-      if (!I.sacola.length) return toast('🛒 Pega alguma coisa nas prateleiras primeiro.');
-      const ganho = 8 * I.sacola.length; mudarVida(VIDA + ganho); toast(`💳 Comprou ${I.sacola.join(', ')}. +${ganho} de vida!`); I.sacola = []; atualizarTituloInterior(); } });
-    else if (m.tipo === 'freezer') a.push({ rotulo: '🍦 Pegar sorvete', fn: () => { if (I.sacola.length >= 4) return toast('🛍️ A sacola está cheia (4 itens). Passa no caixa!'); I.sacola.push('Sorvete'); atualizarTituloInterior(); toast(`🍦 Sorvete na sacola (${I.sacola.length}/4)`); } });
-  }
-  return a.slice(0, 2);
-}
-
-// ---------- desenho do interior ----------
-const R = (x, y, w, h, cor) => { ic.fillStyle = cor; ic.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h)); };
-const B = (x, y, w, h, cor) => { R(x - 1, y - 1, w + 2, h + 2, COR.tinta); R(x, y, w, h, cor); };   // com contorno
-function desenharMovel(m, I, t, agoraReal) {
-  const { x, y, w, h } = m, c = I.cena;
-  switch (m.tipo) {
-    case 'estante': B(x, y, w, h, '#8a5a2b'); for (let s = 0; s < 3; s++) { R(x + 1, y + 2 + s * 8, w - 2, 6, '#6e4520'); for (let k = 0; k < 5; k++) R(x + 2 + k * 3.5, y + 2 + s * 8, 3, 6, ['#c0392b', '#2f6db5', '#3e8e5a', '#d4883a', '#f1c40f'][(k + s + c.n) % 5]); } break;
-    case 'tv': B(x + 2, y + 16, w - 4, 6, '#7a4e26'); B(x + 2, y, w - 4, 14, '#2b2b33'); {
-      if (I.tv) { const f = Math.floor(agoraReal / 300); for (let k = 0; k < 4; k++) R(x + 4 + k * 4, y + 2, 4, 10, ['#5dade2', '#f5b7b1', '#82e0aa', '#f9e79f', '#bb8fce'][(f + k) % 5]); } else R(x + 4, y + 2, w - 8, 10, '#121218'); } break;
-    case 'geladeira': B(x, y, w, h, '#eef1f4'); R(x, y + 9, w, 1, '#b8c0c8'); R(x + w - 4, y + 3, 1, 4, '#8a949e'); R(x + w - 4, y + 12, 1, 8, '#8a949e'); break;
-    case 'fogao': B(x, y, w, h, '#dcdcdc'); R(x + 1, y + 1, w - 2, 5, '#444'); for (let k = 0; k < 2; k++) for (let j = 0; j < 2; j++) R(x + 3 + k * 7, y + 2 + j * 2, 3, 1, '#111'); R(x + 2, y + 8, w - 4, 4, '#555'); break;
-    case 'pia': B(x, y, w, h, '#cbb089'); R(x + 3, y + 2, w - 6, 6, '#e6e6e6'); R(x + w / 2 - 1, y - 3, 2, 4, '#9aa'); R(x + w / 2 - 1, y - 4, 4, 1, '#9aa'); break;
-    case 'beliche': B(x, y, w, h, '#8a5a2b'); for (const dy of [4, 16]) { R(x + 1, y + dy, w - 2, 7, '#f4efe4'); R(x + 1, y + dy, 5, 7, '#fff'); R(x + 6, y + dy + 1, w - 7, 6, c.coberta); } R(x + 1, y, 2, h, '#6e4520'); R(x + w - 3, y, 2, h, '#6e4520'); break;
-    case 'sofa': B(x, y, w, h, c.sofaCor); R(x + 2, y + 5, w - 4, 7, shade(c.sofaCor)); R(x + w / 2 - 0.5, y + 5, 1, 7, c.sofaCor); break;
-    case 'mesa': R(x + 2, y + h - 3, 2, 5, '#6e4520'); R(x + w - 4, y + h - 3, 2, 5, '#6e4520'); B(x, y, w, h - 4, '#c08a4a'); R(x + 4, y + 3, w - 8, 1, '#d9a564'); break;
-    case 'cadeira': B(x, y, w, h - 2, '#a06a34'); R(m.dir === 'right' ? x : x + w - 2, y - 2, 2, h, '#7a4e26'); break;
-    case 'planta': B(x + 1, y + 10, w - 2, 6, '#b5562c'); R(x, y + 2, w, 9, '#2e8b57'); R(x + 2, y, w - 4, 4, '#3cb371'); R(x + 4, y + 6, 2, 2, '#1f6b3f'); break;
-    case 'luminaria': R(x + 3, y + 6, 2, h - 6, '#555'); B(x, y, w, 7, '#f6d78c'); if (ehNoite(t)) { ic.fillStyle = 'rgba(255,230,140,.18)'; ic.beginPath(); ic.ellipse(x + 4, y + 22, 22, 16, 0, 0, Math.PI * 2); ic.fill(); } break;
-    case 'gondola': B(x, y, w, h, '#6d6d7a'); R(x, y + 5, w, 1, '#9a9aa8'); { const r = rng(Math.floor(m.seed * 1e6)); for (let lv = 0; lv < 2; lv++) for (let k = 0; k < 16; k++) R(x + 2 + k * 6, y + 1 + lv * 6, 4, 4, `hsl(${Math.floor(r() * 360)},65%,55%)`); } break;
-    case 'freezer': B(x, y, w, h, '#f4f6f8'); R(x + 2, y + 2, w - 4, h - 4, 'rgba(120,190,240,.45)'); for (let k = 0; k < 6; k++) R(x + 4, y + 5 + k * 12, w - 8, 6, ['#f7c8e0', '#c8e6f7', '#f7eec8'][k % 3]); break;
-    case 'caixa': B(x, y, w, h, '#8a5a2b'); B(x + w - 14, y - 8, 10, 8, '#555'); R(x + w - 12, y - 6, 6, 3, '#9fe0ff'); break;
-    case 'cestas': for (let k = 0; k < 3; k++) B(x, y + 6 - k * 3, w, 5, '#c0392b'); break;
-  }
-}
-const shade = c => c.replace('#', '#').length ? c + 'cc' : c;
-const ehNoite = t => noiteFator(t.min) > 0.5;
-function desenharInterior(agoraReal, t, nf) {
-  const I = INTERIOR, c = I.cena, seg = t.min * 60;
-  if (ICV.width !== c.w) { ICV.width = c.w; ICV.height = c.h; }
-  ic.imageSmoothingEnabled = false;
-  // parede e piso
-  R(0, 0, c.w, c.paredeY, c.parede); R(0, c.paredeY, c.w, 3, '#8c6a3f');
-  for (let y = c.paredeY + 3; y < c.h; y += 6) for (let x = 0; x < c.w; x += 16) R(x, y, 16, 6, c.piso[((x / 16 + y / 6) % 2) | 0]);
-  for (let x = 0; x < c.w; x += 8) R(x, 2 + (x / 8 % 2) * 4, 1, 1, 'rgba(0,0,0,.08)');
-  if (c.tapeteR) { const T = c.tapeteR; B(T.x, T.y, T.w, T.h, c.tapete[0]); R(T.x + 3, T.y + 3, T.w - 6, T.h - 6, c.tapete[1]); }
-  // janelas (céu pela hora), quadro, relógio
-  for (const j of c.janelas) { const ceu = nf >= 1 ? '#1b2140' : nf > 0 ? '#e4915a' : '#8fd0ff'; B(j.x, j.y, j.w, j.h, ceu); R(j.x + j.w / 2 - 0.5, j.y, 1, j.h, '#fff'); R(j.x, j.y + j.h / 2, j.w, 1, '#fff');
-    if (nf >= 1) for (let k = 0; k < 4; k++) R(j.x + 3 + k * 5, j.y + 2 + (k * 7) % 11, 1, 1, '#fff'); if (c.cortina) { R(j.x - 3, j.y - 2, 4, j.h + 4, c.cortina); R(j.x + j.w - 1, j.y - 2, 4, j.h + 4, c.cortina); } }
-  if (c.quadro) { B(c.quadro.x, c.quadro.y, 12, 10, '#8fd0ff'); R(c.quadro.x, c.quadro.y + 6, 12, 4, '#5fa04c'); R(c.quadro.x + 8, c.quadro.y + 2, 3, 3, '#f6c836'); }
-  if (c.relogio) { const k = c.relogio; B(k.x, k.y, 10, 10, '#fff'); const hm = t.min / 60, ang = (h, r) => [k.x + 5 + Math.sin(h) * r, k.y + 5 - Math.cos(h) * r];
-    ic.strokeStyle = '#1e1824'; ic.lineWidth = 1; ic.beginPath(); ic.moveTo(k.x + 5, k.y + 5); ic.lineTo(...ang((hm % 12) / 12 * Math.PI * 2, 2.5)); ic.moveTo(k.x + 5, k.y + 5); ic.lineTo(...ang((t.min % 60) / 60 * Math.PI * 2, 4)); ic.stroke(); }
-  // objetos e pessoas, ordenados de trás pra frente
-  const itens = c.moveis.map(m => ({ y: m.y + m.h, mv: m }));
-  const pessoas = posicoesDentro(seg).map(p => ({ y: p.y + (p.dorme ? -6 : 0), p }));
-  if (I.tipo === 'mercadinho') pessoas.push({ y: 118, p: { atendente: true, x: 34, y: 116, dir: 'down' } });
-  if (!I.espectador) pessoas.push({ y: (I.deitado ? I.deitado.y - 6 : ctrl.y), p: { eu: true, x: I.deitado ? I.deitado.x : ctrl.x, y: I.deitado ? I.deitado.y : ctrl.y, dir: I.deitado ? 'down' : ctrl.dir, anda: ctrl.anda && !ctrl.sentado, dorme: !!I.deitado } });
-  const quadro = Math.floor(agoraReal / 125) % 4;
-  for (const o of [...itens, ...pessoas].sort((a, b) => a.y - b.y)) {
-    if (o.mv) { desenharMovel(o.mv, I, t, agoraReal); continue; }
-    const p = o.p, x = Math.round(p.x), y = Math.round(p.y);
-    let img, ox = 0, oy = 0;
-    if (p.atendente) { img = folhaDe(LOOK_ATENDENTE).dia; } else { const f = fonteSprite(p.eu ? EU.morador : p.m.id, false); img = f.img; ox = f.ox; oy = f.oy; }
-    const fr = p.anda ? (quadro + (p.m ? p.m.id : 0)) % 4 : 0;
-    if (!p.dorme) { ic.fillStyle = 'rgba(0,0,0,.18)'; ic.beginPath(); ic.ellipse(x, y, 4, 1.5, 0, 0, Math.PI * 2); ic.fill(); }
-    ic.drawImage(img, ox + fr * 12, oy + DIRI[p.dir || 'down'] * 18, 12, 18, x - 6, y - 17, 12, 18);
-    if (p.dorme) R(x - 6, y - 9, 12, 8, c.coberta || '#8f63b8');
-    o.sx = x; o.sy = y;
-  }
-  // escuro quando é noite e não tem ninguém acordado
-  const acordado = pessoas.some(o => !o.p.dorme);
-  if (nf > 0 && !acordado) { ic.fillStyle = `rgba(10,12,40,${0.55 * nf})`; ic.fillRect(0, 0, c.w, c.h); }
-  // porta
-  B(c.porta.cx - c.porta.w / 2, c.h - 4, c.porta.w, 4, '#8a5a2b'); R(c.porta.cx - 3, c.h - 3, 6, 2, '#f6c836');
-
-  // ---- blit na tela, centralizado, escala inteira
-  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
-  ctx.fillStyle = nf > 0.5 ? '#141a2a' : '#2a3b2a'; ctx.fillRect(0, 0, W, H);
-  const topo = $('#hud').getBoundingClientRect().bottom + 8, base = H - (PC() ? 90 : 160);
-  const z = Math.max(2, Math.min(Math.floor((W - 24) / c.w), Math.floor((base - topo) / c.h)));
-  const ox0 = Math.round((W - c.w * z) / 2), oy0 = Math.round(topo + (base - topo - c.h * z) / 2);
-  I.tela = { ox: ox0, oy: oy0, z };
-  ctx.imageSmoothingEnabled = false;
-  ctx.fillStyle = '#1e1824'; ctx.fillRect(ox0 - 4, oy0 - 4, c.w * z + 8, c.h * z + 8);
-  ctx.drawImage(ICV, ox0, oy0, c.w * z, c.h * z);
-  // nomes e zzz em escala de tela
-  ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.font = '700 11px Nunito, system-ui, sans-serif';
-  for (const o of pessoas) {
-    if (o.sx == null) continue;
-    const X = ox0 + o.sx * z, Y = oy0 + (o.sy - 19) * z;
-    if (o.p.dorme) { ctx.fillStyle = '#fff8e7'; ctx.font = '700 11px Nunito, sans-serif'; ctx.fillText('z', X + 8 + Math.sin(agoraReal / 400) * 2, Y - 2 - (agoraReal / 60 % 10)); ctx.fillText('Z', X + 13, Y - 10 - (agoraReal / 60 % 10)); }
-    const id = o.p.eu ? EU.morador : o.p.m ? o.p.m.id : null;
-    const n = o.p.atendente ? 'Atendente' : (id && nomeDe(id));
-    if (!n) continue;
-    const w = ctx.measureText(n).width + 10;
-    ctx.fillStyle = o.p.eu ? 'rgba(246,200,54,.95)' : 'rgba(30,24,36,.72)'; pilula(X - w / 2, Y - 8, w, 15, 7); ctx.fill();
-    ctx.fillStyle = o.p.eu ? '#1e1824' : '#fff8e7'; ctx.fillText(n, X, Y);
-  }
-  I.pessoas = pessoas;
-  if ((agoraReal | 0) % 60 === 0) atualizarTituloInterior();
-}
-function tocarInterior(sx, sy) {
-  const I = INTERIOR; if (!I || !I.tela) return;
-  const rx = (sx - I.tela.ox) / I.tela.z, ry = (sy - I.tela.oy) / I.tela.z;
-  let melhor = null, md = 1e9;
-  for (const o of I.pessoas || []) { if (!o.p.m) continue; const d = Math.hypot(o.p.x - rx, o.p.y - 8 - ry); if (d < 9 && d < md) { md = d; melhor = o.p.m.id; } }
-  if (melhor) mostrar('ficha', { id: melhor });
-}
 
 // =====================================================================
 // MUDAR DE CASA (troca de lugar com um morador sem nome da casa escolhida)
@@ -1087,7 +863,7 @@ async function mudarDeCasa(n) {
   PUB[novo] = { id: novo, casa: n, chegou_no_ep: MORADORES[novo - 1].chegou_no_ep, nome: EU.nome, usuario: EU.usuario, aparencia: look, bio: EU.bio || null, ocupado: true };
   try { const v = localStorage.getItem('vila_vida_' + antigo); if (v != null) localStorage.setItem('vila_vida_' + novo, v); } catch {}
   EU.morador = novo; EU.aparencia = look;
-  if (ctrl.ativo) { if (INTERIOR) sairInterior(); ctrl.x = casa.ponto_na_rua[0]; ctrl.y = casa.ponto_na_rua[1]; }
+  if (ctrl.ativo && !JOGO_ATIVO()) { ctrl.x = casa.ponto_na_rua[0]; ctrl.y = casa.ponto_na_rua[1]; }
   seguindo = selecionado = novo; history.replaceState(null, '', '?m=' + novo);
   atualizarHud(); atualizarPresenca(); await carregarMeusAmigos(); carregarPublicos();
   toast(`🏠 Mudou! Agora você é o morador #${novo}, na ${nomeCasa(n).toLowerCase()}.`);
@@ -1372,7 +1148,6 @@ const TELAS = {
     const c = corpo(`<p class="mini">${casa.pronta ? '' : `Em obra — fica pronta com ${casa.pronta_em || 10 * n} seguidores. `}Rua ${casa.rua} · ${dentro} de ${casa.moradores.length} em casa agora${escolhendo ? ' · toque num livre pra escolher' : ''}.</p>
       ${EU && !escolhendo && MORADORES[EU.morador - 1].casa !== n && !casa.moradores.every(ocupado) ? '<p class="mini">Quer morar aqui? Você troca de lugar com um morador sem nome desta casa (1 mudança por dia).</p>' : ''}
       <div class="botoes">
-        <button class="btn btn-flex" id="btnVerInterior">👀 Ver o interior</button>
         ${EU && !escolhendo ? (MORADORES[EU.morador - 1].casa === n ? '<span class="etq etq-eu" style="align-self:center">🏠 você mora aqui</span>'
           : casa.moradores.every(ocupado) ? '<button class="btn btn-flex" disabled>🏠 Casa cheia (10 com nome)</button>'
           : '<button class="btn btn-a btn-flex" id="btnMudar">🏠 Quero morar aqui</button>') : ''}
@@ -1382,7 +1157,6 @@ const TELAS = {
       if (escolhendo) return escolherNoMapa(id);
       irPara(id);
     });
-    c.querySelector('#btnVerInterior').onclick = () => entrarInterior('casa', n, true);
     const bm = c.querySelector('#btnMudar'); if (bm) bm.onclick = () => mudarDeCasa(n);
   },
 
@@ -1838,7 +1612,7 @@ function entrou(r) {
 }
 function sairConta() {
   try { localStorage.removeItem('vila_token'); } catch {}
-  if (INTERIOR) sairInterior(); if (ctrl.ativo) pararControle();
+  if (ctrl.ativo) pararControle();
   EU = null; MEUS = { segue: new Set(), seguidores: new Set() }; atualizarHud(); atualizarBadge(); atualizarPresenca(); atualizarChatUI();
 }
 async function compartilhar(id) {
@@ -1914,9 +1688,19 @@ async function iniciar() {
   carregarEleicao().catch(e => console.warn('eleição', e));
   setInterval(async () => { await carregarPublicos(); await carregarEleicao(); atualizarHud(); if (EU) await carregarMeusAmigos(); }, 90000);
   // gancho de teste (só no servidor local com ?debug)
-  if (Api.modo === 'local' && new URLSearchParams(location.search).has('debug')) window.__vila = { ctrl, entrarInterior, iniciarControle, chatReceber, get EU() { return EU; }, get INTERIOR() { return INTERIOR; } };
+  if (Api.modo === 'local' && new URLSearchParams(location.search).has('debug')) window.__vila = { ctrl, iniciarControle, chatReceber, get EU() { return EU; } };
   if (Api.modo === 'local') console.info('Vila em modo LOCAL (servidor_local.js). Configure site/config.js pra usar o Supabase.');
 }
+// ---------------------------------------------------------------------
+// o que o modo jogo (site/js/jogo.js) usa daqui
+// ---------------------------------------------------------------------
+window.VilaAPI = {
+  get EU() { return EU; }, get VILA() { return VILA; }, get VIDA() { return VIDA; }, get W() { return W; }, get H() { return H; }, get DPR() { return DPR; },
+  get REMOTO() { return REMOTO; }, get PUB() { return PUB; },
+  ctrl, cam, ctx, cv, tocaTela, esc, clamp, rng, br, simMs, noiteFator, pilula, coracao, toast, mostrar, fecharPainel, token,
+  folha32, lookDe, nomeDe, rotulo, mudarVida, iniciarControle, pararControle, enviarPos, mundoPraTela, proj, PC, atualizarAcoes,
+  setSeguindo: v => { seguindo = v; selecionado = v; },
+};
 addEventListener('resize', ajustarTela);
 addEventListener('beforeunload', e => { if (sujo()) { e.preventDefault(); e.returnValue = ''; } });
 iniciar().catch(e => { console.error(e); $('#carregando').innerHTML = '<div class="carregando-caixa">Não consegui abrir a vila 😢<br><small>' + esc(e.message) + '</small></div>'; });

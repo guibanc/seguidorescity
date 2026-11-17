@@ -322,14 +322,91 @@ body.jogando.toque #chat { left: 156px; bottom: calc(80px + var(--seguro-baixo))
 body.jogando #acoes { bottom: calc(24px + var(--seguro-baixo)); }
 @media (min-width: 900px) { #acoes { bottom: 20px; } }
 
-/* ---------------- interior ---------------- */
-#interiorTopo { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 54px); display: flex; align-items: center; gap: 10px; background: var(--papel); border: 2px solid var(--tinta); border-radius: 999px; box-shadow: var(--sombra); padding: 6px 8px 6px 14px; font-weight: 800; font-size: 14px; max-width: calc(100vw - 24px); }
-#interiorTopo span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#btnSairInterior { border: 2px solid var(--tinta); background: var(--vermelho); color: #fff; border-radius: 999px; padding: 6px 12px; font-weight: 800; }
-body.interior #zoom, body.interior .hud-numeros, body.interior #hudMarco { display: none !important; }
-body.interior:not(.jogando) #btnJogar { display: none; }
-body.interior #hud { background: none; }
-@media (min-width: 900px) { #interiorTopo { top: 76px; } body.interior #painel { display: none; } }
+/* ---------------- modo jogo (explorar, mina, inventário, lojas) ---------------- */
+#jogoTopo[hidden], #hotbar[hidden], #btnAcao[hidden] { display: none; }
+.vida-moedas { display: block; font-size: 11.5px; font-weight: 800; color: var(--amarelo); margin-top: 2px; white-space: nowrap; }
+#jogoTopo { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 96px); display: flex; align-items: center; gap: 8px;
+  background: rgba(30,24,36,.82); color: var(--papel); border: 2px solid var(--tinta); border-radius: 999px; padding: 4px 4px 4px 12px; font-weight: 800; font-size: 12.5px; max-width: calc(100vw - 24px); }
+#jogoTopo span { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#btnCidade { border: 2px solid var(--tinta); background: var(--papel); color: var(--texto); border-radius: 999px; padding: 4px 10px; font-weight: 800; font-size: 12.5px; flex: none; }
+body:not(.jogando) #hotbar { display: none; }
+#hotbar { position: fixed; z-index: 6; left: 50%; transform: translateX(-50%); top: calc(env(safe-area-inset-top, 0px) + 52px); display: flex; gap: 4px; align-items: center;
+  background: rgba(30,24,36,.7); border: 2px solid var(--tinta); border-radius: 12px; padding: 3px; }
+#hotbarSlots { display: flex; gap: 3px; }
+.hs, .slot { position: relative; width: 34px; height: 34px; padding: 0; border: 2px solid #4a3f52; background: rgba(255,248,231,.16); border-radius: 7px; display: grid; place-items: center; }
+.hs.sel { border-color: var(--amarelo); background: rgba(246,200,54,.3); box-shadow: 0 0 0 2px var(--amarelo); }
+.hs small { position: absolute; left: 2px; top: 0; font-size: 8.5px; color: rgba(255,248,231,.7); font-weight: 800; }
+.hs b, .slot b { position: absolute; right: 2px; bottom: 0; font-family: var(--fonte-px); font-size: 11px; color: #fff; text-shadow: 1px 1px 0 var(--tinta), -1px 0 0 var(--tinta); }
+.hs .dur, .slot .dur { position: absolute; left: 3px; bottom: 2px; height: 3px; background: #40c463; border-radius: 2px; max-width: calc(100% - 6px); }
+img.ic { width: 24px; height: 24px; image-rendering: pixelated; pointer-events: none; }
+#btnInv { width: 38px; height: 38px; border: 2px solid var(--tinta); background: var(--amarelo); border-radius: 9px; font-size: 19px; padding: 0; }
+#btnAcao { position: fixed; z-index: 6; right: 18px; bottom: calc(80px + var(--seguro-baixo)); width: 78px; height: 78px; border-radius: 50%; border: 3px solid var(--tinta);
+  background: var(--vermelho); color: #fff; font-size: 34px; box-shadow: 0 4px 0 var(--tinta); touch-action: none; user-select: none; -webkit-user-select: none; }
+#btnAcao:active { transform: translateY(3px); box-shadow: 0 1px 0 var(--tinta); }
+body.explorando #acoes { bottom: calc(24px + var(--seguro-baixo)); }
+@media (max-width: 899px) {           /* celular: barra em pé no lado direito; topo do jogo embaixo do quadro de vida */
+  #hotbar { left: auto; right: 8px; transform: none; top: calc(env(safe-area-inset-top, 0px) + 128px); flex-direction: column; padding: 3px; }
+  #hotbarSlots { flex-direction: column; }
+  .hs { width: 34px; height: 34px; } .hs img.ic { width: 24px; height: 24px; }
+  #jogoTopo { left: 12px; transform: none; top: calc(env(safe-area-inset-top, 0px) + 124px); max-width: calc(100vw - 80px); }
+  body.explorando #acoes { flex-direction: column; align-items: center; bottom: calc(76px + var(--seguro-baixo)); }
+}
+@media (max-width: 899px) and (max-height: 700px) { .hs { width: 30px; height: 30px; } .hs img.ic { width: 22px; height: 22px; } #hotbar { top: calc(env(safe-area-inset-top, 0px) + 112px); } }
+body.explorando #chat { display: none; }
+@media (min-width: 900px) {
+  #hotbar { top: auto; bottom: 16px; }
+  .hs { width: 46px; height: 46px; } .hs img.ic { width: 32px; height: 32px; }
+  #jogoTopo { top: 70px; font-size: 14px; }
+  body.jogando #acoes { bottom: 88px; }
+}
+#jogoModal { position: fixed; inset: 0; z-index: 9; background: rgba(20,16,24,.55); display: grid; place-items: center; padding: 12px; }
+#jogoModal[hidden] { display: none; }
+.jm-caixa { width: min(560px, 100%); max-height: min(88vh, 760px); display: flex; flex-direction: column; background: var(--papel); border: 3px solid var(--tinta); border-radius: 16px; box-shadow: 0 6px 0 var(--tinta); overflow: hidden; }
+.jm-topo { display: flex; align-items: center; gap: 10px; padding: 10px 12px 6px; }
+.jm-topo b { flex: 1; font-family: var(--fonte-px); font-size: 20px; }
+#jogoModalMoedas { font-weight: 800; color: #9a6a00; }
+#jogoModalFechar { width: 36px; height: 36px; border: 2px solid var(--tinta); background: var(--papel-2); border-radius: 10px; font-size: 18px; padding: 0; }
+#jogoModalAbas { padding: 0 12px 6px; flex: none; }
+.jm-topo { flex: none; }
+.jm-corpo { overflow-y: auto; padding: 4px 12px 14px; }
+.jm-corpo .mini { margin: 10px 0 5px; font-weight: 800; }
+.jm-corpo .slot { background: var(--papel-2); border-color: var(--papel-3); width: 100%; height: auto; aspect-ratio: 1; }
+.jm-corpo .slot img.ic { width: 70%; height: 70%; }
+.jm-corpo .slot.sel { border-color: var(--vermelho); box-shadow: 0 0 0 2px var(--vermelho); }
+.jm-corpo .slot.arm { width: 42px; height: 42px; }
+.grade { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+.inv-topo { display: flex; gap: 14px; align-items: flex-start; }
+.inv-boneco { display: flex; gap: 10px; align-items: center; background: var(--papel-2); border: 2px solid var(--papel-3); border-radius: 12px; padding: 8px; }
+#invBoneco { width: 64px; height: 96px; image-rendering: pixelated; }
+.inv-arm { display: flex; flex-direction: column; gap: 4px; }
+.arm-linha { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--texto-2); font-weight: 700; }
+.inv-info p { margin: 3px 0; font-size: 13.5px; }
+.inv-sel { display: flex; gap: 10px; align-items: center; margin-top: 10px; padding: 8px; background: var(--papel-2); border-radius: 10px; min-height: 44px; font-size: 13.5px; }
+.inv-sel > div:first-of-type { flex: 1; }
+.inv-sel img.ic { width: 32px; height: 32px; }
+.inv-botoes { display: flex; gap: 6px; }
+.inv-botoes .btn { padding: 6px 10px; min-height: 36px; font-size: 13px; }
+.receitas { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 5px; }
+.receitas li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; background: var(--papel-2); border: 2px solid transparent; border-radius: 10px; }
+.receitas li.pode { border-color: var(--verde); }
+.receitas li > img.ic { width: 30px; height: 30px; flex: none; }
+.rc-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; font-size: 13.5px; }
+.rc-txt span { display: flex; flex-wrap: wrap; gap: 6px; font-size: 12.5px; color: var(--texto-2); align-items: center; }
+.rc-txt em { font-style: normal; display: inline-flex; align-items: center; gap: 1px; font-weight: 800; }
+.rc-txt em img.ic { width: 16px; height: 16px; }
+.rc-txt em.tem { color: var(--verde-esc); } .rc-txt em.falta { color: var(--vermelho); }
+.receitas .btn { padding: 6px 10px; min-height: 36px; font-size: 13px; flex: none; }
+.receitas .trava { color: var(--texto-2); font-weight: 800; }
+.receitas .vazio, .vazio { color: var(--texto-2); font-size: 13.5px; }
+.rank-atual { border: 3px solid; border-radius: 12px; padding: 10px; background: var(--papel-2); margin-bottom: 8px; font-size: 18px; }
+.rank-barra { width: 100%; max-width: none; margin: 6px 0; }
+.lista-rank { margin: 4px 0; padding-left: 18px; font-size: 13.5px; }
+.ranking { list-style: none; margin: 0; padding: 0; }
+.ranking li { display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-bottom: 1px solid var(--papel-3); font-size: 14px; }
+.ranking .pos { width: 28px; font-weight: 800; }
+.ranking small { color: var(--texto-2); }
+.ranking .val { margin-left: auto; font-weight: 800; }
+@media (max-width: 420px) { .inv-topo { flex-direction: column; } .grade { gap: 3px; } }
 
 /* ---------------- celular: topo mais limpo ----------------
    "com nome", "casas", "livres" e a barra do marco somem do topo;

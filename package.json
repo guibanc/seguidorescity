@@ -8,6 +8,7 @@
     "palavras": "node supabase/gerar_palavras.js"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
     "naughty-words": "1.2.0"
   }
 }

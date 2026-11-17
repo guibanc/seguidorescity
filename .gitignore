@@ -12,7 +12,10 @@ __pycache__/
 proximoEP/
 # páginas de teste locais
 site/_teste*.html
+site/_teste*.js
 
 # arquivos de terceiros (não publicar)
 geradordemundos/
 *.apk
+# banco de teste local (PGlite)
+banco_local_pg/

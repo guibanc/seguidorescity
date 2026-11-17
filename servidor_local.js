@@ -1,202 +1,70 @@
 // =====================================================================
-//  Servidor LOCAL pra testar o site no seu PC (sem Supabase).
-//    node servidor_local.js        -> http://localhost:3003
-//  Faz as mesmas funções do Supabase (registrar, entrar, salvar_perfil,
-//  amizades, buscar...) e guarda tudo em banco_local.json.
+//  Servidor LOCAL pra testar o site no seu PC:
+//    npm install            (1 vez)
+//    node servidor_local.js -> http://localhost:3003
+//  Roda os MESMOS arquivos SQL do Supabase num Postgres local (PGlite),
+//  então o que funciona aqui funciona igual no ar. Os dados ficam na
+//  pasta banco_local_pg/ (não vai pro GitHub).
 //  Quando o site/config.js tiver a URL do Supabase, o site usa o Supabase.
+//  Opções:  ELEICAO=votacao node servidor_local.js   (fase da eleição pra testar)
 // =====================================================================
-const http = require('http'), fs = require('fs'), path = require('path'), crypto = require('crypto');
+const http = require('http'), fs = require('fs'), path = require('path');
 const PORTA = Number(process.env.PORT) || 3003;
 const SITE = path.join(__dirname, 'site');
-const BANCO = path.join(__dirname, 'banco_local.json');
-const Sprites = require('./site/js/sprites.js');
+const SQL = ['1_criar_banco.sql', '2_palavras_bloqueadas.sql', '3_contador.sql', '5_bio_e_pedidos.sql', '6_chat_online_casa.sql',
+             '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql'];   // (4 e 10 usam coisas que só o Supabase tem)
+let db;
 
-const moradores = JSON.parse(fs.readFileSync(path.join(SITE, 'dados', 'moradores.json'), 'utf8'));
-const existe = new Set(moradores.map(m => m.id));
-let db = { registros: {}, sessoes: {}, amizades: [], chat: [], eleicao: { fase: 'candidaturas', prefeito: null }, candidaturas: {}, votos: {} };
-try { db = Object.assign(db, JSON.parse(fs.readFileSync(BANCO, 'utf8'))); } catch {}
-// fase da eleição pra testar: ELEICAO=votacao node servidor_local.js
-if (process.env.ELEICAO) db.eleicao.fase = process.env.ELEICAO;
-const salvar = () => fs.writeFileSync(BANCO, JSON.stringify(db, null, 1));
+async function abrirBanco() {
+  const { PGlite } = await import('@electric-sql/pglite');
+  const { pgcrypto } = await import('@electric-sql/pglite/contrib/pgcrypto');
+  db = await PGlite.create({ dataDir: path.join(__dirname, 'banco_local_pg'), extensions: { pgcrypto } });
+  // o que o Supabase já tem pronto
+  await db.exec(`create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions;
+    do $$ begin create role anon; exception when duplicate_object then null; end $$;
+    do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
+    do $$ begin create publication supabase_realtime; exception when duplicate_object then null; end $$;`);
+  for (const f of SQL) {
+    try { await db.exec(fs.readFileSync(path.join(__dirname, 'supabase', f), 'utf8')); }
+    catch (e) { console.error('ERRO no', f, '->', e.message); throw e; }
+  }
+  await db.exec(fs.readFileSync(path.join(SITE, 'dados', 'novos_moradores.sql'), 'utf8'));
+  if (process.env.ELEICAO) await db.query(`update eleicao set fase = $1 where id = 1`, [process.env.ELEICAO]);
+  // "cron" da mina
+  const tick = async () => {
+    const r = (await db.query(`select gerada_em + make_interval(mins => intervalo_min) <= now() as vence from mina_estado where id = 1`)).rows[0];
+    if (r && r.vence) { await db.exec('select gerar_mina()'); emitir('mina', { regenerada: true }); console.log('mina regenerada'); }
+  };
+  setInterval(() => tick().catch(e => console.error(e)), 20000);
+}
 
-// mesma lista e mesma regra do Supabase (gerada por: npm run palavras)
-const nomePermitido = require('./supabase/filtro_nomes.js').criarFiltro(require('./supabase/palavras_bloqueadas.json'));
-function aparenciaOk(a) {
-  if (a == null) return true;
-  if (typeof a !== 'object') return false;
-  const n = Sprites.normalizar(a);
-  return Object.keys(a).every(k => k in n) && Object.keys(n).every(k => JSON.stringify(n[k]) === JSON.stringify(a[k] === undefined ? null : a[k]));
+// ---------- RPC genérico: chama a função do Postgres com os parâmetros nomeados ----------
+const assinaturas = new Map();
+async function assinatura(fn) {
+  if (assinaturas.has(fn)) return assinaturas.get(fn);
+  const r = (await db.query(`
+    select p.proretset as conjunto, p.proargnames as nomes,
+           array(select format_type(t, null) from unnest(p.proargtypes) t) as tipos
+      from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+     where n.nspname = 'public' and p.proname = $1 and has_function_privilege('anon', p.oid, 'execute')`, [fn])).rows;
+  assinaturas.set(fn, r); return r;
 }
-const hashPin = pin => { const sal = crypto.randomBytes(16).toString('hex'); return sal + ':' + crypto.scryptSync(pin, sal, 32).toString('hex'); };
-const pinOk = (pin, h) => { const [sal, v] = h.split(':'); return crypto.timingSafeEqual(Buffer.from(v, 'hex'), crypto.scryptSync(String(pin), sal, 32)); };
-const sha = t => crypto.createHash('sha256').update(String(t || '')).digest('hex');
-const limpaUser = u => String(u || '').trim().replace(/^@+|@+$/g, '').toLowerCase();
-const limpaNome = n => String(n || '').replace(/\s+/g, ' ').trim();
-const regPorUser = u => Object.values(db.registros).find(r => r.usuario === u);
-function sessaoMorador(tok) {
-  const s = db.sessoes[sha(tok)];
-  return s && s.expira > Date.now() ? s.morador : null;
+async function chamar(fn, corpo) {
+  const sigs = await assinatura(fn);
+  if (!sigs.length) return { status: 404, json: { ok: false, erro: 'função não existe' } };
+  const chaves = Object.keys(corpo || {});
+  const sig = sigs.find(s => chaves.every(k => (s.nomes || []).includes(k))) || sigs[0];
+  const args = [], params = [];
+  (sig.nomes || []).forEach((nome, i) => {
+    if (!(nome in corpo)) return;
+    let v = corpo[nome];
+    if (v !== null && typeof v === 'object') v = JSON.stringify(v);
+    params.push(v); args.push(`${nome} => $${params.length}::${sig.tipos[i]}`);
+  });
+  const chamada = `${fn}(${args.join(', ')})`;
+  if (sig.conjunto) return { status: 200, json: (await db.query(`select * from ${chamada}`, params)).rows };
+  return { status: 200, json: (await db.query(`select ${chamada} as r`, params)).rows[0].r };
 }
-function novaSessao(mid) {
-  const tok = crypto.randomBytes(24).toString('hex');
-  db.sessoes[sha(tok)] = { morador: mid, expira: Date.now() + 30 * 864e5 };
-  const r = db.registros[mid]; salvar();
-  return { ok: true, token: tok, morador: mid, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia, bio: r.bio || null };
-}
-const erro = e => ({ ok: false, erro: e });
-const publico = id => {
-  const r = db.registros[id], m = moradores[id - 1];
-  return { id, casa: m.casa, chegou_no_ep: m.chegou_no_ep, nome: r && !r.oculto ? r.nome : null,
-           usuario: r && !r.oculto ? r.usuario : null, aparencia: r && !r.oculto ? r.aparencia : null,
-           bio: r && !r.oculto ? (r.bio || null) : null, ocupado: !!r };
-};
-
-const RPC = {
-  registrar({ p_morador, p_usuario, p_nome, p_pin, p_aparencia = null }) {
-    const u = limpaUser(p_usuario), n = limpaNome(p_nome), pin = String(p_pin || '');
-    if (!/^[0-9]{6}$/.test(pin)) return erro('PIN precisa ter 6 números');
-    if (/^(\d)\1{5}$/.test(pin) || ['123456','654321','121212'].includes(pin)) return erro('PIN muito fácil');
-    if (!nomePermitido(n) || !nomePermitido(u)) return erro('Nome não permitido');
-    if (!aparenciaOk(p_aparencia)) return erro('Aparência inválida');
-    if (!existe.has(p_morador)) return erro('Morador não existe');
-    if (db.registros[p_morador]) return erro('Esse morador já tem dono, escolhe outro');
-    if (regPorUser(u)) return erro('Esse @ já está em uso');
-    if (!/^[a-z0-9_.]{3,20}$/.test(u) || n.length < 2 || n.length > 20) return erro('@ (3-20 letras/números) ou nome (2-20) inválido');
-    db.registros[p_morador] = { morador: p_morador, usuario: u, nome: n, pin: hashPin(pin), aparencia: p_aparencia,
-                                criado_em: new Date().toISOString(), tentativas: 0, bloqueado_ate: 0, oculto: false };
-    return novaSessao(p_morador);
-  },
-  entrar({ p_usuario, p_pin }) {
-    const r = regPorUser(limpaUser(p_usuario));
-    if (!r) return erro('@ ou PIN errado');
-    if (r.bloqueado_ate > Date.now()) return erro('Muitas tentativas. Tenta de novo em alguns minutos');
-    if (!pinOk(p_pin, r.pin)) {
-      r.tentativas++;
-      if (r.tentativas >= 5) { r.tentativas = 0; r.bloqueado_ate = Date.now() + 15 * 60e3; }
-      salvar(); return erro('@ ou PIN errado');
-    }
-    r.tentativas = 0; r.bloqueado_ate = 0;
-    return novaSessao(r.morador);
-  },
-  meu_perfil({ p_token }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    const r = db.registros[mid];
-    return { ok: true, morador: mid, nome: r.nome, usuario: r.usuario, aparencia: r.aparencia, bio: r.bio || null };
-  },
-  salvar_perfil({ p_token, p_nome, p_aparencia, p_bio = null }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    const n = limpaNome(p_nome), b = p_bio == null ? undefined : (limpaNome(p_bio) || null);
-    if (!nomePermitido(n)) return erro('Nome não permitido');
-    if (b && !nomePermitido(b)) return erro('Essa frase não é permitida');
-    if (b && b.length > 90) return erro('A frase pode ter até 90 letras');
-    if (n.length < 2 || n.length > 20) return erro('Nome com 2 a 20 letras');
-    if (!aparenciaOk(p_aparencia)) return erro('Aparência inválida');
-    Object.assign(db.registros[mid], { nome: n, aparencia: p_aparencia }, b === undefined ? {} : { bio: b }); salvar();
-    return { ok: true };
-  },
-  sair({ p_token }) { delete db.sessoes[sha(p_token)]; salvar(); return { ok: true }; },
-  adicionar_amigo({ p_token, p_amigo }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    if (mid === p_amigo) return erro('Esse é você :)');
-    if (!existe.has(p_amigo)) return erro('Morador não existe');
-    if (db.amizades.filter(a => a.de === mid).length >= 100) return erro('Limite de 100 amigos');
-    if (!db.amizades.some(a => a.de === mid && a.para === p_amigo)) { db.amizades.push({ de: mid, para: p_amigo }); salvar(); }
-    return { ok: true, mutuo: db.amizades.some(a => a.de === p_amigo && a.para === mid) };
-  },
-  recusar_amizade({ p_token, p_de }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    db.amizades = db.amizades.filter(a => !(a.de === p_de && a.para === mid)); salvar();
-    return { ok: true };
-  },
-  remover_amigo({ p_token, p_amigo }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    db.amizades = db.amizades.filter(a => !(a.de === mid && a.para === p_amigo)); salvar();
-    return { ok: true };
-  },
-  amigos_de({ p_morador }) {
-    const vis = id => !db.registros[id] || !db.registros[id].oculto;
-    return { segue: db.amizades.filter(a => a.de === p_morador && vis(a.para)).map(a => a.para),
-             seguidores: db.amizades.filter(a => a.para === p_morador && db.registros[a.de] && vis(a.de)).map(a => a.de) };
-  },
-  enviar_chat({ p_token, p_texto }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    const t = limpaNome(p_texto);
-    if (!t) return erro('Escreve alguma coisa');
-    if (t.length > 120) return erro('Até 120 letras por mensagem');
-    if (!nomePermitido(t)) return erro('Essa mensagem não é permitida');
-    const ult = [...db.chat].reverse().find(c => c.morador_id === mid);
-    if (ult && Date.now() - Date.parse(ult.criado_em) < 2000) return erro('Calma aí, uma mensagem a cada 2 segundos');
-    const msg = { id: (db.chat.at(-1)?.id || 0) + 1, morador_id: mid, nome: db.registros[mid].nome, texto: t, criado_em: new Date().toISOString() };
-    db.chat.push(msg); if (db.chat.length > 300) db.chat.shift(); salvar();
-    emitir('chat', msg);
-    return { ok: true, id: msg.id };
-  },
-  trocar_casa({ p_token, p_casa, p_aparencia }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    const r = db.registros[mid];
-    if (r.casa_trocada_em && Date.now() - Date.parse(r.casa_trocada_em) < 864e5) return erro('Você já se mudou hoje. Dá pra mudar de novo amanhã');
-    const antiga = moradores[mid - 1].casa;
-    if (p_casa === antiga) return erro('Você já mora nessa casa');
-    const daCasa = moradores.filter(m => m.casa === p_casa);
-    if (!daCasa.length) return erro('Essa casa não existe');
-    if (!p_aparencia || !aparenciaOk(p_aparencia)) return erro('Aparência inválida');
-    const livre = daCasa.find(m => !db.registros[m.id]);
-    if (!livre) return erro('Essa casa já está cheia de moradores com nome');
-    const novo = livre.id;
-    db.registros[novo] = { ...r, morador: novo, aparencia: p_aparencia, tentativas: 0, bloqueado_ate: 0, casa_trocada_em: new Date().toISOString() };
-    delete db.registros[mid];
-    for (const a of db.amizades) { if (a.de === mid) a.de = novo; if (a.para === novo) a.para = -1; }
-    for (const a of db.amizades) { if (a.para === mid) a.para = novo; }
-    for (const a of db.amizades) { if (a.para === -1) a.para = mid; }
-    for (const sess of Object.values(db.sessoes)) if (sess.morador === mid) sess.morador = novo;
-    for (const c of db.chat) if (c.morador_id === mid) c.morador_id = novo;
-    if (db.candidaturas[mid]) { db.candidaturas[novo] = db.candidaturas[mid]; delete db.candidaturas[mid]; }
-    if (db.votos[mid] != null) { db.votos[novo] = db.votos[mid]; delete db.votos[mid]; }
-    for (const k of Object.keys(db.votos)) if (db.votos[k] === mid) db.votos[k] = novo;
-    if (db.eleicao.prefeito === mid) db.eleicao.prefeito = novo;
-    salvar();
-    return { ok: true, morador: novo, casa: p_casa, antigo: mid };
-  },
-  eleicao_info() {
-    const contar = m => Object.values(db.votos).filter(c => c === m).length;
-    const pr = db.eleicao.prefeito && db.registros[db.eleicao.prefeito];
-    return { fase: db.eleicao.fase, prefeito: pr ? db.eleicao.prefeito : null, prefeito_nome: pr ? pr.nome : null,
-      candidatos: Object.entries(db.candidaturas).filter(([m]) => db.registros[m]).map(([m, c]) => ({ m: Number(m), nome: db.registros[m].nome, slogan: c.slogan,
-        votos: db.eleicao.fase === 'candidaturas' ? null : contar(Number(m)), t: c.criado_em }))
-        .sort((a, b) => (b.votos || 0) - (a.votos || 0) || a.t.localeCompare(b.t)).map(({ t, ...c }) => c) };
-  },
-  candidatar({ p_token, p_slogan }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    if (db.eleicao.fase !== 'candidaturas') return erro('As candidaturas estão fechadas');
-    const t = limpaNome(p_slogan);
-    if (t.length < 3 || t.length > 80) return erro('O slogan precisa ter de 3 a 80 letras');
-    if (!nomePermitido(t)) return erro('Esse slogan não é permitido');
-    db.candidaturas[mid] = { slogan: t, criado_em: (db.candidaturas[mid] || {}).criado_em || new Date().toISOString() }; salvar();
-    return { ok: true };
-  },
-  retirar_candidatura({ p_token }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    if (db.eleicao.fase === 'encerrada') return erro('A eleição já acabou');
-    delete db.candidaturas[mid]; for (const k of Object.keys(db.votos)) if (db.votos[k] === mid) delete db.votos[k]; salvar();
-    return { ok: true };
-  },
-  votar({ p_token, p_candidato }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    if (db.eleicao.fase !== 'votacao') return erro(db.eleicao.fase === 'candidaturas' ? 'A votação ainda não começou' : 'A eleição já acabou');
-    if (!db.candidaturas[p_candidato]) return erro('Esse morador não é candidato');
-    db.votos[mid] = p_candidato; salvar();
-    return { ok: true };
-  },
-  meu_voto({ p_token }) {
-    const mid = sessaoMorador(p_token); if (!mid) return erro('Entre de novo');
-    return { ok: true, candidato: db.votos[mid] ?? null, candidato_eu: !!db.candidaturas[mid] };
-  },
-  buscar({ p_texto }) {
-    const t = String(p_texto || '').toLowerCase(), u = limpaUser(t);
-    return Object.values(db.registros).filter(r => !r.oculto && (r.nome.toLowerCase().includes(t) || r.usuario.includes(u)))
-      .sort((a, b) => a.nome.localeCompare(b.nome)).slice(0, 20).map(r => publico(r.morador));
-  },
-};
 
 // ---------- tempo real (imita o Realtime do Supabase): Server-Sent Events ----------
 const clientes = new Map();            // cid -> { res, m, nome, visto }
@@ -212,51 +80,47 @@ function listaOnline() {
 setInterval(() => { let mudou = false; for (const [cid, c] of clientes) if (Date.now() - c.visto > 45000) { try { c.res.end(); } catch {} clientes.delete(cid); mudou = true; } if (mudou) emitir('online', listaOnline()); }, 15000);
 
 const TIPOS = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.css': 'text/css; charset=utf-8',
-                '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
+                '.json': 'application/json; charset=utf-8', '.png': 'image/png', '.webp': 'image/webp', '.svg': 'image/svg+xml', '.ico': 'image/x-icon',
                 '.webmanifest': 'application/manifest+json' };
 const json = (res, code, obj) => { res.writeHead(code, { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(obj)); };
+const lerCorpo = req => new Promise((ok, erro) => { let b = ''; req.on('data', c => { b += c; if (b.length > 2e5) req.destroy(); }); req.on('end', () => { try { ok(JSON.parse(b || '{}')); } catch (e) { erro(e); } }); });
 
-http.createServer((req, res) => {
+async function tratar(req, res) {
   const url = new URL(req.url, 'http://x');
-  if (url.pathname === '/api/publicos') return json(res, 200, moradores.map(m => publico(m.id)));
-  if (url.pathname === '/api/contador') return json(res, 200, { seguidores: db.seguidores || moradores.length, plataforma: 'local', atualizado_em: new Date().toISOString() });
+  if (url.pathname === '/api/publicos') return json(res, 200, (await db.query('select * from moradores_publicos order by id')).rows);
+  if (url.pathname === '/api/contador') return json(res, 200, (await db.query('select * from contador_publico')).rows[0] || null);
   if (url.pathname === '/api/eventos') {
     const cid = url.searchParams.get('cid') || String(Math.random());
     res.writeHead(200, { 'Content-Type': 'text/event-stream', 'Cache-Control': 'no-store', Connection: 'keep-alive' });
     res.write('retry: 2000\n\n');
     clientes.set(cid, { res, m: null, nome: null, visto: Date.now() });
-    res.write('event: chat_historico\ndata: ' + JSON.stringify(db.chat.slice(-30)) + '\n\n');
+    const hist = (await db.query('select id, morador_id, nome, texto, criado_em from chat order by id desc limit 30')).rows.reverse();
+    res.write('event: chat_historico\ndata: ' + JSON.stringify(hist) + '\n\n');
     emitir('online', listaOnline());
     req.on('close', () => { clientes.delete(cid); emitir('online', listaOnline()); });
     return;
   }
   if (url.pathname === '/api/presenca' || url.pathname === '/api/pos') {
-    let body = '';
-    req.on('data', c => { body += c; if (body.length > 1e4) req.destroy(); });
-    req.on('end', () => {
-      try {
-        const d = JSON.parse(body || '{}'), c = clientes.get(d.cid);
-        if (c) {
-          c.visto = Date.now();
-          if (url.pathname === '/api/presenca') { const mudou = c.m !== (d.m || null); c.m = d.m || null; c.nome = d.nome || null; if (mudou) emitir('online', listaOnline()); }
-          else emitir('pos', d.p, d.cid);
-        }
-        json(res, 200, { ok: true });
-      } catch { json(res, 400, erro('pedido inválido')); }
-    });
-    return;
+    const d = await lerCorpo(req), c = clientes.get(d.cid);
+    if (c) {
+      c.visto = Date.now();
+      if (url.pathname === '/api/presenca') { const mudou = c.m !== (d.m || null); c.m = d.m || null; c.nome = d.nome || null; if (mudou) emitir('online', listaOnline()); }
+      else emitir('pos', d.p, d.cid);
+    }
+    return json(res, 200, { ok: true });
   }
   const m = url.pathname.match(/^\/api\/rpc\/(\w+)$/);
   if (m) {
-    if (req.method !== 'POST' || !RPC[m[1]]) return json(res, 404, erro('função não existe'));
-    let body = '';
-    req.on('data', c => { body += c; if (body.length > 1e5) req.destroy(); });
-    req.on('end', () => {
-      try { json(res, 200, RPC[m[1]](JSON.parse(body || '{}'))); }
-      catch (e) { console.error(e); json(res, 400, erro('pedido inválido')); }
-    });
-    return;
+    if (req.method !== 'POST') return json(res, 405, { ok: false, erro: 'use POST' });
+    const corpo = await lerCorpo(req);
+    const r = await chamar(m[1], corpo);
+    if (m[1] === 'enviar_chat' && r.json && r.json.ok) {
+      const msg = (await db.query('select id, morador_id, nome, texto, criado_em from chat where id = $1', [r.json.id])).rows[0];
+      if (msg) emitir('chat', msg);
+    }
+    return json(res, r.status, r.json);
   }
+  // arquivos do site
   let arq = path.normalize(path.join(SITE, decodeURIComponent(url.pathname)));
   if (!arq.startsWith(SITE)) { res.writeHead(403); return res.end(); }
   if (fs.existsSync(arq) && fs.statSync(arq).isDirectory()) arq = path.join(arq, 'index.html');
@@ -265,4 +129,9 @@ http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': TIPOS[path.extname(arq)] || 'application/octet-stream', 'Cache-Control': 'no-cache' });
     res.end(dados);
   });
-}).listen(PORTA, () => console.log(`Vila rodando em http://localhost:${PORTA}  (banco local: banco_local.json)`));
+}
+
+abrirBanco().then(() => {
+  http.createServer((req, res) => tratar(req, res).catch(e => { console.error(e); try { json(res, 500, { ok: false, erro: 'erro no servidor: ' + e.message }); } catch {} }))
+    .listen(PORTA, () => console.log(`Vila rodando em http://localhost:${PORTA}  (banco local: banco_local_pg/)`));
+}).catch(e => { console.error('Não consegui abrir o banco local:', e); process.exit(1); });
