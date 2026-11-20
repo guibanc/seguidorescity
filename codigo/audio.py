@@ -1,8 +1,8 @@
 import numpy as np, wave, math
 import sys
-from scene import count_at, house_done_time, T, DUR, NH, SITE_CUTS
+from scene import count_at, house_done_time, T, DUR, NH, SITE_CUTS, C0, old2new, DUR_VIDEO
 from world import clamp
-SR=44100; N=int(SR*DUR)
+SR=44100; N=int(SR*DUR_VIDEO)
 out=np.zeros(N,np.float32)
 def sq(f,dur,duty=0.5,vol=0.2,decay=8.0):
     t=np.arange(int(SR*dur))/SR
@@ -17,7 +17,7 @@ def noise(dur,vol=0.2,decay=30.0,seed=0):
     r=np.random.RandomState(seed).uniform(-1,1,len(t))
     return (r*vol*np.exp(-t*decay)).astype(np.float32)
 def add(t,w):
-    i=int(t*SR); j=min(N,i+len(w))
+    i=int(old2new(t)*SR); j=min(N,i+len(w))   # tempos do roteiro -> tempo da narração final
     if i<N: out[i:j]+=w[:j-i]
 # ---- música chiptune ----
 bpm=104; beat=60/bpm
@@ -25,7 +25,7 @@ prog=[(48,[60,64,67]),(45,[57,60,64]),(41,[53,57,60]),(43,[55,59,62])]
 mid=lambda m:440*2**((m-69)/12)
 music=np.zeros(N,np.float32)
 t=0.0;bar=0
-while t<DUR:
+while t<DUR_VIDEO:
     root,ch=prog[bar%4]
     for b in range(4):
         tb=t+b*beat
@@ -64,44 +64,51 @@ def whoosh(tt,dur=0.35):
     n=int(SR*dur); x=np.random.RandomState(int(tt*10)).uniform(-1,1,n).astype(np.float32)
     env=np.sin(np.linspace(0,np.pi,n))**2
     lp=np.convolve(x,np.ones(12)/12,'same'); add(tt-dur/2,(lp*env*0.12).astype(np.float32))
-for i in range(60,NH):
+for i in range(C0//10,NH):
     td=house_done_time(i)
     if td and td>0: chime(td,0.06)
-for tt in (11.45,11.7,11.95,12.2,19.8,21.2,22.9,35.5,36.5,37.5,38.8,39.7,40.5,41.4,45.7,47.1,48.1,48.5,52.2,53.6,55.1,56.1,57.3,
-           74.4,77.6,80.4,81.4,85.0,87.1,90.9,91.6,93.7,95.2,96.1,100.0,101.2):
+for tt in (4.3,4.6,5.4,10.4,13.7,14.4,17.8,18.9,19.4,21.06,22.24,23.24,28.3,29.5,30.5,31.9,38.38,39.32,40.63,41.70,
+           44.3,45.86,47.06,48.56,57.6,59.2,61.97,67.78,69.57,71.06,72.06,73.64,75.8,88.28,90.1,91.09,92.99,94.53,95.48,99.3):
     blip(tt)
-for a_,b_,nm in SITE_CUTS: whoosh(a_,0.25); blip(a_+0.05)
-# abertura: vento + nota grave
-for k in range(int(7.2/0.1)):
-    add(k*0.1,noise(0.12,0.02*clamp(k/20),20,k))
-add(0.3,tri(55,6.5,0.10,0.35)); add(5.5,tri(82,2.0,0.08,1.2))
-fanfare(7.4)
-# rufar de tambor (14.75 -> 16.5) e explosão no nome
-for k in range(int((16.5-14.75)/0.035)):
-    tt=14.75+k*0.035; add(tt,noise(0.03,0.03+0.05*k/50,70,k))
-add(16.5,noise(0.6,0.16,6,1)); fanfare(16.55)
-for j_,fq in enumerate((523,659,784,1047,1319,1568,2093)): add(16.6+j_*0.06,sq(fq,0.2,0.25,0.06,8))
-# mutirão: serrote, pincel, corda
-for k in range(int((21.1-19.8)/0.18)): add(19.8+k*0.18,noise(0.14,0.05,25,k))
-for k in range(15): add(21.2+k*0.1,sq(700+(k%5)*80,0.04,0.5,0.03,30))
-for k in range(int((25.0-22.9)/0.3)): add(22.9+k*0.3,sq(110,0.18,0.5,0.05,6)); add(22.9+k*0.3,noise(0.08,0.03,30,k))
-fanfare(25.1)
-# fogos
-for k in range(9):
-    t0=25.4+k*0.42; add(t0,noise(0.3,0.02,40,k)); add(t0+0.3,noise(0.5,0.11,8,k+50))
-# nuvens / evolução
-whoosh(30.8,1.6); whoosh(32.6,1.2)
-for k in range(48): add(31.0+k*0.04,sq(196*2**(k/16),0.05,0.25,0.03,16))
-for j_,fq in enumerate((392,523,659,784,1047,1319,1568,2093)): add(33.75+j_*0.07,sq(fq,0.22,0.25,0.07,7))
-fanfare(33.8)
-# provador: um "clic" por troca de roupa
-for k in range(int((51.2-45.6)/0.42)): add(45.6+k*0.42,sq(1200,0.03,0.5,0.03,40))
-# prefeito / economia / campo
-fanfare(74.4)
-for k in range(30): add(80.3+k*0.13,sq(1568+(k%3)*200,0.05,0.5,0.025,30))
-for k in range(9): add(85.0+k*0.6,sq(120,0.05,0.5,0.03,30))
+for tt in (4.6,10.2,21.0,25.9,57.0,64.8,75.4,80.5,84.5,89.7,96.7): whoosh(tt,0.3)
+fanfare(0.2)
+# a cidade vira blocos: cubos caindo
+for k in range(40): add(15.35+k*0.025,sq(180+(k%7)*60,0.04,0.5,0.04,30)); add(15.4+k*0.025,noise(0.03,0.03,60,k))
+for j_,fq in enumerate((392,523,659,784,1047,1319,1568,2093)): add(15.75+j_*0.07,sq(fq,0.22,0.25,0.07,7))
+# quase... 700!
+for k in range(int((35.6-33.4)/0.06)): add(33.4+k*0.06,noise(0.04,0.02+0.04*k/36,70,k))
+add(35.65,noise(0.6,0.16,6,1)); fanfare(35.7)
+for j_,fq in enumerate((523,659,784,1047,1319,1568,2093)): add(35.75+j_*0.06,sq(fq,0.2,0.25,0.06,8))
+for k in range(8):
+    t0=35.7+k*0.18; add(t0+0.25,noise(0.5,0.09,8,k+50))
+# obra do campo: pá e martelo
+for k in range(int((42.5-36.6)/0.25)): add(36.6+k*0.25,noise(0.06,0.04,40,k+200))
+fanfare(42.6)
+# apito + passes
+for tt in (43.6,49.8):
+    add(tt,sq(2400,0.35,0.5,0.05,3)); add(tt+0.38,sq(2400,0.2,0.5,0.05,5))
+for tt in (50.0,50.7,51.25,52.2,52.95): add(tt,noise(0.05,0.12,50,int(tt*10))); add(tt,tri(90,0.08,0.15,30))
+add(53.4,noise(0.08,0.2,40,9)); add(53.4,tri(70,0.1,0.25,25))
+# GOOOL: torcida e fogos
+add(53.72,noise(2.2,0.10,1.4,77)); fanfare(53.75)
+for k in range(10): add(53.9+k*0.18,noise(0.5,0.07,8,k+300))
+# vira-lata: latidos
+for tt in (54.9,55.3,56.1,56.5):
+    add(tt,sq(420,0.07,0.5,0.08,25)); add(tt+0.02,noise(0.06,0.05,40,int(tt*7)))
+# fazenda: galo e trator
+for k in range(14): add(57.4+k*0.05,sq(600+ (k%5)*90,0.06,0.5,0.025,20))
+for k in range(int(6.5/0.09)): add(58.0+k*0.09,sq(55,0.06,0.5,0.02,20))
+# eleição: carimbo por cartaz
+for k in range(11): add(65.45+k*0.22,noise(0.05,0.08,50,k+400))
+# entregaram: carimbo
+add(78.79,noise(0.15,0.2,20,5)); add(78.79,tri(80,0.2,0.25,10)); fanfare(78.9)
+# chat: notificações
+for k in range(12): add(80.7+k*0.3,sq(1568,0.04,0.5,0.03,30))
+add(82.4,sq(330,0.12,0.5,0.06,10))
+# 800
+fanfare(84.8)
 for j,fq in enumerate((523,659,784,1047,1319)): add(T['cta'][0]+j*0.09,sq(fq,0.25 if j==4 else 0.12,0.25,0.08,6))
-fanfare(101.2)
+for k in range(int((103-97)/0.42)): add(97.0+k*0.42,tri(110,0.08,0.12,30))
 out=np.clip(out,-0.95,0.95)
 dst=sys.argv[1] if len(sys.argv)>1 else 'bg.wav'
 with wave.open(dst,'wb') as w_:

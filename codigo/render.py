@@ -3,12 +3,11 @@ from PIL import Image, ImageDraw, ImageFilter
 from world import *
 from scene import *
 from font import draw_text, text_width
-from world16 import S
 import vila16 as V
-import iso
+import iso, vox
 
 # =====================================================================
-#  EP. 7 — PINDAMONHANGABA + EVOLUÇÃO 32 BITS (iso.K = 2 a partir de EVOL_T)
+#  EP. 8 — TUDO EM BLOCOS (iso.VOX a partir de EVOL_T) + CAMPO DE FUTEBOL (700)
 # =====================================================================
 FPS=30
 OUTW,OUTH=1080,1920
@@ -40,170 +39,218 @@ def tag_s(d,txt,sx,sy,t,t0,t1,col=YEL,dy=-30,fill=(24,22,52,225)):
     chip(d,txt,sx,sy+dy+bob,t,t0,t1,col,fill)
     if pop(t,t0,t1)>0: d.polygon([(int(sx)-3,int(sy)+dy+bob+16),(int(sx)+3,int(sy)+dy+bob+16),(int(sx),int(sy)+dy+bob+20)],fill=(255,255,255,255))
 
-# ---------- moradores: 1x (16 bits) e 2x (32 bits: EPX + sombreado) ----------
-def _epx(a):
-    h,w,_=a.shape
-    P_=np.pad(a,((1,1),(1,1),(0,0)),mode='edge')
-    A_=P_[:-2,1:-1];B_=P_[1:-1,2:];C_=P_[1:-1,:-2];D_=P_[2:,1:-1]
-    eq=lambda x,y:np.all(x==y,axis=2)
-    o=np.repeat(np.repeat(a,2,0),2,1)
-    c=~eq(A_,D_)&~eq(B_,C_)
-    m1=c&eq(C_,A_);m2=c&eq(A_,B_);m3=c&eq(D_,C_);m4=c&eq(B_,D_)
-    o[0::2,0::2][m1]=C_[m1];o[0::2,1::2][m2]=B_[m2];o[1::2,0::2][m3]=C_[m3];o[1::2,1::2][m4]=D_[m4]
-    return o
+# ---------- moradores: 32 bits (antes) e em bloco (depois) ----------
 _N2={}
-def npc_k(pid,dr,fr,k,uniform=None,carry=None):
-    s=V.NPC(pid,dr,fr,uniform,carry=carry) if carry else V.NPC(pid,dr,fr,uniform)
-    if k==1: return s
-    key=(pid,dr,fr,uniform,carry)
-    if key not in _N2:
-        from char32 import npc32
-        _N2[key]=npc32(V.look_of(pid),dr,fr,uniform,carry=carry)
+UNIF={'jogador':dict(camisa=3,camisa2=2,estampa='time',baixo='bermuda',cor_baixo=2,chapeu=None),
+      'rival':dict(camisa=0,camisa2=4,estampa='time',baixo='bermuda',cor_baixo=2,chapeu=None),
+      'goleiro':dict(camisa=6,camisa2=6,estampa='lisa',baixo='bermuda',cor_baixo=2,chapeu=None),
+      'fazendeiro':dict(camisa=0,camisa2=4,estampa='xadrez',baixo='calca',cor_baixo=0,chapeu='palha',cor_chapeu=2,barba=True)}
+def look_u(pid,uniform):
+    lk=dict(V.look_of(pid))
+    if uniform in UNIF: lk.update(UNIF[uniform])
+    return lk
+def npc_k(pid,dr,fr,k,uniform=None,carry=None,tool=None):
+    from char32 import npc32
+    u2=None if uniform in UNIF else uniform
+    if k==1:
+        key=(pid,dr,fr,uniform,carry,tool,1)
+        if key not in _N2: _N2[key]=npc32(look_u(pid,uniform),dr,fr,u2,tool,carry).resize((16,24),Image.NEAREST)
+        return _N2[key]
+    key=(pid,dr,fr,uniform,carry,tool)
+    if key not in _N2: _N2[key]=npc32(look_u(pid,uniform),dr,fr,u2,tool,carry)
     return _N2[key]
-    if key not in _N2:
-        a=np.array(s.convert('RGBA'))
-        o=_epx(a).astype(np.float32)
-        al=o[:,:,3]>0
-        # luz de cima/esquerda: borda direita/baixo mais escura, esquerda/cima com brilho
-        r_=np.zeros_like(al); r_[:,:-1]=al[:,:-1]&~al[:,1:]
-        b_=np.zeros_like(al); b_[:-1,:]=al[:-1,:]&~al[1:,:]
-        l_=np.zeros_like(al); l_[:,1:]=al[:,1:]&~al[:,:-1]
-        t_=np.zeros_like(al); t_[1:,:]=al[1:,:]&~al[:-1,:]
-        lum=o[:,:,:3].mean(axis=2)
-        thin=(r_|b_|l_|t_)&(lum<70)
-        o[thin,3]=0                                   # contorno com metade da grossura
-        al=o[:,:,3]>0
-        r_=np.zeros_like(al); r_[:,:-1]=al[:,:-1]&~al[:,1:]
-        b_=np.zeros_like(al); b_[:-1,:]=al[:-1,:]&~al[1:,:]
-        l_=np.zeros_like(al); l_[:,1:]=al[:,1:]&~al[:,:-1]
-        t_=np.zeros_like(al); t_[1:,:]=al[1:,:]&~al[:-1,:]
-        o[r_|b_,:3]*=0.72; o[l_|t_,:3]=o[l_|t_,:3]*0.8+255*0.2
-        # contorno escuro fino (1 px em 2x)
-        out_=np.zeros_like(al)
-        for dy,dx in ((1,0),(-1,0),(0,1),(0,-1)):
-            out_|=np.roll(np.roll(al,dy,0),dx,1)
-        out_&=~al
-        o[out_]=[34,28,40,255]
-        yy=np.arange(o.shape[0])[:,None]/o.shape[0]
-        o[:,:,:3]*=(1.06-0.12*yy)[:,:,None]
-        _N2[key]=Image.fromarray(np.clip(o,0,255).astype(np.uint8),'RGBA')
-    return _N2[key]
-def sf(pid,dr,fr,uniform=None,carry=None,hop=0):
+_DOG={}
+def dog32(dr,fr,bola,k):
+    key=(dr,fr,bola,k)
+    if key in _DOG: return _DOG[key]
+    im=Image.new('RGBA',(30,22),(0,0,0,0)); d=ImageDraw.Draw(im)
+    c=(196,150,96); c2=(160,116,70); o=(70,46,30)
+    if dr in ('up','down'):
+        d.rectangle([11,8,18,17],fill=c,outline=o); d.rectangle([10,3,19,10] if dr=='down' else [10,1,19,8],fill=c,outline=o)
+        if dr=='down': d.point([(12,6),(17,6)],fill=(20,20,20)); d.rectangle([14,8,15,9],fill=(30,30,30))
+        d.rectangle([9,2,10,6],fill=c2); d.rectangle([19,2,20,6],fill=c2)
+        sw=fr%2; d.rectangle([11,17,12,20-sw],fill=c2); d.rectangle([17,17,18,19+sw],fill=c2)
+    else:
+        sw=[0,1,0,-1][fr%4]
+        for lx,o_ in ((7,sw),(10,-sw),(17,-sw),(20,sw)): d.rectangle([lx+o_,15,lx+1+o_,20],fill=c2)
+        d.rectangle([5,9,22,16],fill=c,outline=o)
+        d.rectangle([19,4,27,11],fill=c,outline=o); d.rectangle([25,8,28,11],fill=(214,180,130),outline=o)
+        d.point((27,8),fill=(20,20,20)); d.point((23,6),fill=(20,20,20)); d.rectangle([19,3,21,7],fill=c2)
+        d.line([(5,10),(1,6-abs(sw))],fill=c,width=2)
+        if bola: d.ellipse([25,11,30,16],fill=(250,250,250),outline=(40,40,50))
+        if dr=='left': im=im.transpose(Image.FLIP_LEFT_RIGHT)
+    if k==1: im=im.resize((15,11),Image.NEAREST)
+    im.info['foot']=0
+    _DOG[key]=im; return im
+def sf(pid,dr,fr,uniform=None,carry=None,hop=0,tool=None):
     def f(k):
-        s=npc_k(pid,dr,fr,k,uniform,carry)
+        s=npc_k(pid,dr,fr,k,uniform,carry,tool)
         if hop<=0: return s
-        im=Image.new('RGBA',(s.width,s.height+int(hop*k)),(0,0,0,0)); im.paste(s,(0,0)); return im
+        im=Image.new('RGBA',(s.width,s.height+int(hop*k)),(0,0,0,0)); im.paste(s,(0,0)); im.info['foot']=s.info.get('foot',0); return im
     return f
+def dogf(dr,fr,bola=False):
+    return lambda k: dog32(dr,fr,bola,k)
 
 # ---------- câmera ----------
 def CI(x,y,z): px,py=iso.PW(x,y); return (px,py,z)
-_vr=[(i,l) for i,l in enumerate(house_lots[:NH]) if l[1]==ROADC and house_var[i]%3==2 and 40<l[0]<120]
-_VARAL=lot(*_vr[0][1]) if _vr else (60,126)
-CAMS=[(0.0,CI(146,446,7.0)),(7.2,CI(146,446,8.0)),(9.0,CI(135,365,0.78)),(11.2,CI(135,330,0.8)),(14.6,CI(135,400,0.8)),
-      (15.9,CI(130,452,5.0)),(18.1,CI(130,452,5.4)),(18.8,CI(130,450,7.5)),(25.4,CI(128,448,7.5)),(29.0,CI(128,448,4.0)),
-      (30.4,CI(128,448,4.0)),(32.6,CI(135,365,0.62)),(34.6,CI(135,365,0.62)),(35.5,CI(135,330,0.95)),(36.5,CI(120,300,1.05)),
-      (37.6,CI(60,170,3.4)),(42.6,CI(_VARAL[0]+18,_VARAL[1]+12,3.8)),
-      (42.7,CI(132,248,1.0)),(51.3,CI(132,248,1.0)),
-      (51.9,CI(100,525,3.0)),(59.2,CI(112,525,3.0))]
-SITE_CAM={'virou':(CI(132,248,1.8),CI(132,248,2.3)),'chat':(CI(132,250,2.5),CI(132,250,2.6)),'online':(CI(132,252,2.9),CI(140,252,3.0)),
-          'casa':(CI(160,415,3.0),CI(160,415,3.0)),'geladeira':(CI(160,415,3.0),CI(160,415,3.0)),
-          'mercadinho':(CI(172,234,3.4),CI(172,234,3.6)),'banco':(CI(111,262,4.2),CI(111,262,4.4)),
-          'fonte':(CI(132,245,4.2),CI(132,245,4.6)),'mudanca':(CI(70,428,3.0),CI(90,428,3.0))}
-CAMS2=[(73.0,CI(160,414,3.0)),(79.1,CI(160,414,3.2)),(79.6,CI(150,500,2.2)),(84.6,CI(150,520,2.2)),
-       (85.2,CI(178,606,2.7)),(90.6,CI(178,606,2.7)),(91.3,CI(135,250,0.9)),(97.4,CI(135,520,0.9)),
-       (98.0,CI(128,448,5.4)),(102.6,CI(128,448,5.8)),(104.6,CI(135,365,0.8)),(110,CI(135,365,0.8))]
+FX0,FY0,FX1,FY1=vox.campo_rect(); FXM,FYM=(FX0+FX1)/2,(FY0+FY1)/2
+CAMS=[(0.0,CI(132,452,4.0)),(3.6,CI(132,452,4.5)),(4.6,CI(135,420,0.95)),(8.6,CI(140,440,0.95)),(10.2,CI(FXM,FYM,2.6)),
+      (13.5,CI(FXM,FYM,2.6)),(14.6,CI(135,480,1.3)),(16.9,CI(135,480,1.45)),
+      (18.0,CI(96,512,5.2)),(20.9,CI(70,512,5.6)),
+      (21.0,CI(132,248,1.0)),(25.85,CI(132,248,1.0)),
+      (25.9,CI(118,515,4.0)),(29.4,CI(112,515,4.0)),(31.5,CI(54,508,4.2)),(33.0,CI(50,508,4.2)),
+      (33.9,CI(FXM,FYM-3,5.2)),(36.2,CI(FXM,FYM-3,5.3)),(42.8,CI(FXM,FYM-3,5.8)),
+      (43.3,CI(FXM,FYM,6.0)),(49.3,CI(FXM+4,FYM-2,6.6))]
+CAMS2=[(57.0,CI(FXM+20,FYM,6.2)),(58.6,CI(-74,358,5.6)),(64.8,CI(-78,362,6.4)),
+       (64.8,CI(160,424,3.0)),(75.3,CI(160,424,3.0)),
+       (75.4,CI(FXM,FYM-3,5.6)),(80.4,CI(FXM,FYM-3,6.4)),
+       (80.5,CI(132,250,4.0)),(84.4,CI(132,250,4.6)),
+       (84.5,CI(135,520,1.5)),(89.6,CI(135,520,1.6)),
+       (89.7,CI(140,500,1.5)),(96.6,CI(140,420,0.82)),
+       (96.7,CI(FXM,FYM-3,5.8)),(103.5,CI(FXM,FYM-3,6.6))]
 def _interp_cam(t,L):
     for (a,va),(b,vb) in zip(L,L[1:]):
         if a<=t<b:
             f=smooth((t-a)/(b-a)); return tuple(va[i]+(vb[i]-va[i])*f for i in range(3))
     return L[-1][1] if t>=L[-1][0] else L[0][1]
 def camiso(t):
-    if t<59.3: c=_interp_cam(t,CAMS)
-    elif t<73.0:
-        for a,b,nm in SITE_CUTS:
-            if a<=t<b:
-                c0,c1=SITE_CAM[nm]; f=smooth((t-a)/(b-a)); c=tuple(c0[i]+(c1[i]-c0[i])*f for i in range(3)); break
+    if t<49.5: c=_interp_cam(t,CAMS)
+    elif t<57.0:
+        bx,by,bz=ball_at(t)
+        if t>=54.5:
+            dx,dy,_=dog_at(t); bx,by=(bx+dx)/2,(by+dy)/2
+        tx,ty=clamp(bx,FX0+14,FX1-10),clamp(by,FY0+6,FY1-6)
+        c0=_interp_cam(49.3,CAMS); c1=CI(tx,ty-2,7.2)
+        f=smooth(clamp((t-49.5)/0.8)); c=tuple(c0[i]+(c1[i]-c0[i])*f for i in range(3))
     else: c=_interp_cam(t,CAMS2)
-    if T['tambor'][0]<=t<T['nome'][0]+0.3:          # tremida do tambor
-        k=clamp((t-T['tambor'][0])/1.6)*3
-        c=(c[0]+math.sin(t*70)*k,c[1]+math.cos(t*63)*k,c[2])
+    if 53.7<=t<54.6:
+        k=(1-(t-53.7)/0.9)*5; c=(c[0]+math.sin(t*70)*k,c[1]+math.cos(t*63)*k,c[2])
+    if 35.6<=t<36.2:
+        k=(1-(t-35.6)/0.6)*4; c=(c[0]+math.sin(t*70)*k,c[1]+math.cos(t*63)*k,c[2])
     return c
 def w2si(x,y,cam,z_=0):
     cx,cy,zz=cam; px,py=iso.PW(x,y,z_)
     return ((px-(cx-540/zz))*zz/4,(py-(cy-960/zz))*zz/4)
-def site_cut(t):
-    for a,b,nm in SITE_CUTS:
-        if a<=t<b: return nm,a,b
-    return None,0,0
 
-# ---------- moradores ----------
-_cr=random.Random(707)
+# ---------- o jogo ----------
 _regids=sorted(i for i in REG if i<=C1)
-MUTIRAO=[]                                       # plateia do mutirão (inclui gente do site)
-for j in range(34):
-    pid=_regids[j*len(_regids)//34] if j%2==0 else _cr.randint(1,C1)
-    while True:
-        x=_cr.uniform(98,174); y=_cr.uniform(460,484)
-        if x<116 or x>158: break
-    MUTIRAO.append(dict(id=pid,x=x,y=y,sx=131.5+_cr.uniform(-2,2),sy=_cr.uniform(380,440),arr=18.2+_cr.uniform(0,1.6),ph=_cr.uniform(0,6)))
-def mutirao_people(t):
+TEAM=[(12,'ATACANTE',(200,628)),(555,'ATACANTE',(199,643)),(168,'MEIA',(182,627)),(348,'MEIA',(182,644)),
+      (236,None,(169,636)),(473,None,(158,629)),(441,'GOLEIRO',(FX0+3,FYM))]
+RIVAL=[(9301,(207,637)),(9302,(203,624)),(9303,(212,648)),(9304,(192,636)),(9305,(FX1-3,FYM))]
+BALLK=[(43.0,(FXM,FYM)),(49.84,(FXM,FYM)),(50.0,(169,636)),(50.7,(182,627)),(51.25,(182,644)),(52.2,(199,643)),(52.95,(200,628)),
+       (53.72,(FX1+1.5,FYM-2)),(54.3,(FX1+1.5,FYM-2)),(54.5,(FXM,FYM))]
+def _lerp(K_,t):
+    if t<=K_[0][0]: return K_[0][1]
+    for (a,pa),(b,pb) in zip(K_,K_[1:]):
+        if a<=t<b:
+            f=(t-a)/(b-a); return (pa[0]+(pb[0]-pa[0])*f,pa[1]+(pb[1]-pa[1])*f),f,a,b
+    return K_[-1][1]
+DOGK=[(54.7,(FX0-4,FY1+2)),(55.6,(FXM-1,FYM+1)),(56.0,(FXM-1,FYM+1)),(57.0,(FX0+4,FY0-6)),(60,(FX0-30,FY0-30))]
+def dog_at(t):
+    r=_lerp(DOGK,t); p=r[0] if isinstance(r[0],tuple) else r
+    return (p[0],p[1],0)
+def ball_at(t):
+    if 75.4<=t<80.5 or t>=96.7:          # bola rolando à toa / quicando
+        u=t*0.6; return (FXM+math.sin(u)*22,FYM+math.sin(u*1.7)*9,abs(math.sin(t*4))*6 if t>=96.7 else 0)
+    if t>=55.8:
+        x,y,_=dog_at(t); return (x+2.5,y,2.6)
+    r=_lerp(BALLK,t)
+    if isinstance(r[0],tuple):
+        (x,y),f,a,b=r; h=math.sin(f*math.pi)*(3 if b-a<1.0 else 6)
+        if b==53.72: h=math.sin(f*math.pi)*4+f*3
+        return (x,y,h)
+    return (r[0],r[1],0)
+def team_people(t):
+    out=[]; names=[]
+    if not (43.3<=t<57.2 or 75.4<=t<80.5 or t>=96.7): return out,names
+    bx,by,_=ball_at(t)
+    gol=53.72<=t<55.2
+    for k,(pid,pos,(hx,hy)) in enumerate(TEAM):
+        ent=clamp((t-43.6-k*0.25)/1.6)
+        if 75.4<=t or t>=96.7: ent=1
+        sx,sy=hx,FY1+8
+        x=sx+(hx-sx)*smooth(ent); y=sy+(hy-sy)*smooth(ent)
+        if ent>=1:
+            if t>=49.5 and pos!='GOLEIRO':
+                x+=clamp((bx-x)*0.25,-4,4); y+=clamp((by-y)*0.25,-3,3)
+            if 75.4<=t: x+=math.sin(t*1.3+k)*5; y+=math.sin(t*0.9+k*2)*3
+            if pos=='GOLEIRO': y=FYM+clamp(by-FYM,-4,4)
+        if 54.6<t<57.2 and pos!='GOLEIRO':                 # correndo atrás do vira-lata
+            dx,dy,_=dog_at(t); f=clamp((t-55.4)/1.4)*0.6; x+=(dx-x)*f; y+=(dy-y)*f
+        moving=ent<1 or (54.6<t<57.2) or 75.4<=t
+        dr='up' if ent<1 else ('right' if pos!='GOLEIRO' else 'right')
+        if 54.6<t<57.2: dr='left'
+        hop=abs(math.sin((t*3+k)*math.pi))*3 if gol else 0
+        out.append((x,y,sf(pid,dr,int(t*8+k)%4 if moving else 0,'goleiro' if pos=='GOLEIRO' else 'jogador',hop=hop)))
+        names.append((pid,pos,x,y))
+    for k,(pid,(hx,hy)) in enumerate(RIVAL):
+        ent=clamp((t-44.2-k*0.25)/1.6)
+        if 75.4<=t or t>=96.7: ent=1
+        x=hx+(1-smooth(ent))*0; y=FY0-8+(hy-FY0+8)*smooth(ent)
+        if ent>=1 and t>=49.5 and k<4: x+=clamp((bx-x)*0.2,-3,3); y+=clamp((by-y)*0.2,-3,3)
+        if k==4:
+            y=FYM+clamp(by-FYM,-4,4)
+            if 53.4<=t<54.2: y=FYM+6*smooth(clamp((t-53.4)/0.3));
+        if 75.4<=t: x+=math.sin(t*1.1+k*3)*4
+        uni='goleiro' if k==4 else 'rival'
+        out.append((x,y,sf(pid,'left' if ent>=1 else 'down',int(t*8+k)%4 if ent<1 or 75.4<=t else 0,uni)))
+    return out,names
+def torcida(t):
     out=[]
-    if not (18.1<=t<29.2): return out
-    for c in MUTIRAO:
-        if t<c['arr']:
-            f=clamp((t-18.1)/(c['arr']-18.1)); x=c['sx']+(c['x']-c['sx'])*f; y=c['sy']+(c['y']-c['sy'])*f
-            out.append((x,y,sf(c['id'],'down',int(t*8+c['ph'])%4))); continue
-        hop=0
-        if 16.5<=t<18.1 or t>=25.1: hop=abs(math.sin((t*2.4+c['ph'])*math.pi))*3.5
-        out.append((c['x'],c['y'],sf(c['id'],'up' if t<25.1 else 'down',(int(t*5+c['ph'])%2)*2 if hop>0.5 else 0,hop=hop)))
-    # serradores, pintores, puxadores de corda
-    if 19.6<=t<21.3:
-        for k,(x,y) in enumerate(((152,470),(155,478))):
-            out.append((x,y,sf(8000+k,'left',0,'pedreiro','up' if int(t*8+k)%2 else 'down')))
-    if 21.0<=t<22.9:
-        for k in range(3):
-            u=PLACA_X0+3+k*7+((t-21.2)*10)%4
-            out.append((u,PLACA_Y+2.2,sf(8010+k,'up',int(t*6+k)%2*2,'pedreiro')))
-    if 22.7<=t<25.4:
-        f=smooth(clamp((t-22.9)/2.1))
-        for k in range(4):
-            out.append((PLACA_X0+3+k*5.5,PLACA_Y+12+f*6,sf(8020+k,'up',int(t*6+k)%4,'pedreiro')))
+    if campo_p(t)<0.85 or not (41.7<=t<57.2 or 75.4<=t<80.5 or t>=96.7): return out
+    rr=random.Random(5)
+    for k in range(22):
+        dj=1+k%4; pid=_regids[(k*3)%len(_regids)] if k%2==0 else rr.randint(1,C1)
+        x=FX0+6+rr.uniform(0,FX1-FX0-12); y=FY1+2+dj*1.5-0.6
+        hop=dj*1.5
+        if 53.72<=t<55.2 or (41.7<=t<43.3 and k<8): hop+=abs(math.sin((t*2.6+k*0.37)*math.pi))*3
+        out.append((x,y,sf(pid,'up',0,hop=hop)))
     return out
-def mutirao_extra(t):
-    ex=[]
-    if 19.4<=t<21.6:          # cavaletes com tábua + serragem
-        def cav(vd,vx0,vy0,k):
-            for (bx,by) in ((148,471),(151,479)):
-                X,Y=iso.PW(bx,by); X=X*k-vx0; Y=Y*k-vy0
-                vd.line([X-6*k,Y,X-4*k,Y-6*k],fill=(110,74,44)); vd.line([X+6*k,Y,X+4*k,Y-6*k],fill=(110,74,44))
-                vd.rectangle([X-9*k,Y-8*k,X+9*k,Y-6*k],fill=(190,140,86))
-                if t<21.2:
-                    for j in range(5):
-                        q=(t*3+j*0.2)%1
-                        vd.rectangle([X+(j-2)*3*k,Y-6*k+q*8*k,X+(j-2)*3*k+k,Y-6*k+q*8*k+k],fill=(236,206,150))
-        ex.append((148+475,('fn',cav)))
-    if 22.7<=t<25.3:          # cordas
-        n,ang=placa_estado(t)
-        th=ang*math.pi/2; zb=26*ang; ztop=zb+12*math.sin(th); ytop=PLACA_Y-12*math.cos(th)
-        f=smooth(clamp((t-22.9)/2.1))
-        def corda(vd,vx0,vy0,k,ztop=ztop,ytop=ytop,f=f):
-            for kk in range(4):
-                ax,ay=iso.PW(PLACA_X0+3+kk*5.5,ytop,ztop); bx,by=iso.PW(PLACA_X0+3+kk*5.5,PLACA_Y+12+f*6,9)
-                vd.line([ax*k-vx0,ay*k-vy0,bx*k-vx0,by*k-vy0],fill=(214,190,130),width=k)
-        ex.append((PLACA_X1+PLACA_Y+30,('fn',corda)))
-    return ex
+def ball_extra(t):
+    if not (43.0<=t<57.2 or 75.4<=t<80.5 or t>=96.7): return []
+    if t>=55.8 and t<57.2: return []
+    x,y,h=ball_at(t)
+    def ball(vd,vx0,vy0,k,x=x,y=y,h=h):
+        X,Y=iso.PW(x,y,h); X=X*k-vx0; Y=Y*k-vy0; r=2*k
+        Xs,Ys=iso.PW(x,y,0); Xs=Xs*k-vx0; Ys=Ys*k-vy0
+        vd.ellipse([Xs-r,Ys-r/2,Xs+r,Ys+r/2],fill=(0,30,0,80))
+        vd.ellipse([X-r,Y-2*r,X+r,Y],fill=(250,250,250),outline=(40,40,50))
+        vd.rectangle([X-r//2,Y-r-r//2,X,Y-r],fill=(40,40,50))
+    return [(x+y+0.6,('fn',ball))]
+def dog_people(t):
+    if not (54.6<=t<57.2): return []
+    x,y,_=dog_at(t); dr='right' if t<55.6 else ('down' if t<56.0 else 'left')
+    if t>=56.0: dr='up' if False else 'left'
+    return [(x,y,dogf(dr,int(t*12)%4,bola=t>=55.8))]
 
+# ---------- fazenda ----------
+FARMER=(-76,340)
+HIRED=[(652,(-128,372)),(663,(-110,384)),(676,(-92,396)),(689,(-120,408)),(704,(-80,416))]
+def farm_people(t):
+    out=[]
+    if not (56.9<=t<65.0): return out
+    wave=int(t*4)%2
+    out.append((FARMER[0],FARMER[1],sf(9500,'down',wave*2 if t<62 else 0,'fazendeiro')))
+    for k,(pid,(hx,hy)) in enumerate(HIRED):
+        t0=60.8+k*0.25
+        if t<t0: continue
+        f=clamp((t-t0)/1.6); sx,sy=-30,395
+        x=sx+(hx-sx)*f; y=sy+(hy-sy)*f
+        if f<1: out.append((x,y,sf(pid,'left',int(t*8+k)%4)))
+        else: out.append((x+math.sin(t*2+k)*0.6,y,sf(pid,'left',0,tool='up' if int(t*3+k)%2 else 'down')))
+    return out
+
+# ---------- moradores da cidade ----------
 def iso_people(t,cam):
     cx,cy,z=cam; vw,vh=1080/z,1920/z
     out=[]; names=[]
-    hide=18.1<=t<29.2
     for pp in people:
         st=person_state(pp,t)
         if st is None: continue
         x,y=st[0],st[1]
+        if FX0-4<x<FX1+4 and FY0-4<y<FY1+10: continue
         px,py=iso.PW(x,y)
         if not (cx-vw/2-20<px<cx+vw/2+20 and cy-vh/2-30<py<cy+vh/2+30): continue
-        if hide and 100<x<175 and 440<y<505: continue
         st0=person_state(pp,t-0.08)
         dx,dy=(x-st0[0],y-st0[1]) if st0 else (0,1)
         moving=abs(dx)+abs(dy)>0.05
@@ -211,7 +258,7 @@ def iso_people(t,cam):
         dr=('right' if sxd>0 else 'left') if abs(sxd)>abs(syd)*1.2 else ('down' if syd>0 else 'up')
         if not moving: dr='down'
         out.append((x,y,sf(pp['id'],dr,(int(t*8+pp['ph']*3)%4) if moving else 0)))
-        if pp['id'] in REG and z>=2.4: names.append((abs(px-cx)+abs(py-cy),x,y,pp['id']))
+        if pp['id'] in REG and z>=2.4 and not (43.3<=t<57.2): names.append((abs(px-cx)+abs(py-cy),x,y,pp['id']))
         if len(out)>80: break
     names=[n[1:] for n in sorted(names)[:3]]
     C=count_at(t)
@@ -219,321 +266,235 @@ def iso_people(t,cam):
         p=house_p(i,C)
         if 0<p<1:
             lx_,ly_=lot(*l)
-            for j in range(2): out.append((lx_+4+j*12,ly_+22,sf(8000+(i+j)%6,'down',0,'pedreiro','up' if int(t*6+j)%2 else 'down')))
-    out+=mutirao_people(t)
-    if T['campo'][0]-0.4<t<T['campo'][1]+0.3:
-        lx_,ly_=lot(*CAMPO[0])
-        for k in range(4): out.append((lx_+30+k*8,ly_-2,sf(9100+k,'down',0)))
-        gx=lx_+44+math.sin(t*3.2)*10; hop=max(0,math.sin(t*6.4))*5
-        out.append((gx,ly_+30,sf(9200,'down',1 if hop>1 else 0,hop=hop)))   # goleiro
-    nm,a,b=site_cut(t)
-    if nm=='mercadinho':
-        dx_=lot(*MERCADO)[0]+9.5; f=clamp((t-a)/(b-a))
-        out.append((dx_,ROADB+3+f*6,sf(REG and _regids[3] or 5,'down',int(t*8)%4,carry='sacola')))
-    if nm=='banco': out.append((111,265.2,sf(_regids[5] if len(_regids)>5 else 7,'down',0)))
-    if nm=='online':
-        for k in range(6): out.append((120+k*5,248+(k%2)*6+((t-a)*8)%6,sf(_regids[k*3%len(_regids)],'right',int(t*8+k)%4)))
-    return out,names
-
-def extra_iso(t):
-    ex=mutirao_extra(t)
-    if T['campo'][0]-0.4<t<T['campo'][1]+0.3:
-        lx_,ly_=lot(*CAMPO[0]); bx,by=lx_+38,ly_+12+math.sin(t*1.7)*8
-        h=abs(math.sin(t*5))*9
-        def ball(vd,vx0,vy0,k,bx=bx,by=by,h=h):
-            X,Y=iso.PW(bx,by,h); X=X*k-vx0; Y=Y*k-vy0
-            vd.ellipse([X-2*k,Y-2*k,X+2*k,Y+2*k],fill=(255,255,255),outline=(30,30,30))
-        ex.append((bx+by+0.6,('fn',ball)))
-    nm,a,b=site_cut(t)
-    if nm=='mudanca':
-        f=clamp((t-a)/(b-a)); tx=40+f*90; ty=ROADD+5
-        def truck(vd,vx0,vy0,k,tx=tx,ty=ty):
-            pass
-        s_=iso.sprite(lambda tx=tx,ty=ty: caminhao(tx,ty),tx-3,ty-4,tx+14,ty+4,24)
-        if s_: ex.append((tx+ty+8,('spr',s_)))
-    return ex
-def caminhao(x,y):
-    iso.shadow(x,y-2,x+12,y+2,10)
-    iso.box(x+4,y-2,x+12,y+2,11,(240,240,244),(200,200,206)); iso.top(x+4,y-2,x+12,y+2,11,(226,226,232))
-    iso.box(x,y-2,x+4,y+2,7,(214,60,50),(170,44,38)); iso.top(x,y-2,x+4,y+2,7,(230,80,70))
-    iso.quad([iso.P(x+0.4,y+2,4),iso.P(x+3,y+2,4),iso.P(x+3,y+2,6.5),iso.P(x+0.4,y+2,6.5)],(150,206,236))
-    for (wx,wy) in ((x+2,y+2),(x+6,y+2),(x+10,y+2)):
-        X,Y=iso.P(wx,wy,1); iso.d.ellipse([X-1.5,Y-1.5,X+1.5,Y+1.5],fill=(30,30,34))
-    for j in range(3): iso.box(x+5+j*2.3,y-1.5,x+6.8+j*2.3,y+0.5,3,(200,150,90),(170,124,72),z0=11)
-    cx,cy=iso.P(x+8,y+2,7); draw_text(iso.d,"MUDANÇA",cx,cy-3,1,(214,60,50,255),outline=None) if False else None
-
-def pop_iso(t): return None
-
-# ---------- efeitos de tela ----------
-def dark_spot(fr,t,cam):
-    a=np.array(fr).astype(np.float32)
-    k=1.0 if t<6.6 else clamp(1-(t-6.6)/0.9)
-    if k<=0: return fr
-    sx,sy=w2si(149,446,cam,12); sx*=4; sy*=4
-    yy,xx=np.ogrid[0:OUTH,0:OUTW]
-    r=np.sqrt((xx-sx)**2+((yy-sy)*0.8)**2)
-    spot=np.clip(1-(r-170)/240,0,1)*clamp(t/1.2)
-    mul=0.12+0.88*spot
-    m=(1-k)+k*mul
-    a*=m[:,:,None]
-    a[:,:,2]*= (1-k*0.15*(1-spot))+k*0.15*(1-spot)*1.4
-    return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
-def night_tint(fr,k):
-    a=np.array(fr).astype(np.float32)*(1-(1-np.array([0.45,0.5,0.75]))*k)
-    return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
-def grade32(fr,t):
-    """luz '32 bits': quente, contraste e vinheta"""
-    a=np.array(fr).astype(np.float32)
-    a*=np.array([1.05,1.0,0.92]); lum=a.mean(axis=2,keepdims=True); a=lum+(a-lum)*1.12
-    a=128+(a-128)*1.05
-    if not hasattr(grade32,'v'):
-        yy,xx=np.mgrid[0:OUTH,0:OUTW]; v=np.hypot((xx-OUTW/2)/(OUTW/2),(yy-OUTH/2)/(OUTH/2))
-        grade32.v=(1-0.3*np.clip(v-0.6,0,1))[:,:,None]
-        warm=np.clip(1-np.hypot(xx/OUTW-0.15,yy/OUTH-0.0)/1.2,0,1)
-        grade32.w=warm[:,:,None]*np.array([24,14,0])
-    a=a*grade32.v+grade32.w
-    return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
-def pixelate(fr,b):
-    if b<=1: return fr
-    w,h=fr.size; return fr.resize((max(1,w//b),max(1,h//b)),Image.BILINEAR).resize((w,h),Image.NEAREST)
-_CL=[(random.Random(k).uniform(-100,1180),random.Random(k+99).uniform(0,1),random.Random(k+7).uniform(90,260)) for k in range(70)]
-def clouds(fr,t):
-    if not (30.6<=t<34.8): return fr
-    if t<32.6: cover=smooth(clamp((t-30.6)/2.0)); drift=(t-30.6)*900
-    else: cover=1-smooth(clamp((t-32.6)/2.2)); drift=(t-32.6)*-700
-    im=fr.convert('RGBA'); lay=Image.new('RGBA',im.size,(0,0,0,0)); d=ImageDraw.Draw(lay)
-    for (x,yf,r) in _CL:
-        y=(yf*2600+drift)%2600-340
-        rr=r*(0.4+cover*1.4)
-        if t>=32.6: x=540+(x-540)*(1+(t-32.6)*0.8)
-        d.ellipse([x-rr,y-rr*0.6,x+rr,y+rr*0.6],fill=(255,255,255,int(150+100*cover)))
-        d.ellipse([x-rr*0.6,y-rr*0.9,x+rr*0.5,y+rr*0.2],fill=(255,255,255,int(150+100*cover)))
-    lay=lay.filter(ImageFilter.GaussianBlur(6))
-    im.alpha_composite(lay)
-    if cover>0.85:
-        wv=(cover-0.85)/0.15
-        im=Image.blend(im,Image.new('RGBA',im.size,(250,252,255,255)),wv)
-    return im.convert('RGB')
-def fireworks(d,t):
-    if not (25.3<=t<29.6): return
-    rr=random.Random(3)
-    for k in range(9):
-        t0=25.4+k*0.42; age=t-t0
-        if age<0 or age>1.4: continue
-        cx=rr.uniform(40,230); cy=rr.uniform(90,230); col=[(255,90,90),(255,214,70),(120,230,110),(120,180,255),(240,120,240)][k%5]
-        if age<0.3:
-            y=cy+60*(1-age/0.3); d.rectangle([cx,y,cx+1,y+3],fill=(255,240,200,255)); continue
-        a=age-0.3; R=a*55; fade=int(255*clamp(1-a/1.1))
-        for j in range(16):
-            ang=j/16*2*math.pi
-            x=cx+math.cos(ang)*R; y=cy+math.sin(ang)*R+a*a*20
-            d.rectangle([x,y,x+1,y+1],fill=col+(fade,))
-            d.point((cx+math.cos(ang)*R*0.6,cy+math.sin(ang)*R*0.6+a*a*12),fill=(255,255,255,fade))
+            for j in range(2): out.append((lx_+4+j*12,ly_+22,sf(8000+(i+j)%6,'down',int(t*6+j)%2*2,'pedreiro')))
+    if 36.2<=t<42.8:                               # pedreiros no campo
+        p=campo_p(t)
+        for k in range(4):
+            x=FX0+(FX1-FX0)*clamp(min(p/0.3,1)*0.9+0.03*k) if p<0.3 else FX0+8+k*20+math.sin(t*2+k)*6
+            out.append((x,FY0+6+k*10,sf(8030+k,'right' if p<0.3 else 'down',int(t*8+k)%4,'pedreiro')))
+    tp,tn=team_people(t); out+=tp+torcida(t)+dog_people(t)+farm_people(t)
+    return out,names,tn
 
 # ---------- telas especiais ----------
-_PROV_BG=None
-def provador(t):
-    global _PROV_BG
-    if _PROV_BG is None:
-        old=iso.K; iso.K=2
-        bg=iso.render_view(45.0,CI(132,248,1.0),[])
-        iso.K=old
-        _PROV_BG=bg.filter(ImageFilter.GaussianBlur(10))
-        _PROV_BG=Image.fromarray((np.array(_PROV_BG)*0.55).astype(np.uint8))
-    fr=_PROV_BG.copy(); d=ImageDraw.Draw(fr,'RGBA')
-    # palco/pedestal com luz
-    d.ellipse([340,1380,740,1500],fill=(255,240,200,60)); d.ellipse([380,1400,700,1480],fill=(60,50,90,255),outline=(255,214,70,255),width=4)
-    for k in range(5): d.polygon([(540,300),(400-k*30,1440),(680+k*30,1440)],fill=(255,240,200,8))
-    a,b=T['provador']
-    if t<45.6:   # antes / agora
-        s1=npc_k(_regids[0],'down',0,1).resize((12*24,18*24),Image.NEAREST)
-        s2=npc_k(_regids[0],'down',0,2).resize((32*9,48*9),Image.NEAREST)
-        fr.paste(s1,(270-s1.width//2,1440-s1.height),s1); fr.paste(s2,(810-s2.width//2,1440-s2.height),s2)
+_BG={}
+def blur_bg(key,t,cam,dim=0.55):
+    if key not in _BG:
+        old=iso.VOX; iso.VOX=False; iso.K=2
+        bg=iso.render_view(t,cam,[]).filter(ImageFilter.GaussianBlur(10))
+        _BG[key]=Image.fromarray((np.array(bg)*dim).astype(np.uint8)); iso.VOX=old
+    return _BG[key].copy()
+SHOWIDS=None
+def vitrine(t):
+    """21.0-25.9: um morador de bloco grandão, girando, com o visual escolhido no site"""
+    global SHOWIDS
+    if SHOWIDS is None: SHOWIDS=[12,26,11,83,621,2,154,67,614,189,555,473]
+    fr=blur_bg('vit',45.0,CI(132,248,1.0)); d=ImageDraw.Draw(fr,'RGBA')
+    for k in range(5): d.polygon([(540,260),(380-k*30,1450),(700+k*30,1450)],fill=(255,240,200,8))
+    d.polygon([(340,1440),(540,1340),(740,1440),(540,1540)],fill=(80,70,120,255)); d.polygon([(340,1440),(540,1540),(540,1580),(340,1480)],fill=(60,50,96,255))
+    d.polygon([(540,1540),(740,1440),(740,1480),(540,1580)],fill=(44,38,76,255))
+    if t<23.2:
+        pid=12; seq=['down','right','up','left']; dr=seq[int((t-21.0)/0.55)%4]
     else:
-        seq=_regids[:]+list(range(1,C1,37))
-        idx=int((t-45.6)/0.42)%len(seq)
-        pid=seq[idx]; dr=['down','right','down','left'][int((t-45.6)/0.42)%4]
-        s2=npc_k(pid,dr,int(t*6)%4 if dr!='down' else 0,2).resize((32*15,48*15),Image.NEAREST)
-        fr.paste(s2,(540-s2.width//2,1440-s2.height),s2)
-    return fr
-_INT={}
-def interior_frame(t,nm,a,b):
-    fo=clamp((t-a-0.3)/0.4) if nm=='geladeira' else 0.0
-    key=round(fo,2)
-    if key not in _INT:
-        old=iso.K; iso.K=2
-        s_=iso.sprite(lambda: iso.interior(key),0,0,30,22,40)
-        iso.K=old
-        _INT[key]=s_[0]
-    im=_INT[key]
-    base=Image.new('RGB',(OUTW,OUTH),(30,26,44))
-    if nm=='casa':
-        z=4.4+0.6*clamp((t-a)/(b-a)); cx,cy=im.width/2,im.height/2
-    else:
-        z=8.0; cx,cy=im.width*0.80,im.height*0.30
-    s=im.resize((int(im.width*z),int(im.height*z)),Image.NEAREST)
-    base.paste(s,(int(540-cx*z),int(980-cy*z)),s)
-    return base
+        idx=int((t-23.2)/0.45)%len(SHOWIDS); pid=SHOWIDS[idx]; dr=['down','right'][idx%2]
+    s=npc_k(pid,dr,0,2).resize((32*15,48*15),Image.NEAREST)
+    fr.paste(s,(540-s.width//2,1440-s.height),s)
+    nm=nome_tela(REG[pid]['nome']) if pid in REG else ''
+    return fr,nm
+CANDS=[(12,"CRISTIANO RONALDO"),(347,"JOÃO GUILHERME"),(154,"WESLEY"),(67,"KIRA"),(614,"ENZO MILDANA"),(11,"ISABELY67"),
+       (2,"DIDI"),(189,"CABELUDO"),(621,"BACHIRAPRO"),(647,"SALES"),(426,"MT")]
+PROM={0:("CAMPO GRÁTIS!",69.57),2:("LANCHONETE!",71.06),5:("LANCHONETE!",71.06),8:("PASTEL COM CALDO DE CANA!",72.06),1:("REFRI GELADINHO!",73.64)}
+_HEADS={}
+def head_img(pid):
+    if pid not in _HEADS:
+        s=npc_k(pid,'down',0,2); s=s.crop(s.getbbox()); _HEADS[pid]=s.crop((0,0,s.width,int(s.height*0.5)))
+    return _HEADS[pid]
+def mural(t):
+    fr=blur_bg('mural',70.0,CI(160,424,3.0),0.5)
+    a,b=T['eleicao']
+    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
+    cols=[(214,50,50),(40,90,190),(40,150,80),(240,180,40),(150,80,180),(230,120,40)]
+    for k,(pid,nm) in enumerate(CANDS):
+        t0=a+0.35+k*0.22; v=clamp((t-t0)/0.2)
+        if v<=0: continue
+        r,c=divmod(k,3) if k<9 else (3,k-9+0.5)
+        x=int(100+c*300); y=470+r*300+int((1-v)*40)
+        hl=k in PROM and t>=PROM[k][1]
+        d.rectangle([x,y,x+270,y+270],fill=cols[k%6]+(255,),outline=(255,255,255,255),width=6 if hl else 3)
+        d.rectangle([x+12,y+12,x+258,y+190],fill=(250,246,232,255))
+        h=head_img(pid); sc=int(min(220/h.width,170/h.height)); h2=h.resize((int(h.width*sc),int(h.height*sc)),Image.NEAREST)
+        lay.paste(h2,(x+135-h2.width//2,y+196-h2.height),h2)
+        d.rectangle([x+12,y+198,x+258,y+258],fill=(24,22,52,255))
+        sc_=2 if text_width(nm,2)*4<=240 else 1
+        tw=text_width(nm,1)
+        im=Image.new('RGBA',(tw+4,12),(0,0,0,0)); draw_text(ImageDraw.Draw(im),nm,(tw+4)//2,2,1,WHITE)
+        f=min(4,236/(tw+4)); im=im.resize((int((tw+4)*f),int(12*f)),Image.NEAREST)
+        lay.paste(im,(x+135-im.width//2,y+228-im.height//2),im)
+    fr=fr.convert('RGBA'); fr.alpha_composite(lay)
+    return fr.convert('RGB')
+def mural_ui(d,t):
+    a,b=T['eleicao']
+    box(d,14,58,256,98,(200,40,50,240)); draw_text(d,"ELEIÇÃO PRA PREFEITO",135,66,1,WHITE)
+    draw_text(d,"PEGOU FOGO!" if t<67.78 else "11 CANDIDATOS!",135,80,1 if t<67.78 else 1,YEL)
+    for k,(txt,t0) in PROM.items():
+        if t<t0: continue
+        r,c=divmod(k,3) if k<9 else (3,k-9+0.5)
+        x=(100+c*300+135)/4; y=(470+r*300)/4-8
+        if k==5: continue
+        bob=int(math.sin(t*5+k)*1.5)
+        w=text_width(txt,1)+10; x=clamp(x,w/2+4,W-w/2-4)
+        d.rectangle([x-w/2,y-6+bob,x+w/2,y+8+bob],fill=(255,255,255,255),outline=(24,22,52,255))
+        d.polygon([(x-3,y+8+bob),(x+3,y+8+bob),(x,y+12+bob)],fill=(255,255,255,255))
+        draw_text(d,txt,x,y-2+bob,1,(200,40,50,255))
 
-def coins(d,t,t0,t1):
-    if not (t0<=t<t1): return
-    rr=random.Random(11)
-    for k in range(26):
-        x=rr.uniform(10,260); sp=rr.uniform(90,180); ph=rr.uniform(0,3)
-        y=((t-t0)*sp+ph*120)%560-40
-        w=abs(math.sin(t*6+k))*4+1
-        d.ellipse([x-w,y-5,x+w,y+5],fill=(255,214,70,255),outline=(170,120,20,255))
-def icon_brief(d,x,y): d.rectangle([x,y+3,x+14,y+12],fill=(120,80,40,255)); d.rectangle([x+4,y,x+10,y+3],outline=(120,80,40,255))
-def icon_helmet(d,x,y): d.pieslice([x,y,x+14,y+14],180,360,fill=(250,200,40,255)); d.rectangle([x-1,y+7,x+15,y+8],fill=(250,200,40,255))
-def icon_apron(d,x,y): d.polygon([(x+3,y),(x+11,y),(x+14,y+14),(x,y+14)],fill=(250,250,250,255)); d.rectangle([x+5,y+6,x+9,y+9],outline=(200,60,60,255))
-
+# ---------- UI ----------
+def fireworks(d,t,t_ini,n=9,ys=(90,230)):
+    rr=random.Random(int(t_ini*10))
+    for k in range(n):
+        t0=t_ini+k*0.18; age=t-t0
+        cx=rr.uniform(30,240); cy=rr.uniform(*ys); col=[(255,90,90),(255,214,70),(120,230,110),(120,180,255),(240,120,240)][k%5]
+        if age<0 or age>1.4: continue
+        if age<0.25:
+            y=cy+50*(1-age/0.25); d.rectangle([cx-1,y,cx+1,y+3],fill=(255,240,200,255)); continue
+        a=age-0.25; R=a*50; fade=int(255*clamp(1-a/1.1))
+        for j in range(12):
+            ang=j/12*2*math.pi
+            x=cx+math.cos(ang)*R; y=cy+math.sin(ang)*R+a*a*24
+            s=3 if a<0.5 else 2
+            d.rectangle([x,y,x+s,y+s],fill=col+(fade,))
 def chat(d,t,a):
-    msgs=[("OI GENTE!",WHITE),("BORA PRA PRAÇA",YEL),("ALGUÉM NO MERCADINHO?",LBLUE),("KKKKKKK",GREEN),("QUE CIDADE LINDA",WHITE),("PINDA!!!",YEL)]
-    box(d,20,300,250,440,(10,10,24,200))
-    d.rectangle([28,306,60,316],fill=(220,40,40,255)); draw_text(d,"AO VIVO",44,308,1,WHITE)
-    n=int((t-a)/0.17)+1
-    for k,(m,c) in enumerate(msgs[:n][-6:]):
-        draw_text(d,m,135,326+k*18,1,c)
-
-def draw_ui(t,cam,mode):
+    msgs=[("MINHA PROPOSTA É MELHOR!",WHITE),("A MINHA QUE É!",LBLUE),("E O CAMPO?? JÁ TEM!",GREEN),("VOTA EM MIM!",YEL),("NÃO, EM MIM!",WHITE),("KKKKKKK",GREEN)]
+    box(d,20,140,250,290,(10,10,24,215))
+    d.rectangle([28,146,60,156],fill=(220,40,40,255)); draw_text(d,"AO VIVO",44,148,1,WHITE); draw_text(d,"CHAT",160,148,1,LBLUE)
+    n=int((t-a-0.2)/0.3)+1
+    for k,(m,c) in enumerate(msgs[:max(0,n)][-6:]):
+        draw_text(d,m,135,166+k*19,1,c)
+def blocos_icone(d,cx,cy,s,top,left,right):
+    d.polygon([(cx,cy-s),(cx+s*1.7,cy-s*0.15),(cx,cy+s*0.7),(cx-s*1.7,cy-s*0.15)],fill=top)
+    d.polygon([(cx-s*1.7,cy-s*0.15),(cx,cy+s*0.7),(cx,cy+s*2.1),(cx-s*1.7,cy+s*1.25)],fill=left)
+    d.polygon([(cx,cy+s*0.7),(cx+s*1.7,cy-s*0.15),(cx+s*1.7,cy+s*1.25),(cx,cy+s*2.1)],fill=right)
+def draw_ui(t,cam,mode,tnames):
     ui=Image.new('RGBA',(W,H),(0,0,0,0)); d=ImageDraw.Draw(ui)
     C=count_at(t); hs=nhouses(C)
-    if t>=7.35 and mode not in ('prov','int'):
+    if t>=3.9 and mode not in ('vit','mural'):
         y0=36
         box(d,32,y0,238,y0+42)
         draw_text(d,"SEGUIDORES",86,y0+7,1,LBLUE); draw_text(d,"CASAS",192,y0+7,1,LBLUE)
         d.line([150,y0+6,150,y0+36],fill=(120,120,180,255))
         draw_text(d,str(C),86,y0+20,2,YEL if C!=count_at(t-0.12) else WHITE)
         draw_text(d,str(hs),192,y0+20,2,YEL if hs!=nhouses(count_at(t-0.4)) else WHITE)
-    if 5.5<=t<7.3:
-        v=pop(t,5.5,7.3); draw_text(d,"HOJE ELA GANHA UM NOME",135,380,1,(255,255,255,int(255*v)))
     a,b=T['titulo']
     if pop(t,a,b)>0:
+        v=pop(t,a,b)
+        box(d,20,118,250,208,(24,22,52,int(225*v)))
         draw_text(d,"A CIDADE DOS",135,130,2,WHITE); draw_text(d,"SEGUIDORES",135,152,3,YEL)
-        draw_text(d,"EPISÓDIO 7",135,186,1,LBLUE)
-    # votação nos comentários
-    a,b=T['votos']
-    if a<=t<T['nome'][1]:
-        opts=[("SEGUIDÓPOLIS",0.55),("PIXELÂNDIA",0.62),("VILA NOVA",0.4),("PINDAMONHANGABA",1.0)]
-        for k,(nm_,mx) in enumerate(opts):
-            v=pop(t,a+0.25*k,T['nome'][0]+0.2)
-            if v<=0: continue
-            y=110+k*30
-            box(d,24,y,246,y+24,(24,22,52,220))
-            draw_text(d,nm_,90,y+5,1,WHITE if k<3 else YEL)
-            g=clamp((t-a-0.25*k)/2.6)*mx
-            d.rectangle([150,y+8,150+int(80*g),y+15],fill=(230,60,90,255) if k==3 else (150,120,180,255))
-            d.polygon([(140,y+9),(143,y+7),(146,y+9),(143,y+14)],fill=(255,90,110,255))
-        if T['tambor'][0]<=t<T['nome'][0]:
-            draw_text(d,"...",135,300+int(math.sin(t*30)*3),4,WHITE)
-    if T['nome'][0]<=t<T['mutirao'][0]+1.2:
-        nome=NOME_CIDADE; n=int(clamp((t-T['nome'][0])/0.6)*len(nome))
-        sc=2
-        box(d,8,250,262,300,(200,40,50,240))
-        draw_text(d,nome[:n],135,266,sc,YEL)
-        for k in range(30):
-            q=((t-16.5)*0.9+k*0.07)%1.0; cx_=(k*37)%270; cy_=int(q*480)
-            d.rectangle([cx_,cy_,cx_+2,cy_+3],fill=[(255,214,70),(120,230,110),(230,60,60),(180,200,255)][k%4]+(255,))
-    a,b=T['mutirao']
-    for k,(w_,t0,t1) in enumerate((("SERRARAM A MADEIRA",19.8,21.1),("PINTARAM LETRA POR LETRA",21.2,22.8),("E LEVANTARAM NA CORDA!",22.9,25.3))):
-        chip(d,w_,135,120,t,t0,t1,[YEL,GREEN,WHITE][k])
-    a,b=T['fogos']
-    fireworks(d,t)
+        draw_text(d,"EPISÓDIO 8",135,188,1,LBLUE)
+    # recap
+    banner(d,["DA ÚLTIMA VEZ:"],110,t,4.3,10.3,[LBLUE],1)
+    banner(d,["647 MORADORES"],134,t,4.6,10.3,[YEL],2)
+    banner(d,["64 CASAS"],166,t,5.4,10.3,[WHITE],2)
+    if 10.4<=t<13.5:
+        sx,sy=w2si(FXM,FYM,cam,4); tag_s(d,"TERRENO VAZIO... ESPERANDO O 700",sx,sy,t,10.4,13.4,YEL,dy=-40)
+    banner(d,["MAS ANTES..."],120,t,13.7,15.3,[WHITE],2)
+    banner(d,["OLHA COMO A CIDADE","TÁ CRESCENDO!"],120,t,14.4,16.95,[WHITE,YEL],2)
+    for k,(w_,t0,t1) in enumerate((("CASA NOVA",17.1,20.9),("ÁRVORE",18.7,20.9),("RUA CHEIA DE GENTE!",19.9,20.9))):
+        chip(d,w_,135,330+k*20,t,t0,t1,[YEL,GREEN,LBLUE][k])
+    if mode=='vit':
+        banner(d,["CADA MORADOR"],70,t,21.0,25.85,[YEL],2)
+        banner(d,["COM O VISUAL","QUE VOCÊS ESCOLHERAM"],392,t,21.5,25.85,[WHITE,GREEN],1)
+    # casas
+    banner(d,["A RUA E ENCHEU!"],110,t,26.2,33.0,[GREEN],2)
+    if mode=='vox' and 25.9<=t<33.1:
+        for n,t0 in ((65,28.3),(66,29.5),(67,30.5),(72,31.9)):
+            x,y=lot(*house_lots[n-1]); sx,sy=w2si(x+10,y+12,cam,22)
+            tag_s(d,f"CASA {n}" if n<72 else "ATÉ A CASA 72!",sx,sy,t,t0,33.0,GREEN if n<72 else YEL)
+    # 700
+    banner(d,["QUASE..."],120,t,33.4,35.6,[WHITE],3)
+    if 35.65<=t<37.0:
+        v=pop(t,35.65,37.0); s=int(4+2*clamp((t-35.65)/0.25))
+        box(d,30,130,240,230,(200,40,50,240)); draw_text(d,"700!",135,150,6,YEL)
+        draw_text(d,"NOVO MARCO DESBLOQUEADO",135,208,1,WHITE)
+        fireworks(d,t,35.7,8)
+    banner(d,["CAMPO DE FUTEBOL!"],110,t,36.9,43.2,[YEL],2)
+    for k,(w_,t0) in enumerate((("GRAMA NOVA",38.38),("LINHAS PINTADAS",39.32),("TRAVES",40.63),("ARQUIBANCADA",41.70))):
+        chip(d,w_,135,330+k*20,t,t0,43.2,[GREEN,WHITE,YEL,LBLUE][k])
+    banner(d,["PRONTO!"],420,t,42.5,43.25,[GREEN],3)
+    # o time
+    banner(d,["O TIME DA CIDADE"],108,t,43.6,49.4,[YEL],2)
+    if 43.3<=t<49.5 and tnames:
+        for (pid,pos,x,y) in tnames:
+            sx,sy=w2si(x,y,cam,20)
+            if pid not in REG: continue
+            nm=nome_tela(REG[pid]['nome'])
+            if pos in ('ATACANTE','MEIA','GOLEIRO'):
+                t0={'ATACANTE':45.86,'MEIA':47.06,'GOLEIRO':48.56}[pos]
+                if t>=t0: nm=nm+" - "+pos
+            t0,t1={12:(45.86,47.0),555:(45.86,47.0),168:(47.06,48.5),348:(47.06,48.5),441:(48.56,49.45),236:(44.3,45.8),473:(44.3,45.8)}[pid]
+            tag_s(d,nm,sx,sy,t,t0,t1,YEL if pos else WHITE,dy=-34)
+    chip(d,"TOCA PRA LÁ...",80,330,t,51.0,52.0,WHITE)
+    chip(d,"...TOCA PRA CÁ!",190,350,t,52.0,53.6,WHITE)
+    if 53.72<=t<55.4:
+        v=clamp((t-53.72)/0.15); sc=int(3+3*v)
+        y=150+int(math.sin(t*20)*3)
+        draw_text(d,"GOOOL!",135,y,sc,YEL)
+        fireworks(d,t,53.75,10,(80,260))
+    banner(d,["VIRA-LATA EM CAMPO!"],120,t,55.0,57.0,[YEL],2)
+    # fazenda
+    if mode=='vox' and 58.5<=t<64.8:
+        sx,sy=w2si(FARMER[0],FARMER[1],cam,20); tag_s(d,"O FAZENDEIRO",sx,sy,t,59.2,61.6,YEL,dy=-34)
+    banner(d,["VIZINHO NOVO!"],110,t,57.6,64.7,[GREEN],2)
+    banner(d,["CONTRATOU","MORADORES!"],380,t,61.97,64.7,[WHITE,YEL],2)
+    if mode=='mural': mural_ui(d,t)
+    # entregaram
+    banner(d,["4 DE 11 CANDIDATOS","PROMETERAM CAMPO..."],110,t,75.8,80.4,[WHITE,YEL],1)
+    if 78.79<=t<80.45:
+        v=clamp((t-78.79)/0.2)
+        lay=Image.new('RGBA',(220,64),(0,0,0,0)); dl=ImageDraw.Draw(lay)
+        dl.rectangle([2,2,217,61],outline=(60,220,90,255),width=4); dl.rectangle([7,7,212,56],outline=(60,220,90,255),width=1)
+        draw_text(dl,"OS SEGUIDORES",110,14,1,(60,220,90,255)); draw_text(dl,"ENTREGARAM!",110,32,2,(60,220,90,255))
+        sc=1+(1-v)*1.2; lay=lay.resize((int(220*sc),int(64*sc)),Image.NEAREST).rotate(8,expand=True)
+        ui.alpha_composite(lay,(135-lay.width//2,330-lay.height//2))
+    # chat
+    a,b=T['chat']
+    if a<=t<b:
+        chat(d,t,a)
+        v=pop(t,82.4,b)
+        if v>0:
+            bx_,by_=135,350+int(math.sin(t*6)*2)
+            d.rounded_rectangle([bx_-110,by_-26,bx_+110,by_+26],radius=10,fill=(255,255,255,255),outline=(24,22,52,255),width=2)
+            d.polygon([(bx_-20,by_+25),(bx_,by_+25),(bx_-30,by_+40)],fill=(255,255,255,255))
+            draw_text(d,"VAMO ACALMA!",135,by_-18,2,(200,40,50,255)); draw_text(d,"TÁ PARECENDO ELEIÇÃO DE VERDADE",135,by_+8,1,(24,22,52,255))
+    # próximo marco
+    a,b=T['proximo']
     if a<=t<b:
         v=pop(t,a,b)
-        box(d,10,330,260,392,(40,120,70,240)); draw_text(d,"OFICIALMENTE UMA CIDADE!",135,340,1,WHITE); draw_text(d,NOME_CIDADE,135,358,2,YEL)
-    banner(d,["UM VISUAL","À ALTURA..."],140,t,29.2,30.9,[WHITE,YEL],2)
-    a,b=T['bits32']
-    if 33.6<=t<35.4:
-        box(d,22,118,248,186,(40,120,70,240))
-        draw_text(d,"NOVA EVOLUÇÃO:",135,128,1,WHITE); draw_text(d,"32 BITS!",135,146,4,YEL)
-    for k,(w_,t0) in enumerate((("MAIS LUZ",35.5),("SOMBRA",36.5),("DETALHE EM CADA CASA",37.5))):
-        chip(d,w_,135,330+k*20,t,t0,38.6,[YEL,LBLUE,GREEN][k])
-    for k,(w_,t0) in enumerate((("TELHADO",38.8),("VARANDA",39.7),("JARDIM",40.5),("ROUPA NO VARAL",41.4))):
-        chip(d,w_,135,330+k*20,t,t0,b,[YEL,GREEN,GREEN,LBLUE][k])
-    a,b=T['provador']
-    if mode=='prov':
-        banner(d,["MORADORES","32 BITS"],60,t,a+0.2,b,[WHITE,YEL],3)
-        if t<45.6:
-            draw_text(d,"ANTES",68,230,2,LBLUE); draw_text(d,"AGORA",202,230,2,YEL)
-        for k,(w_,t0) in enumerate((("+ ROUPA",45.7),("+ CABELO",47.1),("+ CHAPÉU",48.1),("+ ACESSÓRIO",48.5))):
-            chip(d,w_,[50,220,50,220][k],[400,400,425,425][k],t,t0,b,[YEL,GREEN,LBLUE,YEL][k])
-        banner(d,["MONTA O TEU","DO TEU JEITO!"],380,t,50.0,b,[WHITE,GREEN],2)
-    a,b=T['casas']
-    banner(d,["A RUA E NÃO PAROU"],120,t,52.2,b,[GREEN],2)
-    if mode=='iso32' and a<=t<b:
-        for n,t0 in ((62,53.6),(63,55.1),(64,56.1),(65,57.3)):
-            x,y=lot(*house_lots[n-1]); sx,sy=w2si(x+10,y+12,cam,22)
-            tag_s(d,f"CASA {n}"+(": EM OBRA" if n==65 else ""),sx,sy,t,t0,b,GREEN if n<65 else YEL)
-        banner(d,["COMEÇA EM 645","PRONTA EM 650"],360,t,57.3,b,[WHITE,GREEN])
-    nm,ca,cb=site_cut(t)
-    if nm:
-        lbl={'virou':"O SITE VIROU OUTRA COISA!",'chat':"CHAT AO VIVO",'online':"TODO MUNDO JUNTO, AO VIVO",'casa':"DÁ PRA ENTRAR NAS CASAS",
-             'geladeira':"LANCHE NA GELADEIRA",'mercadinho':"COMPRAS NO MERCADINHO",'banco':"SENTAR NA PRAÇA",'fonte':"MOEDA NA FONTE",'mudanca':"E ATÉ MUDAR DE CASA!"}[nm]
-        box(d,14,104,256,128,(200,40,50,235)); draw_text(d,lbl,135,111,1,WHITE)
-        if nm=='chat': chat(d,t,ca)
-        if nm=='online':
-            for k in range(6):
-                sx,sy=w2si(120+k*5,248+(k%2)*6+((t-ca)*8)%6,cam,22); d.ellipse([sx-3,sy-3,sx+3,sy+3],fill=(60,230,90,255),outline=(255,255,255,255))
-        if nm in ('geladeira','mercadinho'):
-            f=clamp((t-ca-0.4)/0.7)
-            box(d,60,400,210,420); draw_text(d,"VIDA",80,406,1,WHITE)
-            d.rectangle([100,405,100+int(100*(0.35+0.65*f)),414],fill=(80,220,90,255)); d.rectangle([100,405,200,414],outline=(255,255,255,255))
-            if f>0: draw_text(d,"+VIDA!",135,380-int(f*10),2,GREEN)
-        if nm=='banco': draw_text(d,"Z Z Z",150,250-int(((t-ca)*8)%10),1,WHITE) if False else None
-        if nm=='fonte':
-            f=clamp((t-ca)/0.7); sx0,sy0=w2si(124,256,cam,14); sx1,sy1=w2si(132,245,cam,8)
-            if f<1:
-                x=sx0+(sx1-sx0)*f; y=sy0+(sy1-sy0)*f-math.sin(f*math.pi)*40
-                d.ellipse([x-3,y-3,x+3,y+3],fill=(255,214,70,255),outline=(170,120,20,255))
-            else:
-                v=pop(t,ca+0.7,cb)
-                box(d,40,300,230,340,(40,120,70,240)); draw_text(d,"SORTE DO DIA!",135,306,2,YEL)
-                for k in range(12):
-                    ang=k/12*6.28+t*2; r=30+((t-ca)*30)%20
-                    d.point((sx1+math.cos(ang)*r,sy1+math.sin(ang)*r*0.6),fill=(255,240,140,255))
-    a,b=T['prefeito']
-    if a<=t<b:
-        box(d,14,104,256,128,(40,90,190,240)); draw_text(d,"CANDIDATURAS ABERTAS!",135,111,1,WHITE)
-        if t>=74.4: banner(d,["PREFEITO DE",NOME_CIDADE],300,t,74.4,b,[WHITE,YEL],2)
-        if t>=77.6:
-            banner(d,["QUEM VAI SER","O PRIMEIRO?"],370,t,77.6,b,[WHITE,YEL],2)
-    a,b=T['economia']
-    coins(d,t,a+1.2,b)
-    banner(d,["EM BREVE:"],110,t,79.3,b,[LBLUE],1)
-    v=pop(t,80.4,b)
-    if v>0:
-        box(d,30,140,240,170); icon_brief(d,42,148); icon_helmet(d,62,146); icon_apron(d,84,146); draw_text(d,"PROFISSÕES",170,150,1,YEL)
-    v=pop(t,81.4,b)
-    if v>0:
-        box(d,30,176,240,206); d.ellipse([44,182,58,196],fill=(255,214,70,255),outline=(170,120,20,255)); draw_text(d,"$",51,186,1,(150,100,20,255)); draw_text(d,"DINHEIRO",160,186,1,GREEN)
-    banner(d,["ECONOMIA","DE VERDADE!"],330,t,82.2,b,[WHITE,YEL],2)
-    a,b=T['campo']
-    banner(d,["JÁ TEM GOLEIRO..."],110,t,85.0,87.1,[WHITE],2)
-    banner(d,["SÓ FALTA O CAMPO"],110,t,87.1,b,[YEL],2)
-    banner(d,["FALTAM 53"],360,t,88.1,b,[WHITE],3)
-    banner(d,["PRO 700!"],400,t,88.6,b,[GREEN],2)
+        box(d,30,110,240,250,(24,22,52,235)); draw_text(d,"PRÓXIMO MARCO",135,120,1,LBLUE)
+        draw_text(d,"800",135,138,5,YEL)
+        if t>=85.6:
+            blocos_icone(d,92,196,9,(232,190,120,255),(196,150,90,255),(170,124,72,255))
+            d.rectangle([84,190,100,193],fill=(250,240,220,255))
+            blocos_icone(d,178,196,9,(240,180,60,255),(200,90,50,255),(120,180,60,255))
+        draw_text(d,"PADARIA E LANCHONETE",135,230,1,WHITE) if t>=86.2 else None
+        banner(d,["FALTAM 79!"],380,t,88.28,b,[YEL],3)
+    # resumo
     a,b=T['resumo']
-    banner(d,["RESULTADO:"],84,t,90.9,b,[LBLUE],1)
-    banner(d,[f"{C1} MORADORES"],110,t,91.6,b,[YEL])
-    banner(d,[f"{NH} CASAS"],146,t,93.7,b,[WHITE])
-    banner(d,[NOME_CIDADE],330,t,95.2,b,[YEL],1)
-    banner(d,["VISUAL 32 BITS"],356,t,96.1,b,[GREEN])
+    banner(d,["RESULTADO:"],84,t,90.1,b,[LBLUE],1)
+    banner(d,[f"{C1} MORADORES"],110,t,91.09,b,[YEL])
+    banner(d,[f"{NH} CASAS"],146,t,92.99,b,[WHITE])
+    banner(d,["E UM CAMPO","DE FUTEBOL!"],330,t,94.53,b,[WHITE,GREEN])
     a,b=T['cta']
-    v=pop(t,a,b,0.01)
+    v=pop(t,a,b+1,0.01)
     if v>0:
         yy=110+int((1-v)*14)
         box(d,24,yy,246,yy+62,(200,40,50,240))
-        draw_text(d,"LINK NA BIO!",135,yy+10,2,WHITE); draw_text(d,"CRIA O TEU MORADOR",135,yy+38,1,YEL)
-        if t>=100.0: banner(d,["E SE CANDIDATA!"],330,t,100.0,b,[GREEN],2)
-        if t>=101.2: banner(d,[NOME_CIDADE,"TE ESPERA!"],370,t,101.2,b,[YEL,WHITE],2)
+        draw_text(d,"LINK NA BIO!",135,yy+10,2,WHITE); draw_text(d,"ESCOLHE O TEU MORADOR",135,yy+38,1,YEL)
+        if t>=99.3: banner(d,["E VEM JOGAR NO CAMPO","DE PINDAMONHANGABA!"],370,t,99.3,b+1,[WHITE,GREEN],1)
     return ui
 
 def names_layer(t,cam,names):
     if not names: return None
     lay=Image.new('RGBA',(W*2,H*2),(0,0,0,0)); d=ImageDraw.Draw(lay)
     for (x,y,pid) in names:
-        sx,sy=w2si(x,y,cam,40 if iso.K==2 else 20)
+        sx,sy=w2si(x,y,cam,22)
         nm=nome_tela(REG[pid]['nome'])
         if not nm: continue
         X=int(sx*2); Y=int(sy*2)-8
@@ -541,31 +502,29 @@ def names_layer(t,cam,names):
         d.rectangle([X-tw//2,Y-2,X+tw//2,Y+8],fill=(24,22,52,200)); draw_text(d,nm,X,Y,1,YEL)
     return lay.resize((OUTW,OUTH),Image.NEAREST)
 
-_TXT={}
-def placa_texto(fr,t,cam):
-    est=placa_estado(t)
-    if est is None: return fr
-    n,ang=est
-    if n<=0: return fr
-    th=ang*math.pi/2; zb=26*ang; ztop=zb+12*math.sin(th); ytop=PLACA_Y-12*math.cos(th)
+def placa_texto(fr,cam):
+    """PINDAMONHANGABA pintado em alta no pórtico (32 bits: placa inclinada do ep. 7; blocos: face do letreiro)"""
     cx,cy,Z=cam
     def O(x,y,z): px,py=iso.PW(x,y,z); return ((px-(cx-540/Z))*Z,(py-(cy-960/Z))*Z)
-    m=0.06; h_=0.18
-    xa,xb=PLACA_X0+(PLACA_X1-PLACA_X0)*m,PLACA_X1-(PLACA_X1-PLACA_X0)*m
-    fy=lambda f: (ytop+(PLACA_Y-ytop)*f, ztop+(zb-ztop)*f)
-    (y0,z0),(y1,z1)=fy(h_),fy(1-h_)
-    q=[O(xa,y0,z0),O(xb,y0,z0),O(xb,y1,z1),O(xa,y1,z1)]
-    if n not in _TXT:
-        nome=NOME_CIDADE; vis=nome[:n]
-        tw=text_width(nome,4)+8
+    if iso.VOX:
+        y=vox.PORTAL_Y; I0,I1=vox.gi(PLACA_X0),vox.gi(PLACA_X1)
+        xa,xb=I0*vox.B+1.6,(I1+1)*vox.B-1.6; za,zc=25*vox.B-0.6,18*vox.B+0.6
+        q=[O(xa,y,za),O(xb,y,za),O(xb,y,zc),O(xa,y,zc)]
+    else:
+        zb,ztop,ytop=26.0,38.0,PLACA_Y; m=0.06
+        xa,xb=PLACA_X0+(PLACA_X1-PLACA_X0)*m,PLACA_X1-(PLACA_X1-PLACA_X0)*m
+        za,zc=ztop-(ztop-zb)*0.18,zb+(ztop-zb)*0.18
+        q=[O(xa,ytop,za),O(xb,ytop,za),O(xb,ytop,zc),O(xa,ytop,zc)]
+    if max(p[0] for p in q)<-50 or min(p[0] for p in q)>OUTW+50 or max(p[1] for p in q)<-50 or min(p[1] for p in q)>OUTH+50: return fr
+    if not hasattr(placa_texto,'tex'):
+        nome=NOME_CIDADE; tw=text_width(nome,4)+8
         im=Image.new('RGBA',(tw,44),(0,0,0,0)); dd=ImageDraw.Draw(im)
-        draw_text(dd,vis+' '*(len(nome)-n),tw//2,6,4,(255,236,140,255),outline=(70,40,20,255))
-        _TXT[n]=im
-    tex=_TXT[n]; w,h=tex.size
-    A=[];B=[]
+        draw_text(dd,nome,tw//2,6,4,(255,236,140,255),outline=(70,40,20,255)); placa_texto.tex=im
+    tex=placa_texto.tex; w,h=tex.size
+    A=[];B_=[]
     for (X,Y),(u,v) in zip(q,[(0,0),(w,0),(w,h),(0,h)]):
-        A.append([X,Y,1,0,0,0,-u*X,-u*Y]); B.append(u); A.append([0,0,0,X,Y,1,-v*X,-v*Y]); B.append(v)
-    try: co=np.linalg.solve(np.array(A,float),np.array(B,float))
+        A.append([X,Y,1,0,0,0,-u*X,-u*Y]); B_.append(u); A.append([0,0,0,X,Y,1,-v*X,-v*Y]); B_.append(v)
+    try: co=np.linalg.solve(np.array(A,float),np.array(B_,float))
     except np.linalg.LinAlgError: return fr
     lay=tex.transform((OUTW,OUTH),Image.PERSPECTIVE,tuple(co),Image.BILINEAR)
     f2=fr.convert('RGBA'); f2.alpha_composite(lay); return f2.convert('RGB')
@@ -573,38 +532,70 @@ def placa_texto(fr,t,cam):
 def flash(fr,k):
     a=np.array(fr).astype(np.float32); a=a+(255-a)*k
     return Image.fromarray(a.astype(np.uint8))
+def grade(fr):
+    a=np.array(fr).astype(np.float32)
+    a*=np.array([1.04,1.0,0.95]); lum=a.mean(axis=2,keepdims=True); a=lum+(a-lum)*1.1
+    if not hasattr(grade,'v'):
+        yy,xx=np.mgrid[0:OUTH,0:OUTW]; v=np.hypot((xx-OUTW/2)/(OUTW/2),(yy-OUTH/2)/(OUTH/2))
+        grade.v=(1-0.28*np.clip(v-0.6,0,1))[:,:,None]
+    a=a*grade.v
+    return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
 
-def render_frame(t):
-    iso.K=1 if t<EVOL_T else 2
-    cam=camiso(t); names=None
-    nm,ca,cb=site_cut(t)
-    if T['provador'][0]<=t<T['provador'][1]:
-        mode='prov'; fr=provador(t)
-    elif nm in ('casa','geladeira'):
-        mode='int'; fr=interior_frame(t,nm,ca,cb)
+TILE=60
+_tr=random.Random(88)
+_TT={(i,j):15.35+(j/32)*0.55+_tr.uniform(0,0.45) for i in range(OUTW//TILE) for j in range(OUTH//TILE)}
+def view_frame(t,vox_on):
+    iso.VOX=vox_on; iso.K=2
+    cam=camiso(t)
+    ppl,names,tn=iso_people(t,cam)
+    ex=ball_extra(t)
+    fr=iso.render_view(t,cam,ppl,ex,None)
+    fr=placa_texto(fr,cam)
+    return fr,cam,names,tn
+def render_frame(tv):
+    return _frame(new2old(tv))
+def _frame(t):
+    names=None; tn=[]; cam=camiso(t)
+    if 21.0<=t<25.9:
+        mode='vit'; fr,nm=vitrine(t)
+    elif T['eleicao'][0]<=t<T['eleicao'][1]:
+        mode='mural'; fr=mural(t)
+    elif False:
+        a,cam,_,_=view_frame(t,False); b,cam,names,tn=view_frame(t,True)
+        a=grade(a); b=grade(b)
+        A=np.array(a); Bm=np.array(b); out=A.copy()
+        for (i,j),ts in _TT.items():
+            f=clamp((t-ts)/0.28)
+            if f<=0: continue
+            x0,y0=i*TILE,j*TILE
+            if f>=1: out[y0:y0+TILE,x0:x0+TILE]=Bm[y0:y0+TILE,x0:x0+TILE]; continue
+            dy=int((1-f)**2*-220)
+            ys=max(0,y0+dy); ye=y0+TILE+dy
+            if ye>0:
+                out[ys:ye,x0:x0+TILE]=Bm[y0+(ys-(y0+dy)):y0+TILE,x0:x0+TILE]
+                out[ys:min(ye,ys+4),x0:x0+TILE]=(out[ys:min(ye,ys+4),x0:x0+TILE]*0.7+255*0.3).astype(np.uint8)
+        fr=Image.fromarray(out); mode='vox'
     else:
-        mode='iso32' if iso.K==2 else 'iso'
-        ppl,names=iso_people(t,cam)
-        fr=iso.render_view(t,cam,ppl,extra_iso(t),pop_iso(t))
-        fr=placa_texto(fr,t,cam)
-    if t<7.6: fr=dark_spot(fr,t,cam)
-    if 25.3<=t<29.6: fr=night_tint(fr,0.55*min(clamp((t-25.3)/0.4),clamp((29.6-t)/0.6)))
-    if iso.K==2 and mode!='prov': fr=grade32(fr,t)
-    if 30.4<=t<32.7: fr=pixelate(fr,int(1+smooth(clamp((t-30.4)/2.0))*30))
-    fr=clouds(fr,t)
-    for t0,dur,k in ((16.5,0.35,0.8),(EVOL_T+1.2,0.3,0.3)):
+        fr,cam,names,tn=view_frame(t,False)
+        fr=grade(fr); mode='vox'
+    if mode in ('vit','mural'): pass
+    for t0,dur,k in ((35.65,0.3,0.7),(53.72,0.25,0.5)):
         if t0<=t<t0+dur: fr=flash(fr,(1-(t-t0)/dur)*k)
-    for a,b,_ in SITE_CUTS[1:]:
-        if a<=t<a+0.12: fr=flash(fr,(1-(t-a)/0.12)*0.5)
+    for cut in (21.0,25.9,57.0,64.8,75.4,80.5,84.5,89.7,96.7,4.6,10.2):
+        if cut<=t<cut+0.1: fr=flash(fr,(1-(t-cut)/0.1)*0.35)
     fr=fr.convert('RGBA')
     if names:
         nl=names_layer(t,cam,names)
         if nl is not None: fr.alpha_composite(nl)
-    ui=draw_ui(t,cam,mode).resize((OUTW,OUTH),Image.NEAREST)
+    ui=draw_ui(t,cam,mode,tn).resize((OUTW,OUTH),Image.NEAREST)
     fr.alpha_composite(ui)
+    if mode=='vit':
+        nm=vitrine(t)[1] if False else None
     return fr.convert('RGB')
 
 if __name__=='__main__':
     out=sys.argv[1]
     for t in map(float,sys.argv[2:]):
         render_frame(t).save(f'{out}/frame_{t:05.1f}.png')
+
+DUR=DUR_VIDEO

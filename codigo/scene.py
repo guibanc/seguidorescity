@@ -4,42 +4,57 @@ from world import *
 from font import draw_text, text_width
 
 # =====================================================================
-#  EPISÓDIO 7  (617 -> 647 seguidores)
-#  A cidade ganha nome: PINDAMONHANGABA (placa feita em mutirão), fogos,
-#  EVOLUÇÃO 32 BITS (iso.K = 2), provador, casas 62-64, montagem do site,
-#  candidatura a prefeito, teaser de profissões/dinheiro, campo (700).
-#  Tempos sincronizados com a narração (narracao_ep7.wav, com 1,3 s de
-#  respiro pro rufar de tambor depois de "o mais curtido foi...").
+#  EPISÓDIO 8  (647 -> 721 seguidores)
+#  NOVA EVOLUÇÃO: TUDO EM BLOCOS (vox.py, iso.VOX=True), casas 65-72,
+#  MARCO 700: CAMPO DE FUTEBOL, o time, gol, vira-lata, o fazendeiro,
+#  eleição (11 candidatos), debate no chat, próximo marco 800.
+#  Tempos sincronizados com a narração (narracao_ep8.wav).
 # =====================================================================
-EP=7; C0=617; C1=647
+EP=8; C0=647; C1=721
 NOME_CIDADE="PINDAMONHANGABA"
 MH6=680
 T=dict(
-    abertura=(0.0,7.35),       # placa vazia 0.1-4.9 / "hoje ela ganha um nome" 5.5-7.2
-    titulo=(7.35,11.2),
-    votos=(11.2,14.75),        # comentários
-    tambor=(14.75,16.5),       # rufar
-    nome=(16.5,18.1),          # PINDAMONHANGABA! 16.57
-    mutirao=(18.1,25.4),       # serraram 19.8 / pintaram 21.2 / levantaram 22.9-25.1
-    fogos=(25.4,29.1),
-    nuvens=(29.1,33.0),        # "visual à altura" 30.6
-    bits32=(33.0,42.7),        # 32 bits 33.8 / luz 35.5 / sombra 36.5 / casa 37.5 / telhado 38.8 / varanda 39.7 / jardim 40.5 / varal 41.4
-    provador=(42.7,51.3),      # roupa 45.7 / cabelo 47.1 / chapéu 48.1 / acessório 48.5 / teu jeito 50.0
-    casas=(51.3,59.3),         # 62 53.6 / 63 55.1 / 64 56.1 / 65 obra 57.3
-    site=(59.3,73.0),
-    prefeito=(73.0,79.1),      # candidatar 74.4 / primeiro 77.6
-    economia=(79.1,84.6),      # profissões 80.4 / dinheiro 81.4 / economia 82.2
-    campo=(84.6,90.6),         # goleiro 86.0 / falta o campo 87.1 / faltam 53 88.1
-    resumo=(90.6,97.4),        # 647 91.6 / 64 casas 93.7 / nome 95.2 / visual 96.1
-    cta=(97.4,105.5),          # candidata 100.0 / te espera 101.2
+    titulo=(0.0,3.9),
+    recap=(3.9,13.5),          # 647 4.3 / terreno vazio 10.4
+    blocos=(13.5,16.9),        # mudou 13.8 / tudo em bloco 15.4
+    tour=(16.9,25.9),          # casa 17.9 / árvore 18.9 / moradores 19.4 / cabeça 21.1 / braço 22.2 / visual 23.2
+    casas=(25.9,33.1),         # 65 28.3 / 66 29.5 / 67 30.5 / 72 31.9
+    quase=(33.1,36.2),
+    campo=(36.2,43.3),         # CAMPO 36.9 / grama 38.4 / linhas 39.3 / traves 40.6 / arquibancada 41.7
+    time=(43.3,49.5),          # atacante 45.9 / meia 47.1 / goleiro 48.6
+    passes=(49.5,53.5),
+    gol=(53.5,54.5),           # GOOOL 53.7
+    cachorro=(54.5,57.0),
+    fazenda=(57.0,64.8),       # fazendeiro 59.2 / contratou 62.0
+    eleicao=(64.8,75.4),       # 11 candidatos 67.8 / campo grátis 69.6 / lanchonete 71.1 / pastel 72.1 / refri 73.6
+    entregaram=(75.4,80.5),    # entregaram 78.8
+    chat=(80.5,84.5),
+    proximo=(84.5,89.7),       # faltam 79 88.3
+    resumo=(89.7,96.7),        # 721 91.1 / 72 casas 93.0 / campo 94.5 / bloco 95.5
+    cta=(96.7,103.0),
 )
-DUR=105.5
-EVOL_T=32.6                                 # daqui pra frente é 32 bits
-SITE_CUTS=[(59.3,61.35,'virou'),(61.35,62.45,'chat'),(62.45,64.55,'online'),(64.55,66.0,'casa'),(66.0,67.45,'geladeira'),
-           (67.45,68.75,'mercadinho'),(68.75,69.85,'banco'),(69.85,71.35,'fonte'),(71.35,73.0,'mudanca')]
+DUR=103.0                                   # linha do tempo de trabalho (1ª gravação)
+EVOL_T=1e9                                  # ep. 8 continua em 32 bits (o modo em blocos foi cancelado)
+# a narração final (narracao_ep8.wav, 93,5 s) é mais rápida: mapa (tempo de trabalho -> tempo do vídeo)
+TMAP=[(0,0),(0.33,0.2),(3.48,2.99),(4.26,3.71),(10.44,8.18),(13.08,10.44),(13.78,11.05),(16.59,14.27),(17.09,14.67),(18.7,15.76),(19.9,16.58),
+      (21.0,18.0),(25.56,20.62),(26.2,21.22),(28.3,23.6),(29.5,24.5),(30.5,25.3),(31.9,26.4),(32.64,27.29),(33.47,27.94),(35.65,30.25),
+      (36.42,30.59),(38.38,32.6),(39.32,33.4),(40.63,34.42),(41.70,36.05),(42.80,36.98),(43.61,37.61),(45.86,39.58),(47.06,41.40),(48.56,42.69),
+      (49.02,43.69),(49.84,43.98),(52.90,45.50),(53.71,46.14),(54.08,46.55),(54.71,47.26),(56.67,49.17),(57.26,49.75),(59.2,51.58),(61.97,54.28),
+      (64.40,56.86),(65.08,57.61),(67.78,59.95),(69.57,62.6),(71.06,63.5),(72.06,64.3),(73.64,65.8),(74.94,67.06),(75.76,67.48),(78.79,70.73),
+      (80.11,72.03),(80.72,72.76),(84.12,76.27),(84.78,76.84),(88.28,80.22),(89.21,81.37),(90.06,81.89),(91.09,82.70),(92.99,85.04),(94.53,86.08),
+      (96.21,87.01),(97.08,87.62),(99.3,90.15),(101.25,92.01),(103.0,93.5)]
+DUR_VIDEO=93.5
+def _pl(t,A,B):
+    if t<=A[0]: return B[0]+(t-A[0])
+    for k in range(len(A)-1):
+        if A[k]<=t<=A[k+1]: return B[k]+(B[k+1]-B[k])*(t-A[k])/(A[k+1]-A[k])
+    return B[-1]+(t-A[-1])
+def old2new(t): return _pl(t,[a for a,b in TMAP],[b for a,b in TMAP])
+def new2old(t): return _pl(t,[b for a,b in TMAP],[a for a,b in TMAP])
+SITE_CUTS=[]
 
 # ---------- contador ----------
-CK=[(0,C0),(52.8,C0),(54.0,620),(55.3,630),(56.3,640),(57.6,645),(58.4,C1)]
+CK=[(0,C0),(26.2,C0),(28.3,651),(29.5,661),(30.5,671),(31.9,684),(33.0,690),(34.4,697),(35.4,699),(35.65,700),(43.6,700),(46.0,712),(49.0,C1)]
 def count_at(t):
     if t>=CK[-1][0]: return CK[-1][1]
     if t<CK[0][0]: return C0
@@ -104,7 +119,7 @@ POSTO=[(140,ROADE,'a'),(162,ROADE,'a')]     # marco 600
 CAMPO=[(140,ROADF,'b'),(162,ROADF,'b'),(184,ROADF,'b'),(206,ROADF,'b')]   # reservado: marco 700
 RESERV=[VENDA,MERCADO]+ESCOLA+PREFEITURA+[MERCADO2]+POSTO+CAMPO
 house_lots=[l for l in lots if l not in RESERV]
-NH=C1//10                                   # 61 casas
+NH=C1//10                                   # 72 casas
 house_var=[(i*5+2)%6 for i in range(len(house_lots))]
 def house_p(i,C): return clamp((C-(10*i+5))/5)
 def house_done_time(i): return time_reach(10*(i+1))
@@ -125,14 +140,19 @@ def merc2_p(t): return 1.0
 def posto_p(t): return 1.0
 # ---------- a placa nova (mutirão) ----------
 PLACA_X0,PLACA_X1,PLACA_Y=121.0,143.0,466.0      # pórtico novo sobre a rua principal, na entrada
-def placa_velha(t): return t<18.6            # a vazia sai quando o mutirão começa
+def placa_velha(t): return False            # a vazia sai quando o mutirão começa
 def placa_estado(t):
     """(letras pintadas, ângulo 0=deitada..1=em pé) ou None antes de existir"""
-    if t<19.9: return None
-    n=int(clamp((t-21.2)/1.5)*len(NOME_CIDADE)) if t<22.8 else len(NOME_CIDADE)
-    ang=smooth(clamp((t-22.9)/2.1))
-    return (n,ang)
-def eleicao(t): return t>=73.6               # faixas "VOTE" na prefeitura
+    return (len(NOME_CIDADE),1.0)
+def eleicao(t): return True                   # faixas "VOTE" na prefeitura
+def campo_p(t):
+    """obra do campo (marco 700): 0 = terreno cercado · 0.3 grama · 0.6 linhas · 0.62 traves · 0.85 arquibancada · 1 pronto"""
+    k=[(36.4,0.0),(38.6,0.3),(39.3,0.35),(40.4,0.6),(40.63,0.62),(41.7,0.85),(42.6,1.0)]
+    if t<k[0][0]: return 0.0
+    for (a,va),(b,vb) in zip(k,k[1:]):
+        if a<=t<b: return va+(vb-va)*(t-a)/(b-a)
+    return 1.0
+T_ATUAL=[0.0]
 
 # ---------- árvores ----------
 trees=[]
@@ -170,12 +190,13 @@ for k in range(C1):
     else:
         if k<267: lst=list('AAAABBBC')+['M1','M2']
         elif k<320: lst=list('AAABBBCC')+['M1','M2']
-        elif k<C0: lst=list('ABCCCC')+['M1','M2']
-        else: lst=list('DDEE')+['M3']
+        elif k<617: lst=list('ABCCCC')+['M1','M2']
+        elif k<647: lst=list('DDEE')+['M3']
+        else: lst=list('EEEE')+['M3']
         s=pr.choice(lst)
         d['seg']=s; (x0,y0),(x1,y1)=ROADSEG[s]; f=pr.uniform(0.05,0.95)
         d['tx']=x0+(x1-x0)*f; d['ty']=y0+(y1-y0)*f
-    d['y0']=484 if k<C0 else MH6+4         # quem chega no ep. 6 vem pela entrada nova
+    d['y0']=484 if k<617 else MH6+4         # quem chega no ep. 6 vem pela entrada nova
     people.append(d)
 
 def path_pos(pts,dist):

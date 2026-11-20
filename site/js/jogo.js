@@ -4,10 +4,14 @@
 //  O banco (supabase/8_jogo.sql) confere tudo que dá item ou dinheiro;
 //  aqui é o desenho, o controle e os bichos.
 // =====================================================================
+// DESLIGADO por enquanto: o site virou mais "de ver". Sem portal (Explorar
+// e mina), sem Terrenos e Lotes, sem mochila e sem lojas. Pra religar,
+// troque JOGO_LIGADO pra true.
+const JOGO_LIGADO = false;
 (function () {
 'use strict';
 const V = window.VilaAPI;
-if (!V) return;
+if (!V || !JOGO_LIGADO) return;
 const $ = s => document.querySelector(s);
 const esc = V.esc, clamp = V.clamp;
 const PORTAL_CIDADE = [60, 943];            // ao lado da cidade (coordenadas do mapa de cima)

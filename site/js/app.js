@@ -810,9 +810,9 @@ function acoesPerto() {
   const a = [], P = VILA.pontos, x = ctrl.x, y = ctrl.y;
   if (window.Jogo) a.push(...Jogo.acoesCidade(x, y));
   {
-    if (P.mercadinho && distP(P.mercadinho.porta, x, y) < 12) a.push({ rotulo: '🛒 Mercadinho (vender e comprar)', fn: () => Jogo.abrirLoja('mercado') });
+    if (window.Jogo && P.mercadinho && distP(P.mercadinho.porta, x, y) < 12) a.push({ rotulo: '🛒 Mercadinho (vender e comprar)', fn: () => Jogo.abrirLoja('mercado') });
     if (P.prefeitura && P.prefeitura.porta && distP(P.prefeitura.porta, x, y) < 14) a.push({ rotulo: '🏛️ Entrar na prefeitura', fn: () => mostrar('prefeitura', {}, false) });
-    if (P.mercadinho2 && distP(P.mercadinho2.porta, x, y) < 12) a.push({ rotulo: '🛒 Mercadinho 2 (vender e comprar)', fn: () => Jogo.abrirLoja('mercado') });
+    if (window.Jogo && P.mercadinho2 && distP(P.mercadinho2.porta, x, y) < 12) a.push({ rotulo: '🛒 Mercadinho 2 (vender e comprar)', fn: () => Jogo.abrirLoja('mercado') });
   }
   if (P.praca) {
     for (const b of P.praca.bancos) if (distP(b, x, y) < 9) { a.push(ctrl.sentado ? { rotulo: '🧍 Levantar', fn: levantar } : { rotulo: '🪑 Sentar no banco', fn: () => sentar(b[0], b[1] - 2, 'down') }); break; }

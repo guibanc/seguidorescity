@@ -25,12 +25,18 @@ def mapa(lit):
     from world16 import posto16
     from font import draw_text
     dd = ImageDraw.Draw(img)
-    # campo de futebol reservado (marco 700)
+    # campo de futebol (marco 700, ep. 8)
     cx0, cy0 = V.L2(*lot(*CAMPO[0])); cx1 = cx0+42*4
-    dd.rectangle([cx0+2, cy0+4, cx1, cy0+96], fill=(150, 120, 76))
-    for fx in range(cx0+2, cx1+1, 4): dd.point((fx, cy0+4), fill=(250, 250, 250)); dd.point((fx, cy0+96), fill=(250, 250, 250))
-    for fy in range(cy0+4, cy0+97, 4): dd.point((cx0+2, fy), fill=(250, 250, 250)); dd.point((cx1, fy), fill=(250, 250, 250))
-    draw_text(dd, "700", (cx0+cx1)//2, cy0+44, 2, (255, 214, 70, 255))
+    gx0, gy0, gx1, gy1 = cx0+6, cy0+8, cx1-6, cy0+88
+    for k, fx in enumerate(range(gx0, gx1, 12)):
+        dd.rectangle([fx, gy0, min(fx+11, gx1), gy1], fill=(86, 170, 70) if k % 2 == 0 else (72, 150, 58))
+    W_ = (245, 245, 240); xm, ym = (gx0+gx1)//2, (gy0+gy1)//2
+    dd.rectangle([gx0, gy0, gx1, gy1], outline=W_, width=2); dd.line([xm, gy0, xm, gy1], fill=W_, width=2)
+    dd.ellipse([xm-16, ym-16, xm+16, ym+16], outline=W_, width=2)
+    for xs, sg in ((gx0, 1), (gx1, -1)):
+        dd.rectangle([min(xs, xs+sg*22), ym-22, max(xs, xs+sg*22), ym+22], outline=W_, width=2)
+    for xs in (gx0-4, gx1): dd.rectangle([xs, ym-8, xs+4, ym+8], fill=(250, 250, 250))
+    for r_ in range(3): dd.rectangle([gx0+8, gy1+4+r_*3, gx1-8, gy1+5+r_*3], fill=(160-r_*12, 160-r_*12, 168-r_*12))
     # pórtico PINDAMONHANGABA sobre a rua principal (ep. 7)
     px0, py0 = V.L2(110, PLACA_Y-4); px1 = px0+92
     for xx in (V.L2(PLACA_X0, 0)[0], V.L2(PLACA_X1, 0)[0]): dd.rectangle([xx-2, py0-2, xx+1, py0+14], fill=(110, 72, 40))
@@ -91,7 +97,9 @@ pontos = {
     'prefeitura': {'porta': P(lot(*PREFEITURA[0])[0]+21, ROADD+3), 'rua': P(lot(*PREFEITURA[0])[0]+21, ROADD+6), 'lotes': [P(*lot(*l)) for l in PREFEITURA]},
     'mercadinho2': {'porta': P(lot(*MERCADO2)[0]+9.5, ROADE+3), 'rua': P(lot(*MERCADO2)[0]+9.5, ROADE+6), 'lote': P(*lot(*MERCADO2))},
     'posto': {'porta': P(lot(*POSTO[0])[0]+21, ROADE+3), 'rua': P(lot(*POSTO[0])[0]+21, ROADE+6), 'lotes': [P(*lot(*l)) for l in POSTO]},
-    'campo_reservado': {'lotes': [P(*lot(*l)) for l in CAMPO], 'marco': 700},
+    'campo': {'lotes': [P(*lot(*l)) for l in CAMPO], 'marco': 700, 'gramado': [P(lot(*CAMPO[0])[0]+3, lot(*CAMPO[0])[1]+3), P(lot(*CAMPO[0])[0]+87, lot(*CAMPO[0])[1]+43)],
+              'centro': P(lot(*CAMPO[0])[0]+45, lot(*CAMPO[0])[1]+23), 'gols': [P(lot(*CAMPO[0])[0]+3, lot(*CAMPO[0])[1]+23), P(lot(*CAMPO[0])[0]+87, lot(*CAMPO[0])[1]+23)],
+              'arquibancada': [P(lot(*CAMPO[0])[0]+7, lot(*CAMPO[0])[1]+45), P(lot(*CAMPO[0])[0]+83, lot(*CAMPO[0])[1]+50)], 'entrada': P(lot(*CAMPO[0])[0]+45, ROADF+5)},
 }
 ruas = {
     'principal': {'de': P(131.5, 104), 'ate': P(131.5, 480)},
@@ -111,7 +119,7 @@ for i, l in enumerate(house_lots[:NH]):
 lotes_livres = [{'casa': NH+k+1, 'lote': P(*lot(*l)), 'rua': RUAS[l[1]], 'comeca_em': 10*(NH+k)+5, 'pronta_em': 10*(NH+k+1)}
                 for k, l in enumerate(house_lots[NH:])]
 vila = {'episodio': EP, 'seguidores': N, 'casas': NH, 'estilo': '16 bits', 'mapa': {'largura': W*S, 'altura': MH6*S, 'escala_logica': S},
-        'proximo_marco': {'seguidores': 700, 'construcao': 'campo de futebol'}, 'nome_vila': 'Pindamonhangaba',
+        'proximo_marco': {'seguidores': 800, 'construcao': 'padaria/lanchonete'}, 'nome_vila': 'Pindamonhangaba',
         'pontos': pontos, 'ruas': ruas, 'lista_casas': casas, 'lotes_livres': lotes_livres,
         'atlas': {'arquivo': 'img/moradores.png', 'por_linha': cols, 'celula': [CW, CH], 'quadro': [12, 18],
                   'direcoes': DIRS, 'quadros_por_direcao': 4, 'ancora_pes': [6, 14]}}
@@ -161,7 +169,7 @@ moradores = []
 for k in range(N):
     mid = k+1
     ag, dom = agenda(mid)
-    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6 if mid <= 617 else 7,
+    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6 if mid <= 617 else 7 if mid <= 647 else 8,
                       'aparencia': npc_look(mid), 'atlas': {'col': k % cols, 'lin': k//cols},
                       'velocidade': round(random.Random(mid).uniform(0.85, 1.15), 2), 'agenda': ag, 'domingo': dom})
 json.dump(moradores, open(f'{out}/dados/moradores.json', 'w'), ensure_ascii=False)

@@ -16,6 +16,7 @@ OX, OY = MH*2+40, TOP
 IW, IH = (MW+MH)*2+80, MW+MH+TOP+60
 _ox, _oy = OX, OY
 d = None
+VOX = False    # ep. 8: tudo em blocos (vox.py)
 K = 1          # 1 = isométrico 16 bits (ep. 6) · 2 = 32 bits (ep. 7): tudo com o dobro de resolução
 
 class _SD:
@@ -394,6 +395,88 @@ def campo(label=True):
         quad([P(bx-7, by+1, 9), P(bx+7, by+1, 9), P(bx+7, by+1, 18), P(bx-7, by+1, 18)], (250, 214, 70))
         cx, cy = P(bx, by+1, 15); draw_text(d, "700", int(cx)+1, int(cy)-5, 1, (120, 40, 30, 255), outline=None)
 
+def campo_pronto(etapa=4):
+    """marco 700 (ep. 8): 1 grama · 2 linhas · 3 traves · 4 arquibancada"""
+    lx_, ly_ = lot(*SC.CAMPO[0])
+    x0, y0, x1, y1 = lx_+3, ly_+3, lx_+87, ly_+43
+    quad([P(x0-2, y0-2), P(x1+2, y0-2), P(x1+2, y1+2), P(x0-2, y1+2)], (64, 140, 52))
+    for k in range(int((x1-x0)/6)):
+        quad([P(x0+k*6, y0), P(x0+k*6+6, y0), P(x0+k*6+6, y1), P(x0+k*6, y1)], (86, 170, 70) if k % 2 == 0 else (72, 150, 58))
+    if etapa < 2: return
+    W_ = (240, 240, 236)
+    for (a, b) in (((x0, y0), (x1, y0)), ((x1, y0), (x1, y1)), ((x1, y1), (x0, y1)), ((x0, y1), (x0, y0))):
+        d.line([P(*a), P(*b)], fill=W_, width=2)
+    xm, ym = (x0+x1)/2, (y0+y1)/2
+    d.line([P(xm, y0), P(xm, y1)], fill=W_, width=2)
+    d.polygon([P(xm+8*math.cos(a_), ym+8*math.sin(a_)) for a_ in np.linspace(0, 2*math.pi, 28)], outline=W_)
+    for xs, sg in ((x0, 1), (x1, -1)):
+        d.line([P(xs, ym-11), P(xs+sg*11, ym-11), P(xs+sg*11, ym+11), P(xs, ym+11)], fill=W_, width=2)
+    if etapa < 3: return
+    for xs, sg in ((x0, -1), (x1, 1)):                     # traves
+        for yy in (ym-4, ym+4): d.line([P(xs, yy), P(xs, yy, 6)], fill=(250, 250, 250), width=2)
+        d.line([P(xs, ym-4, 6), P(xs, ym+4, 6)], fill=(250, 250, 250), width=2)
+        for yy in np.arange(ym-4, ym+4.1, 1.5): d.line([P(xs, yy, 6), P(xs+sg*2, yy, 0)], fill=(200, 200, 206))
+    if etapa < 4: return
+    for r_, hh in ((1, 1.5), (2, 3.0), (3, 4.5), (4, 6.0)):  # arquibancada
+        yy = y1+2+r_*1.5
+        box(x0+4, yy-1.5, x1-4, yy, hh, (164, 164, 170), (140, 140, 148), outline=False); top(x0+4, yy-1.5, x1-4, yy, hh, (186, 186, 192))
+
+# ---------------- ep. 8: a fazenda do vizinho (fora do mapa, oeste) ----------------
+FARM = dict(celeiro=(-92, 318), silo=(-70, 316), trator=(-60, 352), plantio=(-150, 360, -50, 430), placa=(-40, 350))
+def celeiro():
+    x, y = FARM['celeiro']; x0, y0, x1, y1 = x, y, x+24, y+18
+    shadow(x0, y0, x1, y1, 14)
+    box(x0, y0, x1, y1, 12, (184, 48, 42), (140, 34, 30)); top(x0, y0, x1, y1, 12, (150, 40, 34))
+    for u in np.arange(x0+2, x1, 2.5): d.line([P(u, y1, 0.5), P(u, y1, 11.5)], fill=(160, 40, 36))
+    quad([P(x0+8, y1, 0), P(x1-8, y1, 0), P(x1-8, y1, 9), P(x0+8, y1, 9)], (246, 240, 230))
+    quad([P(x0+9, y1, 0.6), P(x1-9, y1, 0.6), P(x1-9, y1, 8.4), P(x0+9, y1, 8.4)], (150, 36, 32))
+    d.line([P(x0+9, y1, 0.6), P(x1-9, y1, 8.4)], fill=(246, 240, 230)); d.line([P(x1-9, y1, 0.6), P(x0+9, y1, 8.4)], fill=(246, 240, 230))
+    win_s(x0, y1, 3, 6, 6, 9); win_s(x0, y1, 18, 21, 6, 9)
+    gable_roof(x0, y0, x1, y1, 12, 8, [(70, 40, 34), (96, 54, 44), (120, 66, 52), (150, 90, 70)])
+def silo():
+    x, y = FARM['silo']
+    shadow(x-4, y-4, x+4, y+4, 26)
+    for z in range(0, 24):
+        c = (196, 200, 206) if z % 6 else (170, 174, 180)
+        X, Y = P(x, y, z); d.ellipse([X-8, Y-4, X+8, Y+4], fill=sh(c, 0.92))
+    X, Y = P(x, y, 24); d.ellipse([X-8, Y-4, X+8, Y+4], fill=(210, 214, 220))
+    d.polygon([(X-8, Y), (X, Y-8), (X+8, Y)], fill=(150, 60, 50))
+def trator():
+    x, y = FARM['trator']
+    shadow(x-1, y-2, x+9, y+3, 8)
+    for (wx, wy, r) in ((x+1, y+3, 2.4), (x+7, y+3, 1.6)):
+        X, Y = P(wx, wy, r); d.ellipse([X-r*1.3, Y-r*1.3, X+r*1.3, Y+r*1.3], fill=(30, 30, 34)); d.ellipse([X-r*0.5, Y-r*0.5, X+r*0.5, Y+r*0.5], fill=(240, 200, 60))
+    box(x+3, y-2, x+9, y+2, 4, (60, 160, 80), (40, 120, 60), z0=1.5); top(x+3, y-2, x+9, y+2, 5.5, (80, 180, 96))
+    box(x, y-2, x+3, y+2, 8, (60, 160, 80), (40, 120, 60), z0=1.5); top(x, y-2, x+3, y+2, 9.5, (80, 180, 96))
+    quad([P(x+0.4, y+2, 6), P(x+2.6, y+2, 6), P(x+2.6, y+2, 9), P(x+0.4, y+2, 9)], (150, 206, 236))
+    for (wx, wy, r) in ((x+1, y-2, 2.4),): X, Y = P(wx, wy, r); d.ellipse([X-r*1.3, Y-r*1.3, X+r*1.3, Y+r*1.3], fill=(40, 40, 44))
+    d.line([P(x+8, y, 5.5), P(x+8, y, 9)], fill=(60, 60, 64), width=2)
+def plantio_linha(yy, milho):
+    x0, y0, x1, y1 = FARM['plantio']
+    if milho:
+        for u in np.arange(x0+1, x1-1, 1.6):
+            X, Y = P(u, yy, 0); d.line([X, Y, X, Y-5], fill=(60, 130, 50)); d.line([X-1, Y-3, X+1, Y-4], fill=(90, 170, 70))
+            if int(u*7) % 3 == 0: d.point((X+1, Y-4), fill=(240, 200, 70))
+    else:
+        d.line([P(x0+1, yy), P(x1-1, yy)], fill=(196, 160, 70), width=2)
+        for u in np.arange(x0+1, x1-1, 1.2): X, Y = P(u, yy, 0); d.line([X, Y, X, Y-3], fill=(236, 204, 100))
+def placa_fazenda():
+    x, y = FARM['placa']
+    for u in (0, 8): d.line([P(x+u, y), P(x+u, y, 9)], fill=(110, 72, 40), width=2)
+    quad([P(x-1, y, 8), P(x+9, y, 8), P(x+9, y, 14), P(x-1, y, 14)], (214, 174, 116))
+    d.line([P(x-1, y, 8), P(x+9, y, 8), P(x+9, y, 14), P(x-1, y, 14), P(x-1, y, 8)], fill=(110, 72, 40))
+    cx, cy = P(x+4, y, 12); draw_text(d, "CONTRATA-SE!", int(cx), int(cy)-3, 1, (120, 40, 20, 255), outline=None)
+def fazenda_objs():
+    out = []
+    fx, fy = FARM['celeiro']; out.append((fx+fy+40, spr('celeiro', celeiro, (fx-2, fy-2, fx+26, fy+20), 40)))
+    fx, fy = FARM['silo']; out.append((fx+fy, spr('silo', silo, (fx-6, fy-6, fx+6, fy+6), 40)))
+    fx, fy = FARM['trator']; out.append((fx+fy+4, spr('trator', trator, (fx-2, fy-3, fx+10, fy+6), 14)))
+    fx, fy = FARM['placa']; out.append((fx+fy, spr('placaf', placa_fazenda, (fx-3, fy-2, fx+12, fy+2), 24)))
+    x0, y0, x1, y1 = FARM['plantio']
+    for k, yy in enumerate(np.arange(y0+2, y1-1, 3.0)):
+        out.append(((x0+x1)/2+yy, spr(('pl', k), lambda yy=yy, k=k: plantio_linha(yy, k % 4 < 2), (x0, yy-1, x1, yy+1), 10)))
+    return out
+
 def construcao(x0, y0, x1, y1, p, final, hfin=15, col=(250, 250, 246)):
     """obra genérica: estacas -> laje -> paredes -> prédio pronto (com andaime até p=1)"""
     if p <= 0: return
@@ -452,6 +535,9 @@ def terreno(vx0, vy0, w, h):
     yy, xx = np.mgrid[vy0:vy0+h, vx0:vx0+w].astype(np.float32)
     a_ = (xx/K-OX)/2; b_ = yy/K-OY
     lx = (a_+b_)/2; ly = (b_-a_)/2
+    if VOX:
+        import vox
+        return Image.fromarray(vox.terreno_vox(lx, ly, terreno_l)).convert('RGBA')
     c = terreno_l(lx, ly)
     if K > 1:   # 32 bits: grão fino na grama/chão
         n = ((xx.astype(np.int64)*73856093 ^ yy.astype(np.int64)*19349663) % 97)/97.0
@@ -492,6 +578,12 @@ def terreno_l(lx, ly):
 
 _TV = {}
 def tree_var(k, r):
+    if VOX:
+        import vox
+        if ('v', k, r, K) not in _TV:
+            _TV[('v', k, r, K)] = sprite(lambda: vox.tree(0, 0, r+k % 3), -8, -8, 8, 8, 34)
+        im, bx, by = _TV[('v', k, r, K)]; ax, ay = PW(0, 0)
+        return im, bx-ax*K, by-ay*K
     """sprite de árvore genérico (variação k) ancorado no ponto lógico (0,0) — offsets em px de K"""
     if (k, r, K) not in _TV:
         _TV[(k, r, K)] = sprite(lambda: tree(k*0.37, 0, r), k*0.37-8, -8, k*0.37+8, 8, 34)
@@ -528,6 +620,9 @@ def lot_box(l, w=21, h=25): lx_, ly_ = lot(*l); return (lx_-2, ly_, lx_+w+2, ly_
 
 def objetos(t, C):
     """lista (profundidade, sprite) de tudo que é fixo/construído no instante t"""
+    if VOX:
+        import vox
+        return vox.objetos(t, C)
     out = []
     for i, l in enumerate(SC.house_lots):
         p = SC.house_p(i, C); lx_, ly_ = lot(*l)
@@ -549,7 +644,13 @@ def objetos(t, C):
     else:
         for l in SC.POSTO: out.append((lot(*l)[0]+lot(*l)[1]+20, spr(('st', l), lambda l=l: stakes(l), lot_box(l), 10)))
     if pm <= 0: out.append((lot(*SC.MERCADO2)[0]+lot(*SC.MERCADO2)[1]+20, spr(('st', SC.MERCADO2), lambda: stakes(SC.MERCADO2), lot_box(SC.MERCADO2), 10)))
-    lx_, ly_ = lot(*SC.CAMPO[0]); out.append((lx_+ly_-10, spr('campo', campo, (lx_-2, ly_, lx_+92, ly_+54), 26)))
+    lx_, ly_ = lot(*SC.CAMPO[0])
+    cp = getattr(SC, 'campo_p', lambda t: 0)(t)
+    if cp > 0:
+        et = 4 if cp >= 0.85 else 3 if cp >= 0.62 else 2 if cp >= 0.35 else 1
+        out.append((lx_+ly_-10, spr(('campo_pronto', et), lambda et=et: campo_pronto(et), (lx_-2, ly_, lx_+92, ly_+54), 26)))
+    else: out.append((lx_+ly_-10, spr('campo', campo, (lx_-2, ly_, lx_+92, ly_+54), 26)))
+    if getattr(SC, 'EP', 0) >= 8: out += fazenda_objs()
     for k, tr in enumerate(SC.TREES6): out.append((tr['x']+tr['y'], spr(('tr', k), lambda tr=tr: tree(tr['x'], tr['y'], tr['r']+2), (tr['x']-8, tr['y']-8, tr['x']+8, tr['y']+8), 34)))
     out.append((153+231, spr('arvp', lambda: tree(153, 231, 8), (145, 223, 161, 239), 34)))
     for k, (x, y) in enumerate(LAMPS6): out.append((x+y, spr(('lp', k), lambda x=x, y=y: lamp(x, y), (x-2, y-2, x+2, y+2), 24)))
@@ -579,6 +680,7 @@ def _render(t, cam, people_list, extra, pop, kr):
     global K
     oldK = K; K = kr
     try:
+        SC.T_ATUAL[0] = t
         cx, cy, Z = cam; z = Z/kr
         cxk, cyk = cx*kr, cy*kr
         vw, vh = 1080/z, 1920/z
@@ -602,8 +704,8 @@ def _render(t, cam, people_list, extra, pop, kr):
                 X, Y = int(bx*kr-vx0), int(by*kr-vy0)
                 if -30 < X < vw_i+30 and -50 < Y < vh_i+30:
                     s_ = sf(kr)
-                    vd.ellipse([X-4*kr, Y-1*kr, X+4*kr, Y+2*kr], fill=(0, 30, 0, 80))
-                    view.paste(s_, (X-s_.width//2, Y-s_.height+kr), s_)
+                    if not VOX: vd.ellipse([X-4*kr, Y-1*kr, X+4*kr, Y+2*kr], fill=(0, 30, 0, 80))
+                    view.paste(s_, (X-s_.width//2, Y-s_.height+kr+int(s_.info.get('foot', 0))), s_)
                 continue
             if o[0] == 'fn':
                 o[1](vd, vx0, vy0, kr); continue
@@ -631,6 +733,10 @@ def render_view(t, cam, people_list, extra=None, pop=None):
     e de longe os de 1x (com uma transição suave entre os dois)."""
     Z = cam[2]
     if K == 1: return _render(t, cam, people_list, extra, pop, 1)
+    if VOX and Z >= 3.2: return _render(t, cam, people_list, extra, pop, 4)
+    if VOX and Z >= 2.6:
+        w = (Z-2.6)/0.6
+        return Image.blend(_render(t, cam, people_list, extra, pop, 2), _render(t, cam, people_list, extra, pop, 4), w)
     if Z >= 1.7: return _render(t, cam, people_list, extra, pop, 2)
     if Z < 1.3: return _render(t, cam, people_list, extra, pop, 1)
     w = (Z-1.3)/0.4
@@ -662,6 +768,11 @@ def texto_placa(view, vx0, vy0):
     m = 0.06; xa, xb = SC.PLACA_X0+(SC.PLACA_X1-SC.PLACA_X0)*m, SC.PLACA_X1-(SC.PLACA_X1-SC.PLACA_X0)*m
     za, zc = ztop-(ztop-zb)*0.18, zb+(ztop-zb)*0.18
     q = [O(xa, ytop, za), O(xb, ytop, za), O(xb, ytop, zc), O(xa, ytop, zc)]
+    if VOX:
+        import vox
+        y = vox.PORTAL_Y; I0, I1 = vox.gi(SC.PLACA_X0), vox.gi(SC.PLACA_X1)
+        xa, xb = I0*vox.B+1.6, (I1+1)*vox.B-1.6; za, zc = 25*vox.B-0.6, 18*vox.B+0.6
+        q = [O(xa, y, za), O(xb, y, za), O(xb, y, zc), O(xa, y, zc)]
     tw = text_width(nome, 4)+8
     tex = Image.new('RGBA', (tw, 44), (0, 0, 0, 0)); dd = ImageDraw.Draw(tex)
     draw_text(dd, nome, tw//2, 6, 4, (255, 236, 140, 255), outline=(70, 40, 20, 255))

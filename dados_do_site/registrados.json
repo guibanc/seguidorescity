@@ -8,16 +8,18 @@
    "pele": 2,
    "baixo": "bermuda",
    "barba": false,
-   "cabelo": "coque",
-   "camisa": 4,
-   "chapeu": null,
+   "cabelo": "curto",
+   "camisa": 3,
+   "chapeu": "boina",
    "oculos": false,
-   "sapato": 0,
-   "camisa2": 10,
-   "estampa": "lisa",
-   "cor_baixo": 5,
+   "sapato": 3,
+   "camisa2": 2,
+   "estampa": "time",
+   "acessorio": "oculos_sol",
+   "cor_baixo": 0,
    "cor_cabelo": 7,
-   "cor_chapeu": 8
+   "cor_chapeu": 1,
+   "cor_acessorio": 0
   },
   "bio": null
  },
@@ -37,11 +39,13 @@
    "sapato": 2,
    "camisa2": 4,
    "estampa": "regata",
+   "acessorio": "oculos_sol",
    "cor_baixo": 0,
-   "cor_cabelo": 0,
-   "cor_chapeu": 5
+   "cor_cabelo": 1,
+   "cor_chapeu": 5,
+   "cor_acessorio": 0
   },
-  "bio": null
+  "bio": "Vote em mim para um futuro melhor"
  },
  {
   "id": 3,
@@ -154,6 +158,30 @@
   "bio": null
  },
  {
+  "id": 12,
+  "casa": 2,
+  "chegou_no_ep": 1,
+  "nome": "cristiano Ronaldo",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 3,
+   "estampa": "time",
+   "acessorio": "colar",
+   "cor_baixo": 5,
+   "cor_cabelo": 0,
+   "cor_chapeu": 6,
+   "cor_acessorio": 0
+  },
+  "bio": "melhor jogador de bola na cidade pena que não tem campo"
+ },
+ {
   "id": 13,
   "casa": 2,
   "chegou_no_ep": 1,
@@ -261,7 +289,7 @@
    "cor_cabelo": 3,
    "cor_chapeu": 10
   },
-  "bio": "Quem é campeão também pode ser prefeito, vote blue para uma cidade melhor"
+  "bio": "Campeão pokemon de kanto e johto, venho de palet (é meme tá kkkk)"
  },
  {
   "id": 34,
@@ -282,28 +310,6 @@
    "cor_baixo": 2,
    "cor_cabelo": 2,
    "cor_chapeu": 1
-  },
-  "bio": null
- },
- {
-  "id": 45,
-  "casa": 5,
-  "chegou_no_ep": 1,
-  "nome": "Gazinho",
-  "aparencia": {
-   "pele": 3,
-   "baixo": "bermuda",
-   "barba": false,
-   "cabelo": "curto",
-   "camisa": 4,
-   "chapeu": "bone",
-   "oculos": false,
-   "sapato": 0,
-   "camisa2": 9,
-   "estampa": "duas_cores",
-   "cor_baixo": 0,
-   "cor_cabelo": 1,
-   "cor_chapeu": 9
   },
   "bio": null
  },
@@ -343,7 +349,7 @@
    "chapeu": null,
    "oculos": false,
    "sapato": 0,
-   "camisa2": 9,
+   "camisa2": 3,
    "estampa": "lisa",
    "cor_baixo": 0,
    "cor_cabelo": 0,
@@ -374,6 +380,28 @@
   "bio": null
  },
  {
+  "id": 82,
+  "casa": 9,
+  "chegou_no_ep": 1,
+  "nome": "Mentalista",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 0,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 0,
+   "cor_chapeu": 1
+  },
+  "bio": "O melhor detetive"
+ },
+ {
   "id": 83,
   "casa": 9,
   "chegou_no_ep": 1,
@@ -393,7 +421,7 @@
    "cor_cabelo": 2,
    "cor_chapeu": 6
   },
-  "bio": null
+  "bio": "Eu sou amigável prometo comprir oque digo \"vou ser amiga de todos os jogadores com nome\""
  },
  {
   "id": 88,
@@ -484,24 +512,24 @@
   "bio": null
  },
  {
-  "id": 171,
+  "id": 178,
   "casa": 18,
   "chegou_no_ep": 1,
-  "nome": "Greninjapok09",
+  "nome": "Fefefafa123",
   "aparencia": {
-   "pele": 1,
-   "baixo": "calca",
+   "pele": 3,
+   "baixo": "bermuda",
    "barba": false,
-   "cabelo": "curto",
-   "camisa": 0,
-   "chapeu": null,
+   "cabelo": "afro",
+   "camisa": 9,
+   "chapeu": "gorro",
    "oculos": false,
    "sapato": 0,
-   "camisa2": 9,
-   "estampa": "listrada",
-   "cor_baixo": 0,
-   "cor_cabelo": 3,
-   "cor_chapeu": 1
+   "camisa2": 11,
+   "estampa": "duas_cores",
+   "cor_baixo": 1,
+   "cor_cabelo": 1,
+   "cor_chapeu": 6
   },
   "bio": null
  },
@@ -544,10 +572,10 @@
    "camisa2": 6,
    "estampa": "lisa",
    "cor_baixo": 2,
-   "cor_cabelo": 2,
+   "cor_cabelo": 3,
    "cor_chapeu": 5
   },
-  "bio": null
+  "bio": "joga robloxon 🫪"
  },
  {
   "id": 193,
@@ -556,18 +584,20 @@
   "nome": "Guilherme",
   "aparencia": {
    "pele": 0,
-   "baixo": "bermuda",
+   "baixo": "calca",
    "barba": false,
    "cabelo": "franja",
    "camisa": 1,
-   "chapeu": "bone",
-   "oculos": true,
+   "chapeu": null,
+   "oculos": false,
    "sapato": 3,
    "camisa2": 0,
-   "estampa": "listrada",
-   "cor_baixo": 5,
+   "estampa": "time",
+   "acessorio": "oculos_sol",
+   "cor_baixo": 2,
    "cor_cabelo": 1,
-   "cor_chapeu": 1
+   "cor_chapeu": 1,
+   "cor_acessorio": 0
   },
   "bio": "Jesus Saves - Fundador da Vila"
  },
@@ -580,9 +610,9 @@
    "pele": 0,
    "baixo": "calca",
    "barba": false,
-   "cabelo": "raspado",
+   "cabelo": "franja",
    "camisa": 3,
-   "chapeu": null,
+   "chapeu": "palha",
    "oculos": true,
    "sapato": 3,
    "camisa2": 0,
@@ -591,7 +621,7 @@
    "cor_cabelo": 2,
    "cor_chapeu": 4
   },
-  "bio": null
+  "bio": "moro na casa 21 e quero ser futuro fazendeiro"
  },
  {
   "id": 212,
@@ -726,6 +756,28 @@
   "bio": "Lugar favorito da vila: casa"
  },
  {
+  "id": 252,
+  "casa": 26,
+  "chegou_no_ep": 1,
+  "nome": "Greninjapok09",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "listrada",
+   "cor_baixo": 0,
+   "cor_cabelo": 3,
+   "cor_chapeu": 1
+  },
+  "bio": null
+ },
+ {
   "id": 257,
   "casa": 26,
   "chegou_no_ep": 1,
@@ -754,7 +806,7 @@
   "nome": "C4rmin",
   "aparencia": {
    "pele": 0,
-   "baixo": "bermuda",
+   "baixo": "calca",
    "barba": false,
    "cabelo": "franja",
    "camisa": 9,
@@ -763,9 +815,11 @@
    "sapato": 0,
    "camisa2": 4,
    "estampa": "duas_cores",
+   "acessorio": "fone",
    "cor_baixo": 3,
    "cor_cabelo": 0,
-   "cor_chapeu": 7
+   "cor_chapeu": 7,
+   "cor_acessorio": 0
   },
   "bio": "Oi eu sou um player real e sera que algum dia o adm me nota?"
  },
@@ -790,28 +844,6 @@
    "cor_chapeu": 10
   },
   "bio": null
- },
- {
-  "id": 281,
-  "casa": 29,
-  "chegou_no_ep": 2,
-  "nome": "cristiano Ronaldo",
-  "aparencia": {
-   "pele": 3,
-   "baixo": "bermuda",
-   "barba": false,
-   "cabelo": "raspado",
-   "camisa": 0,
-   "chapeu": null,
-   "oculos": false,
-   "sapato": 0,
-   "camisa2": 3,
-   "estampa": "duas_cores",
-   "cor_baixo": 5,
-   "cor_cabelo": 1,
-   "cor_chapeu": 6
-  },
-  "bio": "melhor jogador de bola na cidade pena que não tem campo"
  },
  {
   "id": 284,
@@ -856,6 +888,30 @@
    "cor_chapeu": 2
   },
   "bio": "Amiga de quase todos e considera todo mundo como neto♥︎"
+ },
+ {
+  "id": 293,
+  "casa": 30,
+  "chegou_no_ep": 2,
+  "nome": "Sr HP",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "rabo",
+   "camisa": 9,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 4,
+   "estampa": "listrada",
+   "acessorio": "cachecol",
+   "cor_baixo": 1,
+   "cor_cabelo": 7,
+   "cor_chapeu": 8,
+   "cor_acessorio": 0
+  },
+  "bio": null
  },
  {
   "id": 302,
@@ -924,6 +980,52 @@
   "bio": null
  },
  {
+  "id": 327,
+  "casa": 33,
+  "chegou_no_ep": 3,
+  "nome": "Luiz",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": true,
+   "cabelo": "curto",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 5,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 0
+  },
+  "bio": null
+ },
+ {
+  "id": 335,
+  "casa": 34,
+  "chegou_no_ep": 3,
+  "nome": "Apenas um jogador",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 0,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 1,
+   "estampa": "duas_cores",
+   "acessorio": "mochila",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 5,
+   "cor_acessorio": 9
+  },
+  "bio": "JESUS ESTÁ VOLTANDO, ARREPENDAM-SE"
+ },
+ {
   "id": 347,
   "casa": 35,
   "chegou_no_ep": 3,
@@ -932,16 +1034,18 @@
    "pele": 0,
    "baixo": "bermuda",
    "barba": false,
-   "cabelo": "franja",
+   "cabelo": "curto",
    "camisa": 6,
    "chapeu": "bone",
    "oculos": false,
    "sapato": 0,
    "camisa2": 5,
    "estampa": "regata",
+   "acessorio": "mochila",
    "cor_baixo": 0,
    "cor_cabelo": 1,
-   "cor_chapeu": 6
+   "cor_chapeu": 6,
+   "cor_acessorio": 9
   },
   "bio": null
  },
@@ -1012,6 +1116,28 @@
   "bio": null
  },
  {
+  "id": 426,
+  "casa": 43,
+  "chegou_no_ep": 4,
+  "nome": "Mt",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "coque",
+   "camisa": 3,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 2,
+   "estampa": "lisa",
+   "cor_baixo": 3,
+   "cor_cabelo": 5,
+   "cor_chapeu": 6
+  },
+  "bio": null
+ },
+ {
   "id": 441,
   "casa": 45,
   "chegou_no_ep": 4,
@@ -1061,19 +1187,21 @@
   "chegou_no_ep": 4,
   "nome": "Artur",
   "aparencia": {
-   "pele": 3,
-   "baixo": "calca",
+   "pele": 2,
+   "baixo": "bermuda",
    "barba": false,
    "cabelo": "curto",
-   "camisa": 4,
+   "camisa": 0,
    "chapeu": null,
    "oculos": false,
-   "sapato": 1,
-   "camisa2": 6,
-   "estampa": "lisa",
-   "cor_baixo": 2,
-   "cor_cabelo": 3,
-   "cor_chapeu": 0
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "listrada",
+   "acessorio": "mochila",
+   "cor_baixo": 1,
+   "cor_cabelo": 0,
+   "cor_chapeu": 4,
+   "cor_acessorio": 0
   },
   "bio": null
  },
@@ -1100,24 +1228,34 @@
   "bio": "DEUS melhor do Fut"
  },
  {
-  "id": 576,
-  "casa": 58,
+  "id": 537,
+  "casa": 54,
   "chegou_no_ep": 5,
-  "nome": "BachiraPro",
+  "nome": "Braya",
+  "aparencia": null,
+  "bio": null
+ },
+ {
+  "id": 555,
+  "casa": 56,
+  "chegou_no_ep": 5,
+  "nome": "Murilo mbappe",
   "aparencia": {
-   "pele": 2,
+   "pele": 1,
    "baixo": "bermuda",
    "barba": false,
-   "cabelo": "franja",
-   "camisa": 1,
+   "cabelo": "curto",
+   "camisa": 0,
    "chapeu": "bone",
-   "oculos": false,
+   "oculos": true,
    "sapato": 2,
-   "camisa2": 9,
-   "estampa": "listrada",
+   "camisa2": 4,
+   "estampa": "time",
+   "acessorio": "colar",
    "cor_baixo": 2,
-   "cor_cabelo": 7,
-   "cor_chapeu": 10
+   "cor_cabelo": 2,
+   "cor_chapeu": 1,
+   "cor_acessorio": 1
   },
   "bio": null
  },
@@ -1144,6 +1282,74 @@
   "bio": null
  },
  {
+  "id": 611,
+  "casa": 62,
+  "chegou_no_ep": 6,
+  "nome": "Heitor Emmanull",
+  "aparencia": {
+   "pele": 4,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 2,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 11,
+   "estampa": "listrada",
+   "cor_baixo": 1,
+   "cor_cabelo": 3,
+   "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
+  "id": 612,
+  "casa": 62,
+  "chegou_no_ep": 6,
+  "nome": "Gazinho",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 4,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "duas_cores",
+   "cor_baixo": 0,
+   "cor_cabelo": 1,
+   "cor_chapeu": 9
+  },
+  "bio": null
+ },
+ {
+  "id": 613,
+  "casa": 62,
+  "chegou_no_ep": 6,
+  "nome": "N9nePlayer",
+  "aparencia": {
+   "pele": 5,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "topete",
+   "camisa": 2,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "duas_cores",
+   "acessorio": "colar",
+   "cor_baixo": 3,
+   "cor_cabelo": 6,
+   "cor_chapeu": 11,
+   "cor_acessorio": 4
+  },
+  "bio": "Não dá pra gavar vídeo aqui."
+ },
+ {
   "id": 614,
   "casa": 62,
   "chegou_no_ep": 6,
@@ -1159,10 +1365,58 @@
    "sapato": 1,
    "camisa2": 7,
    "estampa": "lisa",
+   "acessorio": "fone",
    "cor_baixo": 2,
    "cor_cabelo": 0,
-   "cor_chapeu": 1
+   "cor_chapeu": 1,
+   "cor_acessorio": 4
   },
   "bio": "Outras coisas é ser Mildana"
+ },
+ {
+  "id": 621,
+  "casa": 63,
+  "chegou_no_ep": 7,
+  "nome": "Bachirapro",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 0,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 9,
+   "estampa": "regata",
+   "cor_baixo": 0,
+   "cor_cabelo": 7,
+   "cor_chapeu": 10
+  },
+  "bio": "Uai so to vivendo di boa na cidadi dus seeguidor"
+ },
+ {
+  "id": 647,
+  "casa": 65,
+  "chegou_no_ep": 7,
+  "nome": "sales",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 4,
+   "chapeu": "bone",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "listrada",
+   "acessorio": "colar",
+   "cor_baixo": 1,
+   "cor_cabelo": 7,
+   "cor_chapeu": 9,
+   "cor_acessorio": 2
+  },
+  "bio": null
  }
 ]

@@ -2,7 +2,9 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
-**Episódio 7: leia primeiro o `RELATORIO_PARA_EP7.md`** (647 seguidores, casas 62–64, campo de futebol em 700, 53 moradores com nome, chat ao vivo no site, C4rmin em destaque).
+**Episódio 8: leia primeiro o `RELATORIO_PARA_EP8.md`** (721 seguidores, casas 65–72, marco 700 = campo de futebol, 64 moradores com nome, 11 candidatos a prefeito, cristiano Ronaldo em destaque).
+
+**Ep. 8 pronto** (721 seguidores), em 32 bits: casas 65–72 na rua E, **MARCO 700: CAMPO DE FUTEBOL** (lotes 140|162|184|206,600,b, ponto `campo` no `vila.json`), o time (cristiano Ronaldo, Mesi, Neymar, Ronaldo gaucho, DEUS, Theogoleiro, Murilo mbappe), gol, vira-lata, o fazendeiro vizinho (fora do mapa, oeste), mural dos 11 candidatos, debate no chat. Próxima: casa 73 (725→730, lote 206,510,a). Próximo marco: 800 (padaria/lanchonete). Código do ep. 7 em `arquivo_ep7/`. O teste "tudo em blocos" (cancelado) ficou em `arquivo_ep8_blocos/vox.py` (o `codigo/vox.py` só é usado pra medida do campo). A narração final é mais rápida que a linha do tempo de trabalho: `scene.TMAP` / `new2old()` convertem os tempos.
 
 **Ep. 7 pronto** (647 seguidores): a cidade se chama **PINDAMONHANGABA** (pórtico sobre a rua principal, feito em mutirão), EVOLUÇÃO 32 BITS (`iso.K = 2`, casas com varanda/jardim/varal, árvores detalhadas, moradores novos em 32x48 no `char32.py`), casas 62–64, montagem das novidades do site, candidaturas a prefeito, teaser de profissões/dinheiro. Próxima: casa 65 (645→650). Próximo marco: 700 (campo).
 
