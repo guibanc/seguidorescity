@@ -877,7 +877,7 @@ let ELEICAO = null, MEU_VOTO = null;
 async function carregarEleicao() {
   const r = await Api.rpc('eleicao_info', {});
   ELEICAO = r && r.fase ? r : null;
-  if (ELEICAO && EU) { const v = await Api.rpc('meu_voto', { p_token: token() }); MEU_VOTO = v && v.ok ? v.candidato : null; }
+  if (ELEICAO && EU) { const v = await Api.rpc('meu_voto', { p_token: token() }); MEU_VOTO = v && v.ok ? v.candidato : null; } else MEU_VOTO = null;
   atualizarChipEleicao();
   if (telaAtual && telaAtual.tela === 'prefeitura') TELAS.prefeitura();
 }
@@ -886,9 +886,17 @@ function atualizarChipEleicao() {
   b.hidden = !ELEICAO;
   if (!ELEICAO) return;
   b.innerHTML = ELEICAO.fase === 'encerrada' && ELEICAO.prefeito_nome ? `👑 Prefeito(a): <b>${esc(ELEICAO.prefeito_nome)}</b>`
-    : ELEICAO.fase === 'votacao' ? '🗳️ <b>Votação aberta!</b>' : `🗳️ Eleição: <b>${ELEICAO.candidatos.length}</b> ${ELEICAO.candidatos.length === 1 ? 'candidato' : 'candidatos'}`;
+    : ELEICAO.fase === 'votacao' ? `🗳️ <b>Votação aberta!</b>${faltaEleicao() ? ' · ' + faltaEleicao() : ''}` :`🗳️ Eleição: <b>${ELEICAO.candidatos.length}</b> ${ELEICAO.candidatos.length === 1 ? 'candidato' : 'candidatos'}`;
 }
-const candidatoDe = id => ELEICAO && ELEICAO.candidatos.find(c => c.m === id);
+// quanto falta pra votação acabar ("faltam 2d 5h", "faltam 3h 20min")
+function faltaEleicao() {
+  if (!ELEICAO || !ELEICAO.termina_em) return '';
+  const ms = new Date(ELEICAO.termina_em).getTime() - Date.now();
+  if (ms <= 0) return 'apurando…';
+  const min = Math.floor(ms / 60000), d = Math.floor(min / 1440), h = Math.floor(min % 1440 / 60), mm = min % 60;
+  return 'faltam ' + (d ? `${d}d ${h}h` : h ? `${h}h ${mm}min` : `${mm}min`);
+}
+const candidatoDe = id =>ELEICAO && ELEICAO.candidatos.find(c => c.m === id);
 const sloganDe = id => { const c = candidatoDe(id); return c ? c.slogan : null; };
 function seloEleicao(id) {
   if (ELEICAO && ELEICAO.prefeito === id) return '<span class="etq etq-eu">👑 Prefeito(a)</span>';
@@ -1344,21 +1352,21 @@ const TELAS = {
     const E = ELEICAO;
     titulo('Prefeitura' + (VILA.nome_vila ? ' de ' + VILA.nome_vila : ''));
     if (!E) { corpo('<p class="vazio">A eleição ainda não foi aberta no banco. Volta daqui a pouco!</p>'); return; }
-    const fase = { candidaturas: '📝 Candidaturas abertas — a votação começa em breve.', votacao: '🗳️ Votação aberta! Cada morador com nome tem 1 voto (dá pra trocar).', encerrada: '🏛️ Eleição encerrada.' }[E.fase];
+    const fase = { candidaturas: '📝 Candidaturas abertas — a votação começa em breve.', votacao: `🗳️ <b>Votação aberta!</b> ${faltaEleicao() ? '⏳ ' + faltaEleicao() + '. ' : ''}` + (MEU_VOTO ? `Você já votou em <b>${esc(rotulo(MEU_VOTO))}</b>.` : (EU ? 'Você tem <b>1 voto</b> e <b>não dá pra trocar</b>.' : 'Só vota quem entrou com o morador.')) + ' Os votos contam ao vivo e, no fim, o mais votado vira prefeito(a). Ainda dá pra se candidatar.', encerrada: '🏛️ Eleição encerrada.' }[E.fase];
     const souCand = EU && E.candidatos.some(c => c.m === EU.morador);
     const meuSlogan = souCand ? E.candidatos.find(c => c.m === EU.morador).slogan : '';
     const c = corpo(`
       ${E.prefeito ? `<div class="prefeito-box">👑 <b>${esc(E.prefeito_nome)}</b> é o(a) prefeito(a)${VILA.nome_vila ? ' de ' + esc(VILA.nome_vila) : ''}!</div>` : ''}
       <p class="mini" style="margin-top:0">${fase}</p>
-      ${EU && E.fase === 'candidaturas' ? `<div class="secao"><h3>${souCand ? 'Sua candidatura' : 'Quer ser prefeito(a)?'}</h3>
+      ${EU && (E.fase === 'candidaturas' || E.fase === 'votacao') ? `<div class="secao"><h3>${souCand ? 'Sua candidatura' : 'Quer ser prefeito(a)?'}</h3>
         <label class="campo"><span>Seu slogan de campanha</span><input id="slogan" maxlength="80" value="${esc(meuSlogan)}" placeholder="Ex.: Campo de futebol pra todo mundo!"><small>De 3 a 80 letras. Passa pelo filtro de palavras.</small></label>
-        <div class="botoes"><button class="btn btn-p btn-flex" id="btnCandidatar">${souCand ? '💾 Salvar slogan' : '🗳️ Me candidatar'}</button>${souCand ? '<button class="btn btn-flex" id="btnRetirar">Retirar</button>' : ''}</div></div>`
+        <div class="botoes"><button class="btn btn-p btn-flex" id="btnCandidatar">${souCand ? '💾 Salvar slogan' : '🗳️ Me candidatar'}</button>${souCand && E.fase === 'candidaturas' ? '<button class="btn btn-flex" id="btnRetirar">Retirar</button>' : ''}</div></div>`
         : !EU ? '<div class="dica">🔒 <a href="#" id="lnkEntrarEleicao">Entre</a> pra se candidatar ou votar.</div>' : ''}
       <div class="secao"><h3>Candidatos <small>${E.candidatos.length}</small></h3>
         ${E.candidatos.length ? `<ul class="lista">${E.candidatos.map(cd => `<li class="cand"><button data-id="${cd.m}"><canvas width="12" height="15" data-look="${cd.m}"></canvas>
           <span class="l-txt"><span class="l-nome">${esc(cd.nome)}${cd.m === E.prefeito ? ' 👑' : ''}</span><span class="l-sub">“${esc(cd.slogan)}”</span></span>
           ${cd.votos != null ? `<span class="l-dir">${cd.votos} ${cd.votos === 1 ? 'voto' : 'votos'}</span>` : ''}</button>
-          ${EU && E.fase === 'votacao' ? `<button class="btn ${MEU_VOTO === cd.m ? 'btn-v' : ''} btn-votar" data-votar="${cd.m}">${MEU_VOTO === cd.m ? '✓ Seu voto' : 'Votar'}</button>` : ''}</li>`).join('')}</ul>`
+          ${EU && E.fase === 'votacao' ? (MEU_VOTO === cd.m ? '<span class="btn btn-v btn-votar">✓ Seu voto</span>' : !MEU_VOTO ? `<button class="btn btn-votar" data-votar="${cd.m}">Votar</button>` : '') : ''}</li>`).join('')}</ul>`
           : '<p class="vazio">Ninguém se candidatou ainda. Seja o primeiro!</p>'}
       </div>`);
     ligarLista(c, irPara);
@@ -1376,8 +1384,11 @@ const TELAS = {
       toast('Candidatura retirada.'); await carregarEleicao(); TELAS.prefeitura();
     };
     c.querySelectorAll('[data-votar]').forEach(b => b.onclick = async () => {
-      const m = Number(b.dataset.votar); b.disabled = true;
-      const r = await Api.rpc('votar', { p_token: token(), p_candidato: m }); if (!r || !r.ok) { b.disabled = false; return toast((r && r.erro) || 'Não deu certo'); }
+      const m = Number(b.dataset.votar);
+      if (!confirm(`Confirmar seu voto em ${rotulo(m)} pra prefeito(a)?\n\nDepois de confirmar, o voto NÃO pode ser trocado.`)) return;
+      b.disabled = true;
+      const r = await Api.rpc('votar', { p_token: token(), p_candidato: m });
+      if (!r || !r.ok) { b.disabled = false; toast((r && r.erro) || 'Não deu certo'); return carregarEleicao(); }
       MEU_VOTO = m; toast(`🗳️ Voto em ${rotulo(m)} registrado!`); await carregarEleicao(); TELAS.prefeitura();
     });
   },
@@ -1687,6 +1698,8 @@ async function iniciar() {
   carregarIso32();
   carregarEleicao().catch(e => console.warn('eleição', e));
   setInterval(async () => { await carregarPublicos(); await carregarEleicao(); atualizarHud(); if (EU) await carregarMeusAmigos(); }, 90000);
+  // votação aberta e a prefeitura na tela: a contagem atualiza a cada 10 s
+  setInterval(() => { if (ELEICAO && ELEICAO.fase === 'votacao' && telaAtual && telaAtual.tela === 'prefeitura') carregarEleicao().catch(() => {}); }, 10000);
   // gancho de teste (só no servidor local com ?debug)
   if (Api.modo === 'local' && new URLSearchParams(location.search).has('debug')) window.__vila = { ctrl, iniciarControle, chatReceber, get EU() { return EU; } };
   if (Api.modo === 'local') console.info('Vila em modo LOCAL (servidor_local.js). Configure site/config.js pra usar o Supabase.');

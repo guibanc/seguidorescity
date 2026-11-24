@@ -4,57 +4,25 @@ from world import *
 from font import draw_text, text_width
 
 # =====================================================================
-#  EPISÓDIO 8  (647 -> 721 seguidores)
-#  NOVA EVOLUÇÃO: TUDO EM BLOCOS (vox.py, iso.VOX=True), casas 65-72,
-#  MARCO 700: CAMPO DE FUTEBOL, o time, gol, vira-lata, o fazendeiro,
-#  eleição (11 candidatos), debate no chat, próximo marco 800.
-#  Tempos sincronizados com a narração (narracao_ep8.wav).
+#  EPISÓDIO 9  (721 -> 780 seguidores) — 32 bits
+#  Fogo no mercadinho do centro -> CORPO DE BOMBEIROS fundado; casas 73-78 (rua E fecha,
+#  rua F começa); PETSHOP e a bicharada solta; campeonato no campo; eleição com 14
+#  candidatos e VOTAÇÃO ABERTA; morador em destaque; terreno da padaria (marco 800) reservado.
+#  Tempos sincronizados com a narração (narracao_ep9.wav).
 # =====================================================================
-EP=8; C0=647; C1=721
+EP=9; C0=721; C1=780
 NOME_CIDADE="PINDAMONHANGABA"
 MH6=680
-T=dict(
-    titulo=(0.0,3.9),
-    recap=(3.9,13.5),          # 647 4.3 / terreno vazio 10.4
-    blocos=(13.5,16.9),        # mudou 13.8 / tudo em bloco 15.4
-    tour=(16.9,25.9),          # casa 17.9 / árvore 18.9 / moradores 19.4 / cabeça 21.1 / braço 22.2 / visual 23.2
-    casas=(25.9,33.1),         # 65 28.3 / 66 29.5 / 67 30.5 / 72 31.9
-    quase=(33.1,36.2),
-    campo=(36.2,43.3),         # CAMPO 36.9 / grama 38.4 / linhas 39.3 / traves 40.6 / arquibancada 41.7
-    time=(43.3,49.5),          # atacante 45.9 / meia 47.1 / goleiro 48.6
-    passes=(49.5,53.5),
-    gol=(53.5,54.5),           # GOOOL 53.7
-    cachorro=(54.5,57.0),
-    fazenda=(57.0,64.8),       # fazendeiro 59.2 / contratou 62.0
-    eleicao=(64.8,75.4),       # 11 candidatos 67.8 / campo grátis 69.6 / lanchonete 71.1 / pastel 72.1 / refri 73.6
-    entregaram=(75.4,80.5),    # entregaram 78.8
-    chat=(80.5,84.5),
-    proximo=(84.5,89.7),       # faltam 79 88.3
-    resumo=(89.7,96.7),        # 721 91.1 / 72 casas 93.0 / campo 94.5 / bloco 95.5
-    cta=(96.7,103.0),
-)
-DUR=103.0                                   # linha do tempo de trabalho (1ª gravação)
-EVOL_T=1e9                                  # ep. 8 continua em 32 bits (o modo em blocos foi cancelado)
-# a narração final (narracao_ep8.wav, 93,5 s) é mais rápida: mapa (tempo de trabalho -> tempo do vídeo)
-TMAP=[(0,0),(0.33,0.2),(3.48,2.99),(4.26,3.71),(10.44,8.18),(13.08,10.44),(13.78,11.05),(16.59,14.27),(17.09,14.67),(18.7,15.76),(19.9,16.58),
-      (21.0,18.0),(25.56,20.62),(26.2,21.22),(28.3,23.6),(29.5,24.5),(30.5,25.3),(31.9,26.4),(32.64,27.29),(33.47,27.94),(35.65,30.25),
-      (36.42,30.59),(38.38,32.6),(39.32,33.4),(40.63,34.42),(41.70,36.05),(42.80,36.98),(43.61,37.61),(45.86,39.58),(47.06,41.40),(48.56,42.69),
-      (49.02,43.69),(49.84,43.98),(52.90,45.50),(53.71,46.14),(54.08,46.55),(54.71,47.26),(56.67,49.17),(57.26,49.75),(59.2,51.58),(61.97,54.28),
-      (64.40,56.86),(65.08,57.61),(67.78,59.95),(69.57,62.6),(71.06,63.5),(72.06,64.3),(73.64,65.8),(74.94,67.06),(75.76,67.48),(78.79,70.73),
-      (80.11,72.03),(80.72,72.76),(84.12,76.27),(84.78,76.84),(88.28,80.22),(89.21,81.37),(90.06,81.89),(91.09,82.70),(92.99,85.04),(94.53,86.08),
-      (96.21,87.01),(97.08,87.62),(99.3,90.15),(101.25,92.01),(103.0,93.5)]
-DUR_VIDEO=93.5
-def _pl(t,A,B):
-    if t<=A[0]: return B[0]+(t-A[0])
-    for k in range(len(A)-1):
-        if A[k]<=t<=A[k+1]: return B[k]+(B[k+1]-B[k])*(t-A[k])/(A[k+1]-A[k])
-    return B[-1]+(t-A[-1])
-def old2new(t): return _pl(t,[a for a,b in TMAP],[b for a,b in TMAP])
-def new2old(t): return _pl(t,[b for a,b in TMAP],[a for a,b in TMAP])
+from tempos_ep9 import T, KW, DUR
+DUR_VIDEO=DUR
+EVOL_T=1e9
 SITE_CUTS=[]
+def old2new(t): return t
+def new2old(t): return t
 
 # ---------- contador ----------
-CK=[(0,C0),(26.2,C0),(28.3,651),(29.5,661),(30.5,671),(31.9,684),(33.0,690),(34.4,697),(35.4,699),(35.65,700),(43.6,700),(46.0,712),(49.0,C1)]
+CK=None   # definido em tempos_ep9.py (CK)
+from tempos_ep9 import CK
 def count_at(t):
     if t>=CK[-1][0]: return CK[-1][1]
     if t<CK[0][0]: return C0
@@ -116,10 +84,13 @@ ESCOLA=[(162,ROADC,'a'),(184,ROADC,'a')]    # marco 400 (construída no ep. 4)
 PREFEITURA=[(140,ROADD,'a'),(162,ROADD,'a')]  # reservado p/ marco 500
 MERCADO2=(104,ROADE,'a')                    # marco 600
 POSTO=[(140,ROADE,'a'),(162,ROADE,'a')]     # marco 600
-CAMPO=[(140,ROADF,'b'),(162,ROADF,'b'),(184,ROADF,'b'),(206,ROADF,'b')]   # reservado: marco 700
-RESERV=[VENDA,MERCADO]+ESCOLA+PREFEITURA+[MERCADO2]+POSTO+CAMPO
+CAMPO=[(140,ROADF,'b'),(162,ROADF,'b'),(184,ROADF,'b'),(206,ROADF,'b')]   # marco 700 (pronto no ep. 8)
+BOMBEIROS=(206,ROADF,'a')                   # ep. 9: corpo de bombeiros (era a casa 88 prevista)
+PETSHOP=(16,ROADF,'a')                      # ep. 9: petshop (era a casa 89 prevista)
+PADARIA=(16,ROADF,'b')                      # ep. 9: reservado p/ marco 800 (era a casa 90 prevista)
+RESERV=[VENDA,MERCADO]+ESCOLA+PREFEITURA+[MERCADO2]+POSTO+CAMPO+[BOMBEIROS,PETSHOP,PADARIA]
 house_lots=[l for l in lots if l not in RESERV]
-NH=C1//10                                   # 72 casas
+NH=C1//10                                   # 78 casas
 house_var=[(i*5+2)%6 for i in range(len(house_lots))]
 def house_p(i,C): return clamp((C-(10*i+5))/5)
 def house_done_time(i): return time_reach(10*(i+1))
@@ -145,13 +116,15 @@ def placa_estado(t):
     """(letras pintadas, ângulo 0=deitada..1=em pé) ou None antes de existir"""
     return (len(NOME_CIDADE),1.0)
 def eleicao(t): return True                   # faixas "VOTE" na prefeitura
-def campo_p(t):
-    """obra do campo (marco 700): 0 = terreno cercado · 0.3 grama · 0.6 linhas · 0.62 traves · 0.85 arquibancada · 1 pronto"""
-    k=[(36.4,0.0),(38.6,0.3),(39.3,0.35),(40.4,0.6),(40.63,0.62),(41.7,0.85),(42.6,1.0)]
-    if t<k[0][0]: return 0.0
-    for (a,va),(b,vb) in zip(k,k[1:]):
-        if a<=t<b: return va+(vb-va)*(t-a)/(b-a)
-    return 1.0
+def campo_p(t): return 1.0                   # campo pronto desde o ep. 8
+def merc_estado(t):
+    """mercadinho do centro: ok -> fogo -> queimado -> ok (reformado)"""
+    if t<KW['fogo0']: return 'ok'
+    if t<KW['apagou']: return 'fogo'
+    if t<KW['reforma']: return 'queimado'
+    return 'ok'
+def bomb_p(t): return clamp((t-KW['fundado'])/1.4)
+def pet_p(t): return clamp((t-KW['petshop']+0.6)/1.0)
 T_ATUAL=[0.0]
 
 # ---------- árvores ----------
@@ -179,7 +152,7 @@ TREES6.sort(key=lambda d:d['y'])
 # ---------- moradores (mesmo sorteio dos eps. anteriores: ninguém muda de lugar) ----------
 ROADSEG={'A':((16,ROADA+5),(217,ROADA+5)),'B':((16,ROADB+5),(217,ROADB+5)),
          'C':((16,ROADC+5),(217,ROADC+5)),'M1':((131.5,330),(131.5,470)),'M2':((131.5,112),(131.5,330)),
-         'D':((16,ROADD+5),(217,ROADD+5)),'E':((16,ROADE+5),(217,ROADE+5)),'M3':((131.5,470),(131.5,670))}
+         'D':((16,ROADD+5),(217,ROADD+5)),'E':((16,ROADE+5),(217,ROADE+5)),'M3':((131.5,470),(131.5,670)),'F':((16,ROADF+5),(217,ROADF+5))}
 pr=random.Random(42)
 people=[]
 for k in range(C1):
@@ -192,7 +165,8 @@ for k in range(C1):
         elif k<320: lst=list('AAABBBCC')+['M1','M2']
         elif k<617: lst=list('ABCCCC')+['M1','M2']
         elif k<647: lst=list('DDEE')+['M3']
-        else: lst=list('EEEE')+['M3']
+        elif k<721: lst=list('EEEE')+['M3']
+        else: lst=list('EF')+['M3']
         s=pr.choice(lst)
         d['seg']=s; (x0,y0),(x1,y1)=ROADSEG[s]; f=pr.uniform(0.05,0.95)
         d['tx']=x0+(x1-x0)*f; d['ty']=y0+(y1-y0)*f

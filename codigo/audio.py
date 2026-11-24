@@ -1,6 +1,6 @@
 import numpy as np, wave, math
 import sys
-from scene import count_at, house_done_time, T, DUR, NH, SITE_CUTS, C0, old2new, DUR_VIDEO
+from scene import count_at, house_done_time, T, DUR, NH, SITE_CUTS, C0, old2new, DUR_VIDEO, KW
 from world import clamp
 SR=44100; N=int(SR*DUR_VIDEO)
 out=np.zeros(N,np.float32)
@@ -67,48 +67,39 @@ def whoosh(tt,dur=0.35):
 for i in range(C0//10,NH):
     td=house_done_time(i)
     if td and td>0: chime(td,0.06)
-for tt in (4.3,4.6,5.4,10.4,13.7,14.4,17.8,18.9,19.4,21.06,22.24,23.24,28.3,29.5,30.5,31.9,38.38,39.32,40.63,41.70,
-           44.3,45.86,47.06,48.56,57.6,59.2,61.97,67.78,69.57,71.06,72.06,73.64,75.8,88.28,90.1,91.09,92.99,94.53,95.48,99.3):
-    blip(tt)
-for tt in (4.6,10.2,21.0,25.9,57.0,64.8,75.4,80.5,84.5,89.7,96.7): whoosh(tt,0.3)
+K=KW
+for k in ('c73','c74','c75','c76','c77','c78','ruaE','ruaF','cachorro','gato','galinha','timecontra','torcida','c14','panfleto','discurso','briga',
+          'prometeu','destaque','discurso2','online','m800','reservado','faltam','r780','r78','rbomb','rpet','votar','precisava','la'):
+    blip(K[k])
+for k in T:
+    if T[k][0]>0.2: whoosh(T[k][0],0.3)
 fanfare(0.2)
-# a cidade vira blocos: cubos caindo
-for k in range(40): add(15.35+k*0.025,sq(180+(k%7)*60,0.04,0.5,0.04,30)); add(15.4+k*0.025,noise(0.03,0.03,60,k))
-for j_,fq in enumerate((392,523,659,784,1047,1319,1568,2093)): add(15.75+j_*0.07,sq(fq,0.22,0.25,0.07,7))
-# quase... 700!
-for k in range(int((35.6-33.4)/0.06)): add(33.4+k*0.06,noise(0.04,0.02+0.04*k/36,70,k))
-add(35.65,noise(0.6,0.16,6,1)); fanfare(35.7)
-for j_,fq in enumerate((523,659,784,1047,1319,1568,2093)): add(35.75+j_*0.06,sq(fq,0.2,0.25,0.06,8))
-for k in range(8):
-    t0=35.7+k*0.18; add(t0+0.25,noise(0.5,0.09,8,k+50))
-# obra do campo: pá e martelo
-for k in range(int((42.5-36.6)/0.25)): add(36.6+k*0.25,noise(0.06,0.04,40,k+200))
-fanfare(42.6)
-# apito + passes
-for tt in (43.6,49.8):
-    add(tt,sq(2400,0.35,0.5,0.05,3)); add(tt+0.38,sq(2400,0.2,0.5,0.05,5))
-for tt in (50.0,50.7,51.25,52.2,52.95): add(tt,noise(0.05,0.12,50,int(tt*10))); add(tt,tri(90,0.08,0.15,30))
-add(53.4,noise(0.08,0.2,40,9)); add(53.4,tri(70,0.1,0.25,25))
-# GOOOL: torcida e fogos
-add(53.72,noise(2.2,0.10,1.4,77)); fanfare(53.75)
-for k in range(10): add(53.9+k*0.18,noise(0.5,0.07,8,k+300))
-# vira-lata: latidos
-for tt in (54.9,55.3,56.1,56.5):
-    add(tt,sq(420,0.07,0.5,0.08,25)); add(tt+0.02,noise(0.06,0.05,40,int(tt*7)))
-# fazenda: galo e trator
-for k in range(14): add(57.4+k*0.05,sq(600+ (k%5)*90,0.06,0.5,0.025,20))
-for k in range(int(6.5/0.09)): add(58.0+k*0.09,sq(55,0.06,0.5,0.02,20))
-# eleição: carimbo por cartaz
-for k in range(11): add(65.45+k*0.22,noise(0.05,0.08,50,k+400))
-# entregaram: carimbo
-add(78.79,noise(0.15,0.2,20,5)); add(78.79,tri(80,0.2,0.25,10)); fanfare(78.9)
-# chat: notificações
-for k in range(12): add(80.7+k*0.3,sq(1568,0.04,0.5,0.03,30))
-add(82.4,sq(330,0.12,0.5,0.06,10))
-# 800
-fanfare(84.8)
+# fogo: estalos + rugido
+for k in range(int((K['apagou']-K['fogo0'])/0.05)): add(K['fogo0']+k*0.05,noise(0.06,0.05+0.05*np.sin(k*0.7)**2,30,k))
+add(K['FOGO'],noise(0.9,0.22,3,9)); add(K['FOGO'],tri(60,0.6,0.3,4))
+# baldes: splash
+for k in range(int((K['apagou']-K['baldes'])/0.35)): add(K['baldes']+k*0.35,noise(0.12,0.09,25,k+100))
+# bombeiros: fanfarra, sirene, mangueira
+fanfare(K['fundado'])
+for k in range(int((K['banho']-K['caminhao'])/0.5)+2):
+    t0=K['caminhao']+k*0.5; add(t0,sq(880,0.25,0.18,0.2,2)); add(t0+0.25,sq(660,0.25,0.18,0.2,2))
+for k in range(int((K['reforma']-K['banho'])/0.1)): add(K['banho']+k*0.1,noise(0.12,0.05,10,k+300))
+fanfare(K['reforma'])
+# petshop: inauguração + latidos/miados/có
+fanfare(K['petshop'])
+for tt in (K['cachorro'],K['cachorro']+0.35): add(tt,sq(420,0.07,0.5,0.08,25)); add(tt+0.02,noise(0.06,0.05,40,int(tt*7)))
+for j in range(6): add(K['gato']+j*0.03,sq(700+j*60,0.05,0.4,0.04,20))
+for j in range(5): add(K['galinha']+j*0.06,sq(900-(j%2)*200,0.05,0.4,0.04,20))
+# campeonato: apito, chute, torcida
+add(T['campeonato'][0]+0.2,sq(2400,0.35,0.5,0.05,3)); add(K['timecontra']+0.6,noise(1.2,0.08,2,31)); add(K['torcida']+0.4,noise(1.4,0.09,1.8,33))
+# eleição: carimbos dos cartazes, urna
+for k in range(14): add(T['eleicao'][0]+0.3+k*0.14,noise(0.05,0.07,50,k+400))
+add(K['abriu'],noise(0.15,0.2,20,5)); fanfare(K['abriu']+0.05)
+add(K['n777'],tri(80,0.3,0.3,8))
+add(K['antes']-0.4,noise(0.15,0.2,20,6)); fanfare(K['antes'])
+fanfare(T['destaque'][0]+0.1); fanfare(K['m800'])
 for j,fq in enumerate((523,659,784,1047,1319)): add(T['cta'][0]+j*0.09,sq(fq,0.25 if j==4 else 0.12,0.25,0.08,6))
-for k in range(int((103-97)/0.42)): add(97.0+k*0.42,tri(110,0.08,0.12,30))
+for k in range(int((DUR_VIDEO-T['cta'][0])/0.42)): add(T['cta'][0]+0.3+k*0.42,tri(110,0.08,0.12,30))
 out=np.clip(out,-0.95,0.95)
 dst=sys.argv[1] if len(sys.argv)>1 else 'bg.wav'
 with wave.open(dst,'wb') as w_:

@@ -256,7 +256,7 @@
    "pele": 1,
    "baixo": "saia",
    "barba": false,
-   "cabelo": "afro",
+   "cabelo": "cacheado",
    "camisa": 5,
    "chapeu": null,
    "oculos": false,
@@ -405,18 +405,18 @@
   "id": 83,
   "casa": 9,
   "chegou_no_ep": 1,
-  "nome": "Poly",
+  "nome": "Poly_jogadora",
   "aparencia": {
    "pele": 0,
    "baixo": "saia",
    "barba": false,
    "cabelo": "longo",
-   "camisa": 5,
+   "camisa": 9,
    "chapeu": null,
    "oculos": false,
    "sapato": 1,
-   "camisa2": 8,
-   "estampa": "duas_cores",
+   "camisa2": 0,
+   "estampa": "time",
    "cor_baixo": 0,
    "cor_cabelo": 2,
    "cor_chapeu": 6
@@ -576,6 +576,28 @@
    "cor_chapeu": 5
   },
   "bio": "joga robloxon 🫪"
+ },
+ {
+  "id": 191,
+  "casa": 20,
+  "chegou_no_ep": 1,
+  "nome": "jessica",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 10,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 1,
+   "estampa": "time",
+   "cor_baixo": 3,
+   "cor_cabelo": 5,
+   "cor_chapeu": 1
+  },
+  "bio": null
  },
  {
   "id": 193,
@@ -1002,6 +1024,28 @@
   "bio": null
  },
  {
+  "id": 331,
+  "casa": 34,
+  "chegou_no_ep": 3,
+  "nome": "Zé pelintra",
+  "aparencia": {
+   "pele": 5,
+   "baixo": "calca",
+   "barba": true,
+   "cabelo": "careca",
+   "camisa": 4,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 2,
+   "estampa": "lisa",
+   "cor_baixo": 4,
+   "cor_cabelo": 0,
+   "cor_chapeu": 1
+  },
+  "bio": "Boa noite pra quem é de boa noite"
+ },
+ {
   "id": 335,
   "casa": 34,
   "chegou_no_ep": 3,
@@ -1068,6 +1112,28 @@
    "cor_baixo": 2,
    "cor_cabelo": 1,
    "cor_chapeu": 2
+  },
+  "bio": null
+ },
+ {
+  "id": 362,
+  "casa": 37,
+  "chegou_no_ep": 3,
+  "nome": "beca",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "rabo",
+   "camisa": 9,
+   "chapeu": "coroa",
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 0,
+   "estampa": "time",
+   "cor_baixo": 0,
+   "cor_cabelo": 1,
+   "cor_chapeu": 9
   },
   "bio": null
  },
@@ -1206,6 +1272,28 @@
   "bio": null
  },
  {
+  "id": 471,
+  "casa": 48,
+  "chegou_no_ep": 5,
+  "nome": "Heitor Emmanull",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 3,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 11,
+   "estampa": "time",
+   "cor_baixo": 1,
+   "cor_cabelo": 3,
+   "cor_chapeu": 10
+  },
+  "bio": null
+ },
+ {
   "id": 473,
   "casa": 48,
   "chegou_no_ep": 5,
@@ -1260,6 +1348,28 @@
   "bio": null
  },
  {
+  "id": 566,
+  "casa": 57,
+  "chegou_no_ep": 5,
+  "nome": "Neymar",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "topete",
+   "camisa": 3,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 2,
+   "estampa": "time",
+   "cor_baixo": 2,
+   "cor_cabelo": 0,
+   "cor_chapeu": 2
+  },
+  "bio": null
+ },
+ {
   "id": 577,
   "casa": 58,
   "chegou_no_ep": 5,
@@ -1278,28 +1388,6 @@
    "cor_baixo": 2,
    "cor_cabelo": 0,
    "cor_chapeu": 7
-  },
-  "bio": null
- },
- {
-  "id": 611,
-  "casa": 62,
-  "chegou_no_ep": 6,
-  "nome": "Heitor Emmanull",
-  "aparencia": {
-   "pele": 4,
-   "baixo": "bermuda",
-   "barba": false,
-   "cabelo": "curto",
-   "camisa": 2,
-   "chapeu": null,
-   "oculos": false,
-   "sapato": 0,
-   "camisa2": 11,
-   "estampa": "listrada",
-   "cor_baixo": 1,
-   "cor_cabelo": 3,
-   "cor_chapeu": 10
   },
   "bio": null
  },

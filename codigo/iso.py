@@ -498,6 +498,99 @@ def construcao(x0, y0, x1, y1, p, final, hfin=15, col=(250, 250, 246)):
         for u in np.linspace(x0, x1, 5): d.line([P(u, y1+1.5), P(u, y1+1.5, hfin+6)], fill=(124, 82, 46))
         for z in (5, 11): d.line([P(x0, y1+1.5, z), P(x1, y1+1.5, z)], fill=(124, 82, 46))
 
+# ---------------- ep. 9: bombeiros, petshop, terreno da padaria, mercadinho queimado ----------------
+def quartel():
+    """corpo de bombeiros (ep. 9) no lote SC.BOMBEIROS"""
+    lx_, ly_ = lot(*SC.BOMBEIROS); x0, x1, y0, y1 = lx_+1, lx_+20, ly_+4, ly_+20
+    shadow(x0, y0, x1, y1, 22)
+    wc = (206, 44, 40)
+    box(x0, y0, x1, y1, 15, wc, sh(wc, 0.78)); top(x0, y0, x1, y1, 15, (150, 40, 36))
+    quad([P(x0, y1, 13), P(x1, y1, 13), P(x1, y1, 15), P(x0, y1, 15)], (250, 250, 246))
+    for u0 in (1.5, 10.5):                                   # portões da garagem
+        quad([P(x0+u0, y1, 0), P(x0+u0+8, y1, 0), P(x0+u0+8, y1, 10), P(x0+u0, y1, 10)], (240, 236, 226))
+        quad([P(x0+u0+0.6, y1, 0), P(x0+u0+7.4, y1, 0), P(x0+u0+7.4, y1, 9.4), P(x0+u0+0.6, y1, 9.4)], (120, 124, 132))
+        for z in np.arange(1.2, 9.4, 1.4): d.line([P(x0+u0+0.6, y1, z), P(x0+u0+7.4, y1, z)], fill=(150, 154, 162))
+    win_e(x1, y0, 3, 6, 6, 11); win_e(x1, y0, 9, 12, 6, 11)
+    tx0, ty0 = x0+1, y0+1                                    # torre de treino
+    box(tx0, ty0, tx0+5, ty0+5, 26, (226, 60, 50), (170, 44, 38)); top(tx0, ty0, tx0+5, ty0+5, 26, (250, 250, 246))
+    win_s(tx0, ty0+5, 1.5, 3.5, 19, 23)
+    X, Y = P(tx0+2.5, ty0+2.5, 26); d.rectangle([X-1, Y-6, X+1, Y], fill=(250, 214, 60))   # sirene
+    sx_, sy_ = P(x0+10, y1, 17.5)
+    d.rectangle([sx_-24, sy_-6, sx_+24, sy_+4], fill=(250, 250, 246), outline=OUT)
+    draw_text(d, "BOMBEIROS", int(sx_)+1, int(sy_)-4, 1, (200, 30, 30, 255), outline=None)
+
+def petshop():
+    lx_, ly_ = lot(*SC.PETSHOP); x0, x1, y0, y1 = lx_+1, lx_+20, ly_+5, ly_+20
+    shadow(x0, y0, x1, y1, 16)
+    wc = (150, 210, 236)
+    box(x0, y0, x1, y1, 12, wc, sh(wc, 0.8)); top(x0, y0, x1, y1, 12, (236, 150, 190))
+    quad([P(x0+1.5, y1, 0), P(x1-1.5, y1, 0), P(x1-1.5, y1, 7), P(x0+1.5, y1, 7)], (200, 236, 250))
+    door_s(x0, y1, 8, 11.5, 6.5, (236, 110, 160))
+    for k in range(9):
+        u = 0.5+k*2.1
+        quad([P(x0+u, y1, 10.5), P(x0+u+2.1, y1, 10.5), P(x0+u+2.1, y1+3, 8), P(x0+u, y1+3, 8)], [(236, 110, 160), (250, 250, 246)][k % 2])
+    win_e(x1, y0, 4, 11, 3, 8)
+    sx_, sy_ = P(x0+9.5, y1, 15)
+    d.rectangle([sx_-20, sy_-7, sx_+20, sy_+3], fill=(250, 250, 246), outline=OUT)
+    draw_text(d, "PETSHOP", int(sx_)+1, int(sy_)-5, 1, (220, 80, 140, 255), outline=None)
+    X, Y = P(x1-2, y1, 12.5)                                 # patinha
+    d.ellipse([X-3, Y-2, X+3, Y+3], fill=(120, 70, 40))
+    for (a, b) in ((-3, -4), (-1, -5), (1, -5), (3, -4)): d.ellipse([X+a-1, Y+b-1, X+a+1, Y+b+1], fill=(120, 70, 40))
+
+def terreno_padaria():
+    """marco 800 (reservado no ep. 9): terreno cercado com placa"""
+    lx_, ly_ = lot(*SC.PADARIA); x0, x1, y0, y1 = lx_+1, lx_+20, ly_+2, ly_+22
+    quad([P(x0, y0), P(x1, y0), P(x1, y1), P(x0, y1)], (150, 120, 76))
+    for k in range(0, int(y1-y0), 4): d.line([P(x0+1, y0+k+1), P(x1-1, y0+k+1)], fill=(160, 130, 84))
+    for u in np.arange(x0, x1+0.1, 3):
+        d.line([P(u, y1), P(u, y1, 4)], fill=(240, 236, 226)); d.line([P(u, y0), P(u, y0, 4)], fill=(240, 236, 226))
+    for v in np.arange(y0, y1+0.1, 3):
+        d.line([P(x0, v), P(x0, v, 4)], fill=(240, 236, 226)); d.line([P(x1, v), P(x1, v, 4)], fill=(240, 236, 226))
+    for (a, b) in (((x0, y1), (x1, y1)), ((x1, y0), (x1, y1)), ((x0, y0), (x1, y0)), ((x0, y0), (x0, y1))):
+        d.line([P(*a, 3), P(*b, 3)], fill=(214, 210, 200))
+    bx, by = (x0+x1)/2, y1
+    for u in (-5, 5): d.line([P(bx+u, by+1), P(bx+u, by+1, 13)], fill=(104, 66, 36))
+    quad([P(bx-8, by+1, 9), P(bx+8, by+1, 9), P(bx+8, by+1, 19), P(bx-8, by+1, 19)], (250, 214, 70))
+    cx, cy = P(bx, by+1, 17); draw_text(d, "800", int(cx)+1, int(cy)-5, 1, (120, 40, 30, 255), outline=None)
+    cx, cy = P(bx, by+1, 12.5); draw_text(d, "PADARIA", int(cx)+1, int(cy)-4, 1, (120, 40, 30, 255), outline=None)
+
+def queimado(spr_):
+    """versão queimada de um sprite (preto de fuligem)"""
+    im, bx, by = spr_
+    a = np.array(im).astype(np.float32)
+    lum = a[:, :, :3].mean(axis=2, keepdims=True)
+    a[:, :, :3] = lum*0.28+np.array([22, 18, 16])
+    return Image.fromarray(np.clip(a, 0, 255).astype(np.uint8)), bx, by
+
+def caminhao(vd, X, Y, k, eixo, t, sirene=True):
+    """caminhão de bombeiros desenhado direto na vista (X, Y = chão no centro); eixo 'x' ou 'y'"""
+    def Q(dx, dy, dz): return (X+(dx-dy)*2*k, Y+(dx+dy)*k-dz*k)
+    L, Wd = (8, 3) if eixo == 'x' else (3, 8)
+    if eixo == 'x': x0, x1, y0, y1 = -L, L, -Wd, Wd
+    else: x0, x1, y0, y1 = -Wd, Wd, -L, L
+    vd.polygon([Q(x0, y0, 0), Q(x1, y0, 0), Q(x1, y1, 0), Q(x0, y1, 0)], fill=(0, 30, 0, 80))
+    def bx(a0, a1, b0, b1, z0, z1, c):
+        vd.polygon([Q(a0, b1, z0), Q(a1, b1, z0), Q(a1, b1, z1), Q(a0, b1, z1)], fill=sh(c, 0.85))
+        vd.polygon([Q(a1, b0, z0), Q(a1, b1, z0), Q(a1, b1, z1), Q(a1, b0, z1)], fill=sh(c, 0.7))
+        vd.polygon([Q(a0, b0, z1), Q(a1, b0, z1), Q(a1, b1, z1), Q(a0, b1, z1)], fill=c)
+    for (wx, wy) in ((x0+2, y1), (x1-2, y1), (x1, y0+2), (x1, y1-2)) if eixo == 'x' else ((x1, y0+2), (x1, y1-2), (x0+2, y1), (x1-2, y1)):
+        cx_, cy_ = Q(wx, wy, 1.4); vd.ellipse([cx_-2*k, cy_-2*k, cx_+2*k, cy_+2*k], fill=(30, 30, 34))
+    bx(x0, x1, y0, y1, 1.2, 7, (214, 40, 36))
+    if eixo == 'x': bx(x1-4, x1, y0, y1, 7, 9.5, (214, 40, 36)); vd.polygon([Q(x1, y0+0.5, 7.4), Q(x1, y1-0.5, 7.4), Q(x1, y1-0.5, 9.2), Q(x1, y0+0.5, 9.2)], fill=(150, 206, 236))
+    else: bx(x0, x1, y1-4, y1, 7, 9.5, (214, 40, 36)); vd.polygon([Q(x0+0.5, y1, 7.4), Q(x1-0.5, y1, 7.4), Q(x1-0.5, y1, 9.2), Q(x0+0.5, y1, 9.2)], fill=(150, 206, 236))
+    if eixo == 'x': a, b = Q(x0+1, 0, 8), Q(x1-5, 0, 8)
+    else: a, b = Q(0, y0+1, 8), Q(0, y1-5, 8)
+    vd.line([a, b], fill=(210, 210, 216), width=max(1, 2*k)); vd.line([a, b], fill=(160, 160, 168), width=1)
+    if eixo == 'x': vd.line([Q(x0, y1, 4), Q(x1, y1, 4)], fill=(250, 250, 246), width=k)
+    else: vd.line([Q(x1, y0, 4), Q(x1, y1, 4)], fill=(250, 250, 246), width=k)
+    if sirene:
+        on = int(t*8) % 2
+        for j, c in enumerate(((60, 120, 255), (255, 60, 60))):
+            p_ = Q(x1-2 if eixo == 'x' else 0, 0 if eixo == 'x' else y1-2, 9.8+0.1*j)
+            cc = c if (j == on) else sh(c, 0.4)
+            vd.rectangle([p_[0]-2*k+j*2*k, p_[1]-k, p_[0]+j*2*k, p_[1]+k], fill=cc)
+            if j == on: vd.ellipse([p_[0]-5*k+j*2*k, p_[1]-4*k, p_[0]+3*k+j*2*k, p_[1]+3*k], fill=c+(60,))
+
 # ---------------- cache de sprites ----------------
 def sprite(fn, x0, y0, x1, y1, hz, pad=24):
     """desenha fn() num sprite próprio. Devolve (img, bx0, by0) em coordenadas da tela iso (já multiplicadas por K)"""
@@ -632,7 +725,21 @@ def objetos(t, C):
         pk = 1.0 if p >= 1 else round(p*20)/20
         out.append((lx_+ly_+40, spr(('h', i, pk), lambda l=l, i=i, pk=pk: house(l, SC.house_var[i], pk), lot_box(l), 46)))
     lx_, ly_ = lot(*SC.VENDA); out.append((lx_+ly_+40, spr('venda', lambda: house(SC.VENDA, 5, 1, True), lot_box(SC.VENDA), 46)))
-    lx_, ly_ = lot(*SC.MERCADO); out.append((lx_+ly_+40, spr('merc', lambda: mercadinho(), lot_box(SC.MERCADO), 40)))
+    lx_, ly_ = lot(*SC.MERCADO); _m = spr('merc', lambda: mercadinho(), lot_box(SC.MERCADO), 40)
+    ms = SC.merc_estado(t) if hasattr(SC, 'merc_estado') else 'ok'
+    if ms == 'queimado':
+        if ('mercq', K) not in _SPR: _SPR[('mercq', K)] = queimado(_m)
+        _m = _SPR[('mercq', K)]
+    out.append((lx_+ly_+40, _m))
+    if getattr(SC, 'EP', 0) >= 9:
+        lb = SC.BOMBEIROS; lx_, ly_ = lot(*lb); pb = round(SC.bomb_p(t)*20)/20
+        if pb > 0: out.append((lx_+ly_+40, spr(('qb', pb), lambda pb=pb, lx_=lx_, ly_=ly_: construcao(lx_+1, ly_+4, lx_+20, ly_+20, pb, quartel, 15, (206, 44, 40)), lot_box(lb), 60)))
+        else: out.append((lx_+ly_+20, spr(('st', lb), lambda: stakes(lb), lot_box(lb), 10)))
+        lp = SC.PETSHOP; lx_, ly_ = lot(*lp); pp_ = round(SC.pet_p(t)*20)/20
+        if pp_ > 0: out.append((lx_+ly_+40, spr(('pet', pp_), lambda pp_=pp_, lx_=lx_, ly_=ly_: construcao(lx_+1, ly_+5, lx_+20, ly_+20, pp_, petshop, 12, (150, 210, 236)), lot_box(lp), 46)))
+        else: out.append((lx_+ly_+20, spr(('st', lp), lambda: stakes(lp), lot_box(lp), 10)))
+        lq = SC.PADARIA; lx_, ly_ = lot(*lq)
+        out.append((lx_+ly_+20, spr('padaria800', terreno_padaria, lot_box(lq), 30)))
     out.append((246, spr('igreja', church, (110, 60, 150, 108), 80)))
     out.append((349, spr('escola', escola, (158, 126, 210, 150), 60)))
     out.append((181+420, spr('pref', prefeitura, (136, 396, 186, 424), 60)))

@@ -11,7 +11,7 @@ from PIL import Image
 from world import W, H, ROADA, ROADB, ROADC, MAINX0, MAINX1
 from world16 import npc_sprite, npc_look, S
 import vila16 as V
-from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, ROADE, ROADF, MERCADO2, POSTO, CAMPO, MH6, lot, C1, EP, NOME_CIDADE, PLACA_X0, PLACA_X1, PLACA_Y
+from scene import house_lots, house_var, house_p, NH, VENDA, MERCADO, ESCOLA, PREFEITURA, ROADD, ROADE, ROADF, MERCADO2, POSTO, CAMPO, BOMBEIROS, PETSHOP, PADARIA, MH6, lot, C1, EP, NOME_CIDADE, PLACA_X0, PLACA_X1, PLACA_Y
 
 out = sys.argv[1] if len(sys.argv) > 1 else '../site'
 os.makedirs(f'{out}/img', exist_ok=True); os.makedirs(f'{out}/dados', exist_ok=True)
@@ -37,6 +37,17 @@ def mapa(lit):
         dd.rectangle([min(xs, xs+sg*22), ym-22, max(xs, xs+sg*22), ym+22], outline=W_, width=2)
     for xs in (gx0-4, gx1): dd.rectangle([xs, ym-8, xs+4, ym+8], fill=(250, 250, 250))
     for r_ in range(3): dd.rectangle([gx0+8, gy1+4+r_*3, gx1-8, gy1+5+r_*3], fill=(160-r_*12, 160-r_*12, 168-r_*12))
+    # ep. 9: corpo de bombeiros, petshop e o terreno reservado da padaria (marco 800)
+    for (l, roof, wall, txt, tc) in ((BOMBEIROS, (170, 40, 36), (214, 52, 46), "BOMBEIROS", (255, 255, 255, 255)),
+                                     (PETSHOP, (236, 130, 180), (150, 210, 236), "PETSHOP", (255, 255, 255, 255))):
+        bx0, by0 = V.L2(*lot(*l))
+        dd.rectangle([bx0+3, by0+10, bx0+40, by0+40], fill=wall, outline=(60, 40, 40))
+        dd.rectangle([bx0+3, by0+10, bx0+40, by0+28], fill=roof)
+        draw_text(dd, txt, bx0+22, by0+16, 1, tc, outline=None)
+    bx0, by0 = V.L2(*lot(*PADARIA))
+    dd.rectangle([bx0+3, by0+4, bx0+40, by0+44], fill=(150, 120, 76), outline=(240, 236, 226))
+    dd.rectangle([bx0+11, by0+34, bx0+33, by0+46], fill=(250, 214, 70), outline=(104, 66, 36))
+    draw_text(dd, "800", bx0+22, by0+36, 1, (120, 40, 30, 255), outline=None)
     # pórtico PINDAMONHANGABA sobre a rua principal (ep. 7)
     px0, py0 = V.L2(110, PLACA_Y-4); px1 = px0+92
     for xx in (V.L2(PLACA_X0, 0)[0], V.L2(PLACA_X1, 0)[0]): dd.rectangle([xx-2, py0-2, xx+1, py0+14], fill=(110, 72, 40))
@@ -96,6 +107,9 @@ pontos = {
     'escola': {'porta': P(lot(*ESCOLA[0])[0]+21, ROADC+3), 'rua': P(lot(*ESCOLA[0])[0]+21, ROADC+6), 'lotes': [P(*lot(*l)) for l in ESCOLA]},
     'prefeitura': {'porta': P(lot(*PREFEITURA[0])[0]+21, ROADD+3), 'rua': P(lot(*PREFEITURA[0])[0]+21, ROADD+6), 'lotes': [P(*lot(*l)) for l in PREFEITURA]},
     'mercadinho2': {'porta': P(lot(*MERCADO2)[0]+9.5, ROADE+3), 'rua': P(lot(*MERCADO2)[0]+9.5, ROADE+6), 'lote': P(*lot(*MERCADO2))},
+    'bombeiros': {'porta': P(lot(*BOMBEIROS)[0]+10, ROADF-2), 'rua': P(lot(*BOMBEIROS)[0]+10, ROADF+5), 'lote': P(*lot(*BOMBEIROS)), 'desde_ep': 9},
+    'petshop': {'porta': P(lot(*PETSHOP)[0]+10, ROADF-2), 'rua': P(lot(*PETSHOP)[0]+10, ROADF+5), 'lote': P(*lot(*PETSHOP)), 'desde_ep': 9},
+    'padaria': {'marco': 800, 'lotes': [P(*lot(*PADARIA))], 'placa': P(lot(*PADARIA)[0]+10, lot(*PADARIA)[1]+23), 'construcao': 'padaria/lanchonete'},
     'posto': {'porta': P(lot(*POSTO[0])[0]+21, ROADE+3), 'rua': P(lot(*POSTO[0])[0]+21, ROADE+6), 'lotes': [P(*lot(*l)) for l in POSTO]},
     'campo': {'lotes': [P(*lot(*l)) for l in CAMPO], 'marco': 700, 'gramado': [P(lot(*CAMPO[0])[0]+3, lot(*CAMPO[0])[1]+3), P(lot(*CAMPO[0])[0]+87, lot(*CAMPO[0])[1]+43)],
               'centro': P(lot(*CAMPO[0])[0]+45, lot(*CAMPO[0])[1]+23), 'gols': [P(lot(*CAMPO[0])[0]+3, lot(*CAMPO[0])[1]+23), P(lot(*CAMPO[0])[0]+87, lot(*CAMPO[0])[1]+23)],
@@ -169,7 +183,7 @@ moradores = []
 for k in range(N):
     mid = k+1
     ag, dom = agenda(mid)
-    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6 if mid <= 617 else 7 if mid <= 647 else 8,
+    moradores.append({'id': mid, 'casa': k//10+1, 'chegou_no_ep': 1 if mid <= 267 else 2 if mid <= 320 else 3 if mid <= 370 else 4 if mid <= 460 else 5 if mid <= 577 else 6 if mid <= 617 else 7 if mid <= 647 else 8 if mid <= 721 else 9,
                       'aparencia': npc_look(mid), 'atlas': {'col': k % cols, 'lin': k//cols},
                       'velocidade': round(random.Random(mid).uniform(0.85, 1.15), 2), 'agenda': ag, 'domingo': dom})
 json.dump(moradores, open(f'{out}/dados/moradores.json', 'w'), ensure_ascii=False)

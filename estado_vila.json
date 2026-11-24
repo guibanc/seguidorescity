@@ -1,12 +1,12 @@
 {
  "serie": "A Cidade dos Seguidores",
- "seguidores": 721,
+ "seguidores": 780,
  "regras": {
   "1 seguidor": "1 morador",
   "10 seguidores": "1 casa (casa i fica pronta com 10*(i+1) seguidores; construção começa em 10*i+5)",
   "marcos": "cada marco abaixo ganha uma construção nova; marcos já feitos: 300 = mercadinho, 400 = escola, 500 = prefeitura + ruas calçadas, 600 = 2º mercadinho + posto de saúde, 700 = campo de futebol"
  },
- "casas_prontas": 72,
+ "casas_prontas": 78,
  "construcoes": [
   "ruas calçadas: principal (x 127-136, até y 680), A (y 330), B (y 240), C (y 150), D (y 420), E (y 510, ep. 6), F (y 600, ep. 6)",
   "praça com poço, árvore e bancos",
@@ -24,7 +24,11 @@
   "CAMPO DE FUTEBOL (lotes 140|162|184|206,600,b) — marco 700, ep. 8: gramado listrado (x 142-226, y 615-655), linhas, traves com rede, arquibancada de 4 degraus no lado sul",
   "ep. 6: a cidade virou ISOMÉTRICA no vídeo (codigo/iso.py), com campo infinito em volta",
   "PÓRTICO 'PINDAMONHANGABA' sobre a rua principal (x 121-143, y 466) — ep. 7, feito em mutirão; a placa velha (149,446) saiu",
-  "ep. 8: fazenda do vizinho FORA do mapa, no campo do oeste (celeiro x -92 y 318, silo, trator, plantação x -150..-50 y 360..430, placa CONTRATA-SE) — não ocupa lote"
+  "ep. 8: fazenda do vizinho FORA do mapa, no campo do oeste (celeiro x -92 y 318, silo, trator, plantação x -150..-50 y 360..430, placa CONTRATA-SE) — não ocupa lote",
+  "ep. 9: MERCADINHO DO CENTRO pegou fogo e foi reformado (mesmo lugar)",
+  "ep. 9: CORPO DE BOMBEIROS no lote (206,600,a) — ponto 'bombeiros'",
+  "ep. 9: PETSHOP no lote (16,600,a) — ponto 'petshop'",
+  "ep. 9: terreno RESERVADO da padaria/lanchonete (marco 800) no lote (16,600,b) — ponto 'padaria' com marco 800"
  ],
  "lotes_casas": [
   [
@@ -479,12 +483,6 @@
   ]
  ],
  "lotes_livres": [
-  "casa 73: lote 206,510,a",
-  "casa 74: lote 206,510,b",
-  "casa 75: lote 16,510,a",
-  "casa 76: lote 16,510,b",
-  "casa 77: lote 104,600,a",
-  "casa 78: lote 104,600,b",
   "casa 79: lote 140,600,a",
   "casa 80: lote 82,600,a",
   "casa 81: lote 82,600,b",
@@ -493,10 +491,7 @@
   "casa 84: lote 60,600,b",
   "casa 85: lote 184,600,a",
   "casa 86: lote 38,600,a",
-  "casa 87: lote 38,600,b",
-  "casa 88: lote 206,600,a",
-  "casa 89: lote 16,600,a",
-  "casa 90: lote 16,600,b"
+  "casa 87: lote 38,600,b"
  ],
  "proximos_marcos": {
   "800": "padaria/lanchonete",
@@ -510,19 +505,19 @@
   "50000": "aeroporto",
   "100000": "arranha-céu símbolo"
  },
- "ultimo_episodio_publicado": 8,
+ "ultimo_episodio_publicado": 9,
  "nome_vila": "Pindamonhangaba",
  "proxima_casa": {
-  "numero": 73,
-  "comeca_em": 725,
-  "pronta_em": 730,
+  "numero": 79,
+  "comeca_em": 785,
+  "pronta_em": 790,
   "lote": [
-   206,
-   510,
+   140,
+   600,
    "a"
   ]
  },
- "proximo_episodio": 9,
+ "proximo_episodio": 10,
  "estilo_visual": "32 BITS desde o ep. 7 (iso.K = 2). No ep. 8 testamos um visual 'tudo em blocos' (vox.py), mas foi CANCELADO: o vídeo e o site seguem em 32 bits. O vox.py ficou guardado em arquivo_ep8_blocos/.",
  "status_ep3": "vídeo gerado (78 s), sincronizado com a narração",
  "site": "pasta site/: SITE_ESPEC.md + img/ + dados/ (gerar com codigo/exportar_site.py)",
@@ -572,15 +567,23 @@
     510,
     "a"
    ]
+  ],
+  "padaria_800": [
+   16,
+   600,
+   "b"
   ]
  },
  "capacidade": "90 lotes de casa → dá até 900 inscritos sem crescer o mapa de novo",
  "ganchos": [
-  "eleição pra prefeito: 11 candidatos (votação ainda não abriu)",
-  "800 = padaria/lanchonete (Wesley prometeu lanchonete)",
-  "o fazendeiro vizinho contratou moradores",
-  "o time da cidade: 7 jogadores, agora com campo"
+  "VOTAÇÃO ABERTA (14 candidatos) — resultado no próximo ep.?",
+  "800 = padaria/lanchonete (faltam 20)",
+  "bombeiros fundados",
+  "petshop e bicharada solta",
+  "campeonato no campo (verde x azul)"
  ],
  "status_ep7": "vídeo gerado (105,5 s) com a narração (+1,3 s de respiro pro tambor): placa vazia no escuro, votação, PINDAMONHANGABA, mutirão do pórtico, fogos, nuvens -> 32 bits, provador, casas 62-64, montagem do site, candidaturas, economia, campo",
- "status_ep8": "vídeo gerado (93,5 s) em 32 bits com a narração final: recap, a cidade crescendo, vitrine dos moradores, casas 65-72, QUASE... 700, obra do campo, o time (7 jogadores com nome), passes, GOOOL, vira-lata, fazendeiro, mural dos 11 candidatos, 'os seguidores entregaram', VAMO ACALMA, 800, resumo, CTA"
+ "status_ep8": "vídeo gerado (93,5 s) em 32 bits com a narração final: recap, a cidade crescendo, vitrine dos moradores, casas 65-72, QUASE... 700, obra do campo, o time (7 jogadores com nome), passes, GOOOL, vira-lata, fazendeiro, mural dos 11 candidatos, 'os seguidores entregaram', VAMO ACALMA, 800, resumo, CTA",
+ "obs_lotes": "os lotes antes previstos pras casas 88, 89 e 90 viraram bombeiros, petshop e padaria: as casas 88+ precisam de lotes novos (mapa cresce pra baixo/direita, previsto pro 1000)",
+ "status_ep9": "vídeo gerado (104 s), 32 bits: fogo no mercadinho, bombeiros, casas 73-78, petshop, campeonato, eleição 14 candidatos e votação aberta, campanha (jessica/Enzo/777), destaque Enzo Mildana, terreno 800"
 }

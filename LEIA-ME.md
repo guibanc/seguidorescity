@@ -2,7 +2,9 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
-**Episódio 8: leia primeiro o `RELATORIO_PARA_EP8.md`** (721 seguidores, casas 65–72, marco 700 = campo de futebol, 64 moradores com nome, 11 candidatos a prefeito, cristiano Ronaldo em destaque).
+**Episódio 9: leia primeiro o `RELATORIO_PARA_EP9.md`** (780 seguidores, casas 73–78, rua F começa, padaria/lanchonete no 800 faltando 20, 68 moradores com nome, 14 candidatos a prefeito, Enzo Mildana em destaque).
+
+**Ep. 9 pronto** (780 seguidores, 32 bits): o mercadinho do centro pegou fogo (e foi reformado) → fundado o **CORPO DE BOMBEIROS** (lote 206,600,a); casas 73–78 (rua E fechou, rua F começou); **PETSHOP** (lote 16,600,a) e bicharada solta; campeonato no campo; eleição com 14 candidatos e **votação aberta**; destaque Enzo Mildana; **terreno da padaria reservado** (marco 800, lote 16,600,b, ponto `padaria`). Tempos da narração em `codigo/tempos_ep9.py`. Código do ep. 8 em `arquivo_ep8/`. Próxima: casa 79 (785→790, lote 140,600,a). ⚠️ Casas 88+ precisam de lotes novos.
 
 **Ep. 8 pronto** (721 seguidores), em 32 bits: casas 65–72 na rua E, **MARCO 700: CAMPO DE FUTEBOL** (lotes 140|162|184|206,600,b, ponto `campo` no `vila.json`), o time (cristiano Ronaldo, Mesi, Neymar, Ronaldo gaucho, DEUS, Theogoleiro, Murilo mbappe), gol, vira-lata, o fazendeiro vizinho (fora do mapa, oeste), mural dos 11 candidatos, debate no chat. Próxima: casa 73 (725→730, lote 206,510,a). Próximo marco: 800 (padaria/lanchonete). Código do ep. 7 em `arquivo_ep7/`. O teste "tudo em blocos" (cancelado) ficou em `arquivo_ep8_blocos/vox.py` (o `codigo/vox.py` só é usado pra medida do campo). A narração final é mais rápida que a linha do tempo de trabalho: `scene.TMAP` / `new2old()` convertem os tempos.
 

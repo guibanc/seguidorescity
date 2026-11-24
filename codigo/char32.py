@@ -244,6 +244,14 @@ def npc32(look, dirc='down', frame=0, uniforme=None, tool=None, carry=None):
         bx = tx1+1 if not side else 18
         d.rectangle([bx, ty0+11, bx+5, ty0+17], fill=A((250, 250, 244))); d.arc([bx+1, ty0+8, bx+4, ty0+13], 180, 360, fill=A((200, 200, 200)))
         d.point((bx+2, ty0+13), fill=A((230, 60, 60))); d.point((bx+3, ty0+14), fill=A((90, 180, 80)))
+    elif carry == 'balde':
+        bx = tx1+1 if not side else 18
+        d.polygon([(bx, ty0+11), (bx+6, ty0+11), (bx+5, ty0+18), (bx+1, ty0+18)], fill=A((150, 156, 166)))
+        d.line([(bx, ty0+11), (bx+6, ty0+11)], fill=A((90, 150, 230))); d.arc([bx, ty0+7, bx+6, ty0+14], 180, 360, fill=A((80, 80, 90)))
+    elif carry == 'panfleto':
+        bx = tx1 if not side else 18
+        d.rectangle([bx, ty0+6, bx+6, ty0+14], fill=A((250, 250, 244)), outline=A((60, 90, 180)))
+        d.line([(bx+1, ty0+9), (bx+5, ty0+9)], fill=A((60, 90, 180))); d.line([(bx+1, ty0+11), (bx+4, ty0+11)], fill=A((200, 40, 50)))
     elif carry == 'tabua':
         d.polygon([(4, ty0-2), (28, ty0-6), (28, ty0-3), (4, ty0+1)], fill=A((190, 140, 86)))
     if tool in ('up', 'down'):

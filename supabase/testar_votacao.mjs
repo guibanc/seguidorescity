@@ -1,0 +1,32 @@
+// testa a votação (12_votacao.sql) num Postgres local:  node supabase/testar_votacao.mjs .
+import { PGlite } from '@electric-sql/pglite';
+import { pgcrypto } from '@electric-sql/pglite/contrib/pgcrypto';
+import fs from 'fs';
+const R = process.argv[2] || '.';
+const db = await PGlite.create({ extensions: { pgcrypto } });
+await db.exec(`create schema if not exists extensions; create extension if not exists pgcrypto with schema extensions;
+  do $$ begin create role anon; exception when duplicate_object then null; end $$;
+  do $$ begin create role authenticated; exception when duplicate_object then null; end $$;
+  create publication supabase_realtime;`);
+for (const f of ['1_criar_banco.sql', '2_palavras_bloqueadas.sql', '3_contador.sql', '5_bio_e_pedidos.sql', '6_chat_online_casa.sql', '7_32bits_eleicao.sql'])
+  await db.exec(fs.readFileSync(R + '/supabase/' + f, 'utf8'));
+await db.exec(fs.readFileSync(R + '/site/dados/novos_moradores.sql', 'utf8'));
+const q = async (s, p) => (await db.query(s, p)).rows[0].r;
+const reg = async (m, u) => (await q(`select registrar($1, $2, $3, '583920', null) r`, [m, u, 'Nome' + m])).token;
+const A = await reg(10, 'aaa'), B = await reg(20, 'bbb'), C = await reg(30, 'ccc');
+console.log('candidatar (fase candidaturas):', await q(`select candidatar($1,'Campo pra todos') r`, [A]));
+console.log('votar antes de abrir:', await q(`select votar($1,10) r`, [B]));
+await db.exec(fs.readFileSync(R + '/supabase/12_votacao.sql', 'utf8'));
+let e = await q(`select eleicao_info() r`); console.log('aberta:', e.fase, '| termina_em em ~', Math.round((new Date(e.termina_em) - Date.now()) / 3600000), 'h');
+console.log('candidatar durante a votação:', await q(`select candidatar($1,'Pastel pra todos') r`, [B]));
+console.log('retirar durante a votação:', await q(`select retirar_candidatura($1) r`, [A]));
+console.log('votar sem login:', await q(`select votar('token-falso',10) r`));
+console.log('B vota em 10:', await q(`select votar($1,10) r`, [B]));
+console.log('B tenta trocar pra 20:', await q(`select votar($1,20) r`, [B]));
+console.log('C vota em 10:', await q(`select votar($1,10) r`, [C]));
+console.log('A vota em 20:', await q(`select votar($1,20) r`, [A]));
+e = await q(`select eleicao_info() r`); console.log('contagem ao vivo:', e.candidatos.map(c => `${c.nome}=${c.votos}`).join(', '));
+await db.exec(`update eleicao set termina_em = now() - interval '1 minute' where id = 1`);
+console.log('votar depois do prazo:', await q(`select votar($1,10) r`, [A]));
+e = await q(`select eleicao_info() r`); console.log('depois do prazo:', e.fase, '| prefeito:', e.prefeito, e.prefeito_nome);
+console.log('candidatar depois do prazo:', await q(`select candidatar($1,'Tarde') r`, [C]));
