@@ -46,5 +46,15 @@
     } catch { return null; }
   }
 
-  window.Api = { contador, modo: sb ? 'supabase' : semBanco ? 'sem-banco' : 'local', rpc, publicos };
+  // histórico do chat: as `limite` mensagens antes do id `antes` (sem `antes` = as mais novas), em ordem de envio
+  async function chatHistorico(antes, limite = 50) {
+    if (semBanco) return [];
+    const url = sb ? `${base}/rest/v1/chat?select=id,morador_id,nome,texto,criado_em&order=id.desc&limit=${limite}${antes ? '&id=lt.' + antes : ''}`
+                   : `/api/chat?limite=${limite}${antes ? '&antes=' + antes : ''}`;
+    const r = await fetch(url, { headers: H });
+    if (!r.ok) throw new Error('chat ' + r.status);
+    return (await r.json()).reverse();
+  }
+
+  window.Api = { contador, modo: sb ? 'supabase' : semBanco ? 'sem-banco' : 'local', rpc, publicos, chatHistorico };
 })();

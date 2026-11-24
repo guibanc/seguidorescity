@@ -72,6 +72,26 @@
       <div class="jm-corpo" id="jogoModalCorpo"></div>
     </div>
   </div>
+  <!-- celular: o chat da cidade com histórico, horário e emoji (estilo app de mensagem) -->
+  <div id="celular" hidden>
+    <div class="cel-corpo" role="dialog" aria-label="Chat da cidade">
+      <div class="cel-status"><b id="celHora">--:--</b><span class="cel-notch"></span><span>📶 🔋</span></div>
+      <div class="cel-topo">
+        <button id="celFechar" aria-label="Fechar o chat">←</button>
+        <span class="cel-avatar">🏙️</span>
+        <span class="cel-titulo"><b id="celNome">Chat da cidade</b><small id="celSub">conectando…</small></span>
+      </div>
+      <div class="cel-msgs" id="celMsgs"></div>
+      <button id="celDescer" hidden aria-label="Ir pras mensagens novas">⌄<i id="celNovas"></i></button>
+      <div class="cel-emojis" id="celEmojis" hidden></div>
+      <div class="cel-rodape" id="celRodape">
+        <button id="celEmojiBtn" aria-label="Emojis">😊</button>
+        <input id="celInput" maxlength="120" placeholder="Mensagem" autocomplete="off" enterkeyhint="send">
+        <button id="celEnviar" aria-label="Enviar">➤</button>
+      </div>
+      <button id="celEntrar" hidden>💬 Entre com seu morador pra conversar</button>
+    </div>
+  </div>
   <!-- chat ao vivo -->
   <aside id="chat" hidden>
     <button id="chatToggle" aria-label="Mostrar ou esconder o chat">💬</button>
@@ -127,6 +147,7 @@
   <nav id="menu">
     <button data-aba="buscar"><svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg><span>Buscar</span></button>
     <button data-aba="moradores"><svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.8 3.2-6 6.5-6s5.9 2.2 6.5 6"/><circle cx="17" cy="9" r="2.6"/><path d="M16 14.2c2.9.1 4.8 2 5.5 5.3"/></svg><span>Moradores</span></button>
+    <button data-aba="chat" id="menuChat"><svg viewBox="0 0 24 24"><path d="M4 5.5h16v10.5H10l-4.5 3.5V16H4z"/><path d="M8 9.5h8M8 12.5h5"/></svg><span>Chat</span><i class="badge" id="chatBadge" hidden></i></button>
     <button data-aba="registrar" class="menu-destaque"><svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span id="menuRegTxt">Registrar</span></button>
     <button data-aba="eu"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c.8-4.4 4-7 8-7s7.2 2.6 8 7"/></svg><span id="menuEuTxt">Entrar</span></button>
   </nav>

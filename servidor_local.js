@@ -12,7 +12,7 @@ const http = require('http'), fs = require('fs'), path = require('path');
 const PORTA = Number(process.env.PORT) || 3003;
 const SITE = path.join(__dirname, 'site');
 const SQL = ['1_criar_banco.sql', '2_palavras_bloqueadas.sql', '3_contador.sql', '5_bio_e_pedidos.sql', '6_chat_online_casa.sql',
-             '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql', '11_terrenos.sql', '12_votacao.sql'];   // (4 e 10 usam coisas que só o Supabase tem)
+             '7_32bits_eleicao.sql', '8_jogo.sql', '9_mundo_explorar.sql', '11_terrenos.sql', '12_votacao.sql', '13_chat_historico.sql'];   // (4 e 10 usam coisas que só o Supabase tem)
 let db;
 
 async function abrirBanco() {
@@ -88,6 +88,10 @@ const lerCorpo = req => new Promise((ok, erro) => { let b = ''; req.on('data', c
 async function tratar(req, res) {
   const url = new URL(req.url, 'http://x');
   if (url.pathname === '/api/publicos') return json(res, 200, (await db.query('select * from moradores_publicos order by id')).rows);
+  if (url.pathname === '/api/chat') {                     // histórico do chat (o celular do site)
+    const antes = Number(url.searchParams.get('antes')) || null, lim = Math.min(200, Number(url.searchParams.get('limite')) || 50);
+    return json(res, 200, (await db.query(`select id, morador_id, nome, texto, criado_em from chat where ($1::bigint is null or id < $1) order by id desc limit $2`, [antes, lim])).rows);
+  }
   if (url.pathname === '/api/contador') return json(res, 200, (await db.query('select * from contador_publico')).rows[0] || null);
   if (url.pathname === '/api/eventos') {
     const cid = url.searchParams.get('cid') || String(Math.random());

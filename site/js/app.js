@@ -768,6 +768,7 @@ function chatReceber(msg, historico) {
   box.appendChild(el);
   while (box.children.length > CHAT_MAX) box.firstChild.remove();
   envelhecerChat();
+  celReceber(msg, historico);
 }
 function envelhecerChat() {
   const box = $('#chatMsgs'); if (!box) return;
@@ -793,11 +794,140 @@ function atualizarChatUI() {
   $('#chatForm').hidden = !EU; $('#chatEntrar').hidden = !!EU;
   let fechado = false; try { fechado = localStorage.getItem('vila_chat') === '0'; } catch {}
   c.classList.toggle('fechado', fechado);
+  celRodape();
 }
 $('#chatEnviar').onclick = chatEnviar;
 $('#chatInput').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); chatEnviar(); } e.stopPropagation(); };
 $('#chatToggle').onclick = () => { const c = $('#chat'); c.classList.toggle('fechado'); try { localStorage.setItem('vila_chat', c.classList.contains('fechado') ? '0' : '1'); } catch {} };
 $('#chatEntrar').onclick = () => mostrar('entrar');
+
+// =====================================================================
+// CELULAR: o chat da cidade com histórico completo, horário, dia e emoji
+// (botão "Chat" do menu). As mensagens novas chegam pelo mesmo tempo real.
+// =====================================================================
+const CEL = { msgs: [], ids: new Set(), carregado: false, temMais: true, carregando: false, naoLidas: 0 };
+const EMOJIS = ('😀 😂 🤣 😅 😊 😍 🥰 😘 😎 🤩 🥳 😜 🤪 😏 🤔 🤨 😐 🙄 😴 😢 😭 😡 🤯 😱 🥶 🥵 🤗 🤝 👍 👎 👏 🙌 🙏 💪 👋 ✌️ 🤙 👀 ' +
+  '❤️ 🧡 💛 💚 💙 💜 🖤 💔 💯 🔥 ✨ ⭐ 🎉 🎊 🏆 👑 💰 🪙 🗳️ 🏛️ 🏠 🏙️ ⚽ 🥅 🐶 🐱 🍕 🍔 🌭 🥐 🍞 🥟 🧃 ☕ 🍺 🚒 🚓 🚗 🏍️ 🌳 🌞 🌙 🌧️ ⚡ 🎮 📱 💬').split(' ');
+const celAberto = () => !$('#celular').hidden;
+const pad2 = n => String(n).padStart(2, '0');
+const horaMsg = iso => { const d = new Date(iso); return isNaN(d) ? '' : pad2(d.getHours()) + ':' + pad2(d.getMinutes()); };
+function diaMsg(iso) {
+  const d = new Date(iso); if (isNaN(d)) return '';
+  const hoje = new Date(), ontem = new Date(Date.now() - 864e5), mesmo = (a, b) => a.toDateString() === b.toDateString();
+  if (mesmo(d, hoje)) return 'Hoje';
+  if (mesmo(d, ontem)) return 'Ontem';
+  return d.toLocaleDateString('pt-BR', { weekday: 'long', day: '2-digit', month: '2-digit' });
+}
+const CORES_NOME = ['#c0392b', '#1f7a4d', '#2a5bb8', '#8e44ad', '#b9770e', '#0e7c86', '#c2185b', '#5d6d1e', '#a04000', '#34495e'];
+const corNome = id => CORES_NOME[(Number(id) * 7) % CORES_NOME.length];
+function htmlMsg(m, anterior) {
+  const meu = EU && m.morador_id === EU.morador;
+  const novoDia = !anterior || diaMsg(anterior.criado_em) !== diaMsg(m.criado_em);
+  const seguida = !novoDia && anterior && anterior.morador_id === m.morador_id;
+  return (novoDia ? `<div class="cel-dia"><span>${esc(diaMsg(m.criado_em))}</span></div>` : '') +
+    `<div class="cel-msg ${meu ? 'minha' : ''} ${seguida ? 'seguida' : ''}" data-id="${m.id}">` +
+    (!meu && !seguida ? `<b class="cel-autor" data-m="${m.morador_id}" style="color:${corNome(m.morador_id)}">${esc(m.nome)}</b>` : '') +
+    `<span class="cel-txt">${esc(m.texto)}</span><small class="cel-hora">${horaMsg(m.criado_em)}${meu ? ' ✓✓' : ''}</small></div>`;
+}
+function celDesenhar(manterRolagem) {
+  const box = $('#celMsgs'); if (!box) return;
+  const altAntes = box.scrollHeight, topoAntes = box.scrollTop;
+  let h = CEL.temMais ? `<button class="cel-mais" id="celMais">${CEL.carregando ? 'Carregando…' : '⬆ Ver mensagens mais antigas'}</button>`
+                      : (CEL.msgs.length ? '<div class="cel-inicio">🔒 Este é o começo do chat da cidade</div>' : '');
+  if (!CEL.msgs.length && !CEL.carregando) h += '<p class="cel-vazio">Nenhuma mensagem ainda. Manda a primeira! 👋</p>';
+  CEL.msgs.forEach((m, i) => { h += htmlMsg(m, CEL.msgs[i - 1]); });
+  box.innerHTML = h;
+  const mais = $('#celMais'); if (mais) mais.onclick = celCarregarAntigas;
+  if (manterRolagem) box.scrollTop = topoAntes + (box.scrollHeight - altAntes);
+  else box.scrollTop = box.scrollHeight;
+}
+async function celCarregarAntigas() {
+  if (CEL.carregando || !CEL.temMais) return;
+  const antes = CEL.msgs.length ? CEL.msgs[0].id : null;   // null = primeira carga (vai pro fim da conversa)
+  CEL.carregando = true; celDesenhar(!!antes);
+  try {
+    const lote = await Api.chatHistorico(antes, 50);
+    CEL.temMais = lote.length === 50;
+    const novas = lote.filter(m => !CEL.ids.has(m.id)); novas.forEach(m => CEL.ids.add(m.id));
+    CEL.msgs = novas.concat(CEL.msgs).sort((a, b) => a.id - b.id);
+    CEL.carregado = true;
+  } catch (e) { toast('Não deu pra carregar o histórico do chat'); }
+  CEL.carregando = false; celDesenhar(!!antes);
+}
+function celReceber(msg, historico) {
+  if (!msg || !msg.id || CEL.ids.has(msg.id)) return;
+  if (!CEL.carregado && historico) return;              // o histórico completo vem quando abre o celular
+  CEL.ids.add(msg.id); CEL.msgs.push(msg); CEL.msgs.sort((a, b) => a.id - b.id);
+  const meu = EU && msg.morador_id === EU.morador;
+  if (!celAberto()) { if (!historico && !meu) { CEL.naoLidas++; celBadge(); } return; }
+  const box = $('#celMsgs'), noFim = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  const ant = CEL.msgs[CEL.msgs.indexOf(msg) - 1];
+  if (CEL.msgs[CEL.msgs.length - 1] !== msg) return celDesenhar(true);
+  box.querySelector('.cel-vazio')?.remove();
+  box.insertAdjacentHTML('beforeend', htmlMsg(msg, ant));
+  if (noFim || meu) box.scrollTop = box.scrollHeight;
+  else { const n = $('#celNovas'); n.textContent = Number(n.textContent || 0) + 1; $('#celDescer').hidden = false; }
+}
+function celBadge() { const b = $('#chatBadge'); b.hidden = !CEL.naoLidas; b.textContent = CEL.naoLidas > 99 ? '99+' : CEL.naoLidas; }
+function celRodape() {
+  if (!$('#celular')) return;
+  $('#celRodape').hidden = !EU; $('#celEntrar').hidden = !!EU;
+  if (!EU) $('#celEmojis').hidden = true;
+}
+function celSub() {
+  const n = ONLINE.size;
+  $('#celNome').textContent = VILA && VILA.nome_vila ? VILA.nome_vila : 'Chat da cidade';
+  $('#celSub').textContent = !window.Rt ? 'chat indisponível agora' : n ? `${n} ${n === 1 ? 'morador online' : 'moradores online'}${VISITANTES ? ` · ${VISITANTES} visitando` : ''}` : 'chat da cidade';
+}
+function celRelogio() { const d = new Date(); $('#celHora').textContent = pad2(d.getHours()) + ':' + pad2(d.getMinutes()); }
+function abrirCelular() {
+  $('#celular').hidden = false; document.body.classList.add('cel-aberto'); $('#menuChat').classList.add('ativo');
+  CEL.naoLidas = 0; celBadge(); celRodape(); celSub(); celRelogio();
+  $('#celNovas').textContent = ''; $('#celDescer').hidden = true;
+  if (!CEL.carregado) { CEL.msgs = []; CEL.ids.clear(); CEL.temMais = true; celCarregarAntigas(); } else celDesenhar();
+  if (EU && !tocaTela) setTimeout(() => $('#celInput').focus(), 50);
+}
+function fecharCelular() {
+  $('#celular').hidden = true; document.body.classList.remove('cel-aberto'); $('#menuChat').classList.remove('ativo');
+  $('#celEmojis').hidden = true;
+}
+async function celEnviar() {
+  const inp = $('#celInput'), t = inp.value.trim(); if (!t || !EU) return;
+  inp.value = ''; $('#celEmojis').hidden = true; const b = $('#celEnviar'); b.disabled = true;
+  const r = await Api.rpc('enviar_chat', { p_token: token(), p_texto: t });
+  b.disabled = false; if (!tocaTela) inp.focus();
+  if (!r || !r.ok) { toast((r && r.erro) || 'Não deu pra enviar'); inp.value = t; return; }
+  setTimeout(() => { if (!CEL.ids.has(r.id)) chatReceber({ id: r.id, morador_id: EU.morador, nome: EU.nome, texto: t, criado_em: new Date().toISOString() }); }, 1500);
+}
+(() => {
+  $('#celEmojis').innerHTML = EMOJIS.map(e => `<button type="button">${e}</button>`).join('');
+  $('#celEmojis').onclick = e => {
+    const b = e.target.closest('button'); if (!b) return;
+    const inp = $('#celInput'); if (inp.value.length + b.textContent.length > 120) return;
+    const i = inp.selectionStart ?? inp.value.length, f = inp.selectionEnd ?? i;
+    inp.value = inp.value.slice(0, i) + b.textContent + inp.value.slice(f);
+    const p = i + b.textContent.length; if (!tocaTela) { inp.focus(); inp.setSelectionRange(p, p); }
+  };
+  $('#celEmojiBtn').onclick = () => { $('#celEmojis').hidden = !$('#celEmojis').hidden; };
+  $('#celEnviar').onclick = celEnviar;
+  $('#celInput').onkeydown = e => { if (e.key === 'Enter') { e.preventDefault(); celEnviar(); } if (e.key === 'Escape') fecharCelular(); e.stopPropagation(); };
+  $('#celInput').onkeyup = e => e.stopPropagation();
+  $('#celFechar').onclick = fecharCelular;
+  $('#celular').onclick = e => { if (e.target.id === 'celular') fecharCelular(); };
+  $('#celEntrar').onclick = () => { fecharCelular(); mostrar('entrar'); };
+  $('#celDescer').onclick = () => { const box = $('#celMsgs'); box.scrollTop = box.scrollHeight; };
+  $('#celMsgs').onscroll = () => {
+    const box = $('#celMsgs');
+    if (box.scrollHeight - box.scrollTop - box.clientHeight < 40) { $('#celDescer').hidden = true; $('#celNovas').textContent = ''; }
+    if (box.scrollTop < 30 && CEL.temMais && !CEL.carregando && CEL.carregado) celCarregarAntigas();
+  };
+  $('#celMsgs').addEventListener('click', e => {
+    const a = e.target.closest('.cel-autor'); if (!a) return;
+    const id = Number(a.dataset.m); if (MORADORES[id - 1]) { fecharCelular(); irPara(id); }
+  });
+  addEventListener('keydown', e => { if (e.key === 'Escape' && celAberto()) fecharCelular(); });
+  setInterval(() => { if (celAberto()) { celRelogio(); celSub(); } }, 5000);
+})();
 
 // =====================================================================
 // AÇÕES perto do boneco (portas, banco, fonte, móveis) — botão na tela ou tecla E
@@ -1022,6 +1152,8 @@ $('#painelAlca').onclick = () => {
 };
 document.querySelectorAll('#menu button').forEach(b => b.onclick = () => {
   const aba = b.dataset.aba;
+  if (aba === 'chat') return celAberto() ? fecharCelular() : abrirCelular();
+  if (celAberto()) fecharCelular();
   if (telaAtual && b.classList.contains('ativo')) return fecharPainel();
   pilha.length = 0; telaAtual && telaAtual.tela === 'editor' ? null : (telaAtual = null);
   if (aba === 'registrar' && EU) return mostrar('editor', { modo: 'editar' }, false);
