@@ -158,30 +158,6 @@
   "bio": null
  },
  {
-  "id": 12,
-  "casa": 2,
-  "chegou_no_ep": 1,
-  "nome": "cristiano Ronaldo",
-  "aparencia": {
-   "pele": 3,
-   "baixo": "bermuda",
-   "barba": false,
-   "cabelo": "raspado",
-   "camisa": 0,
-   "chapeu": null,
-   "oculos": false,
-   "sapato": 0,
-   "camisa2": 3,
-   "estampa": "time",
-   "acessorio": "colar",
-   "cor_baixo": 5,
-   "cor_cabelo": 0,
-   "cor_chapeu": 6,
-   "cor_acessorio": 0
-  },
-  "bio": "melhor jogador de bola na cidade pena que não tem campo"
- },
- {
   "id": 13,
   "casa": 2,
   "chegou_no_ep": 1,
@@ -310,6 +286,30 @@
    "cor_baixo": 2,
    "cor_cabelo": 2,
    "cor_chapeu": 1
+  },
+  "bio": null
+ },
+ {
+  "id": 42,
+  "casa": 5,
+  "chegou_no_ep": 1,
+  "nome": "Teuszx",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "cacheado",
+   "camisa": 10,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 1,
+   "camisa2": 3,
+   "estampa": "time",
+   "acessorio": "cachecol",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 10,
+   "cor_acessorio": 0
   },
   "bio": null
  },
@@ -495,21 +495,23 @@
   "id": 96,
   "casa": 10,
   "chegou_no_ep": 1,
-  "nome": "Cabo Jair",
+  "nome": "Capitão Jair",
   "aparencia": {
    "pele": 0,
    "baixo": "calca",
    "barba": false,
    "cabelo": "franja",
-   "camisa": 1,
+   "camisa": 2,
    "chapeu": null,
    "oculos": false,
    "sapato": 0,
-   "camisa2": 9,
-   "estampa": "lisa",
-   "cor_baixo": 2,
+   "camisa2": 3,
+   "estampa": "time",
+   "acessorio": "oculos_sol",
+   "cor_baixo": 0,
    "cor_cabelo": 1,
-   "cor_chapeu": 5
+   "cor_chapeu": 1,
+   "cor_acessorio": 0
   },
   "bio": null
  },
@@ -1208,6 +1210,28 @@
   "bio": null
  },
  {
+  "id": 357,
+  "casa": 36,
+  "chegou_no_ep": 3,
+  "nome": "Davimito334",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "cacheado",
+   "camisa": 2,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 3,
+   "estampa": "time",
+   "cor_baixo": 1,
+   "cor_cabelo": 0,
+   "cor_chapeu": 11
+  },
+  "bio": null
+ },
+ {
   "id": 362,
   "casa": 37,
   "chegou_no_ep": 3,
@@ -1248,6 +1272,30 @@
    "cor_baixo": 4,
    "cor_cabelo": 2,
    "cor_chapeu": 3
+  },
+  "bio": null
+ },
+ {
+  "id": 371,
+  "casa": 38,
+  "chegou_no_ep": 4,
+  "nome": "Brunao",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": true,
+   "sapato": 0,
+   "camisa2": 6,
+   "estampa": "lisa",
+   "acessorio": "oculos_sol",
+   "cor_baixo": 2,
+   "cor_cabelo": 0,
+   "cor_chapeu": 9,
+   "cor_acessorio": 0
   },
   "bio": null
  },
@@ -1488,6 +1536,30 @@
   "bio": null
  },
  {
+  "id": 558,
+  "casa": 56,
+  "chegou_no_ep": 5,
+  "nome": "Ribeiro",
+  "aparencia": {
+   "pele": 5,
+   "baixo": "calca",
+   "barba": true,
+   "cabelo": "raspado",
+   "camisa": 0,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 11,
+   "estampa": "duas_cores",
+   "acessorio": "colar",
+   "cor_baixo": 3,
+   "cor_cabelo": 0,
+   "cor_chapeu": 2,
+   "cor_acessorio": 7
+  },
+  "bio": null
+ },
+ {
   "id": 566,
   "casa": 57,
   "chegou_no_ep": 5,
@@ -1530,6 +1602,54 @@
    "cor_chapeu": 7
   },
   "bio": null
+ },
+ {
+  "id": 588,
+  "casa": 59,
+  "chegou_no_ep": 6,
+  "nome": "Val",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "vestido",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 6,
+   "estampa": "lisa",
+   "acessorio": "cachecol",
+   "cor_baixo": 1,
+   "cor_cabelo": 2,
+   "cor_chapeu": 8,
+   "cor_acessorio": 0
+  },
+  "bio": null
+ },
+ {
+  "id": 611,
+  "casa": 62,
+  "chegou_no_ep": 6,
+  "nome": "GABRIEL",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 9,
+   "chapeu": "coroa",
+   "oculos": true,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "listrada",
+   "acessorio": "colar",
+   "cor_baixo": 2,
+   "cor_cabelo": 3,
+   "cor_chapeu": 4,
+   "cor_acessorio": 2
+  },
+  "bio": "SE ACHA ATÉ DEMAIS"
  },
  {
   "id": 612,
@@ -1602,6 +1722,30 @@
   "bio": "Outras coisas é ser Mildana"
  },
  {
+  "id": 615,
+  "casa": 62,
+  "chegou_no_ep": 6,
+  "nome": "IVALDO",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 4,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "xadrez",
+   "acessorio": "mochila",
+   "cor_baixo": 1,
+   "cor_cabelo": 2,
+   "cor_chapeu": 3,
+   "cor_acessorio": 9
+  },
+  "bio": null
+ },
+ {
   "id": 621,
   "casa": 63,
   "chegou_no_ep": 7,
@@ -1644,6 +1788,52 @@
    "cor_cabelo": 7,
    "cor_chapeu": 9,
    "cor_acessorio": 2
+  },
+  "bio": null
+ },
+ {
+  "id": 761,
+  "casa": 77,
+  "chegou_no_ep": 9,
+  "nome": "cristiano Ronaldo",
+  "aparencia": {
+   "pele": 3,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "raspado",
+   "camisa": 0,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 3,
+   "estampa": "time",
+   "acessorio": "colar",
+   "cor_baixo": 5,
+   "cor_cabelo": 0,
+   "cor_chapeu": 6,
+   "cor_acessorio": 0
+  },
+  "bio": "melhor jogador de bola na cidade JA FIZ 989 GOLS SUULL!!"
+ },
+ {
+  "id": 762,
+  "casa": 77,
+  "chegou_no_ep": 9,
+  "nome": "Diego brando",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 7,
+   "chapeu": "boina",
+   "oculos": false,
+   "sapato": 2,
+   "camisa2": 1,
+   "estampa": "listrada",
+   "cor_baixo": 4,
+   "cor_cabelo": 3,
+   "cor_chapeu": 7
   },
   "bio": null
  }
