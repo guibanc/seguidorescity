@@ -134,6 +134,10 @@
   "segue": [],
   "seguidores": []
  },
+ "76": {
+  "segue": [],
+  "seguidores": []
+ },
  "82": {
   "segue": [],
   "seguidores": []
@@ -153,6 +157,25 @@
   ]
  },
  "88": {
+  "segue": [],
+  "seguidores": []
+ },
+ "89": {
+  "segue": [],
+  "seguidores": [
+   96
+  ]
+ },
+ "96": {
+  "segue": [
+   390,
+   89
+  ],
+  "seguidores": [
+   390
+  ]
+ },
+ "136": {
   "segue": [],
   "seguidores": []
  },
@@ -502,6 +525,14 @@
   "segue": [],
   "seguidores": []
  },
+ "390": {
+  "segue": [
+   96
+  ],
+  "seguidores": [
+   96
+  ]
+ },
  "412": {
   "segue": [],
   "seguidores": []
@@ -515,6 +546,10 @@
    193,
    647
   ]
+ },
+ "434": {
+  "segue": [],
+  "seguidores": []
  },
  "441": {
   "segue": [

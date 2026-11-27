@@ -2,7 +2,9 @@
 
 Manda este zip de volta em cada episódio novo, junto com o número de seguidores (e o nome da vila, se já tiver).
 
-**Episódio 9: leia primeiro o `RELATORIO_PARA_EP9.md`** (780 seguidores, casas 73–78, rua F começa, padaria/lanchonete no 800 faltando 20, 68 moradores com nome, 14 candidatos a prefeito, Enzo Mildana em destaque).
+**Episódio 10: leia primeiro o `RELATORIO_PARA_EP10.md`** (814 seguidores, casas 79–81, MARCO 800 = padaria/lanchonete, eleição empatada Enzo Mildana 3 × 3 Cabo Jair até 27/11 11:25, lotes acabando na casa 87, GLEYDSON e os 3 cachorros em destaque).
+
+**Ep. 10 pronto** (814 seguidores, 32 bits): **MARCO 800: PADARIA/LANCHONETE** (lote 16,600,b); casas 79–81; o mapa cresceu pra baixo (680 → 740) com a **RUA G** (y 690, `scene.ROADG`, lotes novos no fim da lista = casas 88+); **terreno da torre de internet reservado** (marco 900, lote 206,690,b, ponto `torre`); GLEYDSON e os 3 cachorros; curral e vacas na fazenda (desafio: 1 comentário = 1 vaca); chat no celular; 16 candidatos e empate Enzo Mildana 3 × 3 Cabo Jair; ponte no 1000. Tempos em `codigo/tempos_ep10.py`. Código do ep. 9 em `arquivo_ep9/`. Próxima: casa 82 (815→820, lote 162,600,a).
 
 **Ep. 9 pronto** (780 seguidores, 32 bits): o mercadinho do centro pegou fogo (e foi reformado) → fundado o **CORPO DE BOMBEIROS** (lote 206,600,a); casas 73–78 (rua E fechou, rua F começou); **PETSHOP** (lote 16,600,a) e bicharada solta; campeonato no campo; eleição com 14 candidatos e **votação aberta**; destaque Enzo Mildana; **terreno da padaria reservado** (marco 800, lote 16,600,b, ponto `padaria`). Tempos da narração em `codigo/tempos_ep9.py`. Código do ep. 8 em `arquivo_ep8/`. Próxima: casa 79 (785→790, lote 140,600,a). ⚠️ Casas 88+ precisam de lotes novos.
 

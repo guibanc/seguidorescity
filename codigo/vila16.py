@@ -20,7 +20,8 @@ REGLOOK = {i: (dict(r['aparencia'], seed=i) if r.get('aparencia') else None) for
 def _static(lit, rd=True, pv=False, big=False):
     if big:   # ep. 6: mapa de 680 (ruas E e F)
         from world16 import make_ground16_h
-        g, river = make_ground16_h(MH6, (ROADD, ROADE, ROADF), True)
+        import scene as _S
+        g, river = make_ground16_h(getattr(_S, 'MAPH', MH6), (ROADD, ROADE, ROADF)+((_S.ROADG,) if hasattr(_S, 'ROADG') else ()), True)
     else: g, river = make_ground16((ROADD,) if rd else (), pv)
     img = Image.fromarray(g).convert('RGBA'); d = ImageDraw.Draw(img)
     # placa da entrada

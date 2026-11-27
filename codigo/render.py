@@ -7,7 +7,7 @@ import vila16 as V
 import iso, vox
 
 # =====================================================================
-#  EP. 9 — FOGO NO MERCADINHO, CORPO DE BOMBEIROS, PETSHOP, CAMPEONATO, VOTAÇÃO ABERTA (32 bits)
+#  EP. 10 — PADARIA (800), RUA G, TORRE (900) RESERVADA, VACAS, ELEIÇÃO EMPATADA (32 bits)
 # =====================================================================
 FPS=30
 OUTW,OUTH=1080,1920
@@ -166,273 +166,11 @@ def grade(fr):
     a*=np.array([1.04,1.0,0.95]); lum=a.mean(axis=2,keepdims=True); a=lum+(a-lum)*1.1
     if not hasattr(grade,'v'):
         yy,xx=np.mgrid[0:OUTH,0:OUTW]; v=np.hypot((xx-OUTW/2)/(OUTW/2),(yy-OUTH/2)/(OUTH/2))
-        grade.v=(1-0.28*np.clip(v-0.6,0,1))[:,:,None]
+        grade.v=(1-0.16*np.clip(v-0.6,0,1))[:,:,None]
     a=a*grade.v
     return Image.fromarray(np.clip(a,0,255).astype(np.uint8))
 
 # =====================================================================
-#  EP. 9 — cenas
-# =====================================================================
-K_=KW
-def CI(x,y,z): px,py=iso.PW(x,y); return (px,py,z)
-MX,MY=lot(*MERCADO); MX0,MX1,MY0,MY1=MX+1,MX+20,MY+5,MY+20          # mercadinho do centro
-BX,BY=lot(*BOMBEIROS); PX_,PY_=lot(*PETSHOP); QX,QY=lot(*PADARIA)
-FX0,FY0,FX1,FY1=vox.campo_rect(); FXM,FYM=(FX0+FX1)/2,(FY0+FY1)/2
-RB=ROADB+5                                                          # meio da rua B (frente do mercadinho)
-TRUCK_PARK=(MX+10,RB)
-
-# ---------- caminho do caminhão: garagem -> rua F -> avenida -> rua B -> mercadinho ----------
-_route=[(BX+10,BY+24),(BX+10,ROADF+5),(131.5,ROADF+5),(131.5,RB),(TRUCK_PARK[0],RB)]
-_seg=[math.hypot(b[0]-a[0],b[1]-a[1]) for a,b in zip(_route,_route[1:])]; _tot=sum(_seg)
-TR0,TR1=K_['caminhao']-0.2,K_['banho']-0.3
-def truck_at(t):
-    if t<TR0: return (_route[0][0],_route[0][1],'y',False)
-    f=smooth(clamp((t-TR0)/(TR1-TR0)))*_tot
-    for (a,b),L_ in zip(zip(_route,_route[1:]),_seg):
-        if f<=L_:
-            u=f/L_ if L_ else 0; x=a[0]+(b[0]-a[0])*u; y=a[1]+(b[1]-a[1])*u
-            return (x,y,'x' if abs(b[0]-a[0])>abs(b[1]-a[1]) else 'y',True)
-        f-=L_
-    return (_route[-1][0],_route[-1][1],'x',True)
-def truck_extra(t):
-    if not (K_['fundado']+1.4<=t<T['bombeiros'][1]): return []
-    x,y,ax,mov=truck_at(t)
-    def fn(vd,vx0,vy0,k,x=x,y=y,ax=ax):
-        X,Y=iso.PW(x,y); iso.caminhao(vd,X*k-vx0,Y*k-vy0,k,ax,t,True)
-    return [(x+y+3,('fn',fn))]
-
-# ---------- fogo, fumaça e água ----------
-def fire_extra(t):
-    out=[]
-    st=merc_estado(t)
-    sm_until=K_['reforma']
-    if st=='fogo' or (st=='queimado' and t<sm_until):
-        inten=clamp((t-K_['fogo0'])/0.6) if st=='fogo' else 0.0
-        if st=='fogo' and t>K_['apagou']-1.2: inten*=clamp((K_['apagou']-t)/1.2)
-        def fn(vd,vx0,vy0,k,inten=inten,st=st):
-            rr=random.Random(7)
-            def S(x,y,z): X,Y=iso.PW(x,y,z); return (X*k-vx0,Y*k-vy0)
-            nfl=int(110*inten)
-            for i in range(nfl):                                    # chamas
-                px=rr.uniform(MX0,MX1); py=rr.uniform(MY0,MY1); base=16 if rr.random()<0.6 else rr.uniform(4,14)
-                if base<16: py=MY1
-                ph=rr.uniform(0,1); life=0.7; a=((t*1.6+ph)%life)/life
-                z=base+a*14*rr.uniform(0.6,1.3); X,Y=S(px+math.sin(t*9+i)*0.6,py,z)
-                c=[(255,240,120),(255,180,40),(240,90,30),(200,40,20)][min(3,int(a*4))]
-                s_=max(1,int((1-a)*6*k))
-                vd.rectangle([X-s_,Y-s_*2,X+s_,Y],fill=c+(230,))
-            ns=int(30*inten)+(14 if st=='queimado' else 0)
-            for i in range(ns):                                     # fumaça
-                ph=rr.uniform(0,1); life=2.4; a=((t*0.7+ph)%life)/life
-                px=rr.uniform(MX0+2,MX1-2)+a*16; py=rr.uniform(MY0+2,MY1-2)-a*8; z=18+a*60
-                X,Y=S(px,py,z); r_=int((3+a*9)*k)
-                g=int(70+a*60) if st=='fogo' else int(110+a*60)
-                vd.ellipse([X-r_,Y-r_,X+r_,Y+r_],fill=(g,g,g,int(170*(1-a))))
-        out.append((MX+MY+42,('fn',fn)))
-    # baldes de água (correria) e jato do caminhão
-    if K_['baldes']<=t<K_['apagou']:
-        def fn2(vd,vx0,vy0,k):
-            rr=random.Random(3)
-            for i in range(14):
-                ph=rr.uniform(0,1); a=((t*1.4+ph)%1.0)
-                sx_=rr.uniform(MX0+2,MX1-2); x=sx_; y=MY1+3-a*2; z=4+math.sin(a*math.pi)*8
-                X,Y=iso.PW(x,y,z); X=X*k-vx0; Y=Y*k-vy0
-                if a<0.8: vd.rectangle([X-k,Y-k,X+k,Y+k],fill=(90,160,240,220))
-        out.append((MX+MY+44,('fn',fn2)))
-    if K_['banho']<=t<K_['reforma']+0.4:
-        def fn3(vd,vx0,vy0,k):
-            nx,ny,nz=TRUCK_PARK[0]-3,RB,9
-            for j,(tx,tz) in enumerate(((MX+6,10),(MX+12,13),(MX+16,8))):
-                for i in range(18):
-                    u=((i/18)+t*1.8+j*0.3)%1.0
-                    x=nx+(tx-nx)*u; y=ny+(MY1-ny)*u; z=nz+(tz-nz)*u+math.sin(u*math.pi)*6
-                    X,Y=iso.PW(x,y,z); X=X*k-vx0; Y=Y*k-vy0
-                    vd.rectangle([X-k,Y-k,X+k,Y+k],fill=(120,190,255,230))
-                X,Y=iso.PW(tx,MY1,tz); X=X*k-vx0; Y=Y*k-vy0
-                vd.ellipse([X-4*k,Y-3*k,X+4*k,Y+3*k],fill=(220,240,255,150))
-        out.append((MX+MY+46,('fn',fn3)))
-    return out
-
-# ---------- bichos ----------
-_CAT={}
-def cat32(dr,fr,k):
-    key=(dr,fr,k)
-    if key in _CAT: return _CAT[key]
-    im=Image.new('RGBA',(24,18),(0,0,0,0)); d=ImageDraw.Draw(im)
-    c=(120,120,128); c2=(90,90,98); o=(40,40,46)
-    sw=[0,1,0,-1][fr%4]
-    for lx,o_ in ((5,sw),(8,-sw),(14,-sw),(17,sw)): d.rectangle([lx+o_,12,lx+o_,16],fill=c2)
-    d.rectangle([4,8,18,13],fill=c,outline=o)
-    d.rectangle([15,3,21,9],fill=c,outline=o); d.polygon([(15,3),(16,0),(17,3)],fill=c); d.polygon([(19,3),(20,0),(21,3)],fill=c)
-    d.point((19,5),fill=(120,220,90)); d.point((17,5),fill=(120,220,90))
-    d.line([(4,9),(1,4+abs(sw))],fill=c,width=2)
-    if dr=='left': im=im.transpose(Image.FLIP_LEFT_RIGHT)
-    if k==1: im=im.resize((12,9),Image.NEAREST)
-    _CAT[key]=im; return im
-_HEN={}
-def hen32(fr,dr,k):
-    key=(fr,dr,k)
-    if key not in _HEN:
-        h=V.HENS[fr%2]; h=h.resize((h.width*2,h.height*2),Image.NEAREST) if k==2 else h
-        if dr=='left': h=h.transpose(Image.FLIP_LEFT_RIGHT)
-        _HEN[key]=h
-    return _HEN[key]
-_ar=random.Random(91)
-ANIMAIS=[]
-for i in range(16):
-    kind=['dog','cat','hen','hen','dog','cat'][i%6]
-    if i<8: cx,cy=PX_+10+_ar.uniform(-6,40),ROADF+5+_ar.uniform(-3,3)      # perto do petshop
-    else: cx,cy=_ar.uniform(30,200),_ar.choice([ROADE+5,ROADF+5,ROADD+5,RB])
-    ANIMAIS.append(dict(kind=kind,cx=cx,cy=cy,amp=_ar.uniform(8,26),spd=_ar.uniform(0.6,1.6),ph=_ar.uniform(0,6.28),t0=K_['petshop']+0.6+i*0.12))
-def animal_people(t):
-    out=[]
-    if t<K_['petshop']+0.6: return out
-    for i,a in enumerate(ANIMAIS):
-        if t<a['t0']: continue
-        u=(t-a['t0'])*a['spd']+a['ph']
-        e=clamp((t-a['t0'])/1.2)
-        x=a['cx']+math.sin(u)*a['amp']*e; y=a['cy']+math.sin(u*1.7)*1.5
-        if i<8: x=PX_+10+(x-PX_-10)*e; y=PY_+22+(y-PY_-22)*e
-        dx=math.cos(u); dr='right' if dx>0 else 'left'; fr=int(t*10+i)%4
-        if a['kind']=='dog': f=(lambda k,dr=dr,fr=fr: dog32(dr,fr,False,k))
-        elif a['kind']=='cat': f=(lambda k,dr=dr,fr=fr: cat32(dr,fr,k))
-        else: f=(lambda k,dr=dr,fr=fr: hen32(fr,dr,k))
-        out.append((x,y,f))
-    if K_['cachorro']-0.6<=t<T['petshop'][1]:                         # morador correndo atrás
-        u=(t-K_['cachorro']+0.6)
-        a=ANIMAIS[0]; x=PX_+10+math.sin((t-a['t0'])*a['spd']+a['ph'])*a['amp']-6; y=PY_+24
-        out.append((x,y,sf(735,'right' if math.cos((t-a['t0'])*a['spd']+a['ph'])>0 else 'left',int(t*10)%4)))
-    return out
-
-# ---------- campeonato ----------
-TEAM=[(12,(200,628)),(555,(199,643)),(168,(182,627)),(348,(182,644)),(236,(169,636)),(473,(158,629)),(441,(FX0+3,FYM))]
-RIVAL=[(9301,(207,637)),(9302,(203,624)),(9303,(212,648)),(9304,(192,636)),(9305,(FX1-3,FYM))]
-def ball_at(t):
-    u=t*0.9; return (FXM+math.sin(u)*24+math.sin(u*2.3)*6,FYM+math.sin(u*1.6)*10,abs(math.sin(t*3.1))*3)
-def game_people(t):
-    out=[]
-    a,b=T['campeonato']
-    if not (a<=t<b or T['cta'][0]<=t): return out
-    bx,by,_=ball_at(t)
-    for k,(pid,(hx,hy)) in enumerate(TEAM):
-        gk=k==6
-        x=hx+(0 if gk else clamp((bx-hx)*0.35,-10,10))+math.sin(t*1.3+k)*2; y=(FYM+clamp(by-FYM,-4,4)) if gk else hy+clamp((by-hy)*0.3,-5,5)
-        out.append((x,y,sf(pid,'right',int(t*8+k)%4,'goleiro' if gk else 'jogador')))
-    for k,(pid,(hx,hy)) in enumerate(RIVAL):
-        gk=k==4
-        x=hx+(0 if gk else clamp((bx-hx)*0.35,-10,10))+math.sin(t*1.1+k*3)*2; y=(FYM+clamp(by-FYM,-4,4)) if gk else hy+clamp((by-hy)*0.3,-5,5)
-        out.append((x,y,sf(pid,'left',int(t*8+k)%4,'goleiro' if gk else 'azul')))
-    rr=random.Random(5)                                         # torcida
-    for k in range(26):
-        dj=1+k%4; pid=_regids[(k*3)%len(_regids)] if k%2==0 else rr.randint(1,C1)
-        x=FX0+6+rr.uniform(0,FX1-FX0-12); y=FY1+2+dj*1.5-0.6
-        hop=dj*1.5+(abs(math.sin((t*2.6+k*0.37)*math.pi))*3 if K_['torcida']<=t<b else 0)
-        out.append((x,y,sf(pid,'up',0,hop=hop)))
-    return out
-def ball_extra(t):
-    a,b=T['campeonato']
-    if not (a<=t<b or T['cta'][0]<=t): return []
-    x,y,h=ball_at(t)
-    def ball(vd,vx0,vy0,k,x=x,y=y,h=h):
-        X,Y=iso.PW(x,y,h); X=X*k-vx0; Y=Y*k-vy0; r=2*k
-        Xs,Ys=iso.PW(x,y,0); Xs=Xs*k-vx0; Ys=Ys*k-vy0
-        vd.ellipse([Xs-r,Ys-r/2,Xs+r,Ys+r/2],fill=(0,30,0,80))
-        vd.ellipse([X-r,Y-2*r,X+r,Y],fill=(250,250,250),outline=(40,40,50))
-    return [(x+y+0.6,('fn',ball))]
-_regids=sorted(i for i in REG if i<=C1)
-
-# ---------- moradores ----------
-BRIGADA=[740,744,752,760,733,766,771,778]
-def fire_people(t):
-    out=[]
-    if K_['fumaca']<=t<K_['apagou']+2.0:                       # correria com balde
-        for k,pid in enumerate(BRIGADA):
-            run=K_['baldes']-0.4<=t<K_['apagou']
-            ph=k/len(BRIGADA)
-            if run:
-                u=((t*0.55+ph)%1.0); go=u<0.5; f=u*2 if go else (1-u)*2
-                x0,y0=128+k*1.5,RB+6; x1,y1=MX0+2+k*2.2,MY1+3
-                x=x0+(x1-x0)*f; y=y0+(y1-y0)*f
-                dr='right' if go else 'left'
-                out.append((x,y,sf(pid,dr,int(t*10+k)%4,carry='balde')))
-            else:
-                x=120+k*7; y=RB+8+(k%2)*3
-                out.append((x,y,sf(pid,'up',0)))
-    if K_['banho']-0.3<=t<T['bombeiros'][1]:                   # bombeiros com a mangueira
-        for k in range(3):
-            out.append((TRUCK_PARK[0]-6+k*5,RB-1.5,sf(8040+k,'up',0,'bombeiro')))
-    if K_['fundado']+0.8<=t<K_['caminhao']:                     # equipe na frente do quartel
-        for k in range(4): out.append((BX+4+k*4,BY+25,sf(8040+k,'down',0,'bombeiro')))
-    return out
-def iso_people(t,cam):
-    cx,cy,z=cam; vw,vh=1080/z,1920/z
-    out=[]; names=[]
-    for pp in people:
-        st=person_state(pp,t)
-        if st is None: continue
-        x,y=st[0],st[1]
-        if FX0-4<x<FX1+4 and FY0-4<y<FY1+10: continue
-        if MX0-4<x<MX1+6 and MY1-2<y<RB+6 and K_['fumaca']<=t<T['bombeiros'][1]: continue
-        px,py=iso.PW(x,y)
-        if not (cx-vw/2-20<px<cx+vw/2+20 and cy-vh/2-30<py<cy+vh/2+30): continue
-        st0=person_state(pp,t-0.08)
-        dx,dy=(x-st0[0],y-st0[1]) if st0 else (0,1)
-        moving=abs(dx)+abs(dy)>0.05
-        sxd,syd=(dx-dy)*2,(dx+dy)
-        dr=('right' if sxd>0 else 'left') if abs(sxd)>abs(syd)*1.2 else ('down' if syd>0 else 'up')
-        if not moving: dr='down'
-        out.append((x,y,sf(pp['id'],dr,(int(t*8+pp['ph']*3)%4) if moving else 0)))
-        if pp['id'] in REG and z>=2.4: names.append((abs(px-cx)+abs(py-cy),x,y,pp['id']))
-        if len(out)>80: break
-    names=[n[1:] for n in sorted(names)[:3]]
-    C=count_at(t)
-    for i,l in enumerate(house_lots):
-        p=house_p(i,C)
-        if 0<p<1:
-            lx_,ly_=lot(*l)
-            for j in range(2): out.append((lx_+4+j*12,ly_+22,sf(8000+(i+j)%6,'down',int(t*6+j)%2*2,'pedreiro')))
-    for (pb,lb) in ((bomb_p(t),BOMBEIROS),(pet_p(t),PETSHOP)):
-        if 0<pb<1:
-            lx_,ly_=lot(*lb)
-            for j in range(3): out.append((lx_+3+j*7,ly_+23,sf(8010+j,'down',int(t*6+j)%2*2,'pedreiro')))
-    if T['petshop'][0]<=t<K_['cachorro']:                          # inauguração
-        for j in range(6): out.append((PX_+2+j*3.5,PY_+26+(j%2)*2,sf(722+j*7,'up',0)))
-    out+=fire_people(t)+game_people(t)+animal_people(t)
-    if T['eleicao'][0]<=t<T['promessa'][1] and False: pass
-    return out,names
-
-# ---------- câmera ----------
-CAMS=[(0.0,CI(132,452,4.0)),(T['titulo'][1]-0.4,CI(132,452,4.5)),
-      (T['recap'][0]+0.6,CI(FXM,FYM,2.6)),(T['recap'][1]-0.2,CI(150,520,1.2)),
-      (T['fogo'][0]+0.4,CI(MX+10,MY+14,2.6)),(K_['fogo0'],CI(MX+10,MY+16,4.6)),(K_['baldes'],CI(MX+6,MY+20,5.2)),
-      (K_['apagou'],CI(MX+8,MY+20,5.4)),(T['fogo'][1],CI(MX+8,MY+18,5.6)),
-      (T['bombeiros'][0]+0.3,CI(BX+10,BY+18,4.0)),(K_['caminhao']-0.3,CI(BX+10,BY+18,4.4))]
-CAMS_B=[(K_['banho']-0.3,CI(MX+8,MY+22,4.6)),(T['bombeiros'][1],CI(MX+8,MY+20,5.2)),
-      (T['casas'][0]+0.3,CI(110,505,1.9)),(K_['ruaE'],CI(110,505,2.0)),(K_['ruaF']-0.2,CI(110,505,2.0)),(K_['ruaF']+0.4,CI(104,600,3.4)),(T['casas'][1],CI(104,600,3.6)),
-      (T['petshop'][0]+0.3,CI(PX_+14,PY_+22,4.2)),(K_['cachorro']-0.4,CI(PX_+16,PY_+24,4.4)),(T['petshop'][1],CI(PX_+40,PY_+26,3.4)),
-      (T['campeonato'][0]+0.3,CI(FXM,FYM-3,4.4)),(T['campeonato'][1],CI(FXM,FYM-3,5.2)),
-      (T['proximo'][0]+0.3,CI(QX+12,QY+4,4.2)),(T['proximo'][1],CI(QX+12,QY+4,5.0)),
-      (T['resumo'][0]+0.3,CI(140,500,1.5)),(T['resumo'][1],CI(140,420,0.82)),
-      (T['cta'][0]+0.3,CI(160,424,3.4)),(DUR+1,CI(160,424,4.0))]
-def _interp_cam(t,L):
-    for (a,va),(b,vb) in zip(L,L[1:]):
-        if a<=t<b:
-            f=smooth((t-a)/(b-a)); return tuple(va[i]+(vb[i]-va[i])*f for i in range(3))
-    return L[-1][1] if t>=L[-1][0] else L[0][1]
-def camiso(t):
-    if t<K_['caminhao']-0.3: c=_interp_cam(t,CAMS)
-    elif t<K_['banho']-0.3:
-        x,y,_,_=truck_at(t); c=CI(x,y,4.0)
-        f=smooth(clamp((t-K_['caminhao']+0.3)/0.5)); c0=CAMS[-1][1]; c=tuple(c0[i]+(c[i]-c0[i])*f for i in range(3))
-    else: c=_interp_cam(t,CAMS_B)
-    if K_['FOGO']<=t<K_['FOGO']+0.8:
-        k=(1-(t-K_['FOGO'])/0.8)*5; c=(c[0]+math.sin(t*70)*k,c[1]+math.cos(t*63)*k,c[2])
-    return c
-def w2si(x,y,cam,z_=0):
-    cx,cy,zz=cam; px,py=iso.PW(x,y,z_)
-    return ((px-(cx-540/zz))*zz/4,(py-(cy-960/zz))*zz/4)
-
-# ---------- telas de UI cheia ----------
 CANDS=[(12,"CRISTIANO RONALDO"),(347,"JOÃO GUILHERME"),(154,"WESLEY"),(67,"KIRA"),(614,"ENZO MILDANA"),(11,"ISABELY67"),
        (2,"DIDI"),(189,"CABELUDO"),(621,"BACHIRAPRO"),(647,"SALES"),(426,"MT"),(335,"APENAS UM JOGADOR"),(191,"JESSICA"),(257,"ALBERT AISTEN")]
 def poster(lay,d,x,y,w,pid,nm,col,hl=False):
@@ -445,88 +183,316 @@ def poster(lay,d,x,y,w,pid,nm,col,hl=False):
     f=min(4,(w-28)/(tw+4)); im=im.resize((max(1,int((tw+4)*f)),max(1,int(12*f))),Image.NEAREST)
     lay.paste(im,(int(x+w/2-im.width/2),int(y+w*0.86-im.height/2)),im)
 COLS=[(214,50,50),(40,90,190),(40,150,80),(240,180,40),(150,80,180),(230,120,40)]
-def mural(t):
-    fr=blur_bg('mural',T['eleicao'][0],CI(160,424,3.0),0.5).convert('RGBA')
-    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
-    a=T['eleicao'][0]
-    for k,(pid,nm) in enumerate(CANDS):
-        t0=a+0.3+k*0.14; v=clamp((t-t0)/0.18)
-        if v<=0: continue
-        r,c=divmod(k,3)
-        if k>=12: c=k-12+0.5
-        x=int(130+c*290); y=380+r*228+int((1-v)*40)
-        poster(lay,d,x,y,210,pid,nm,COLS[k%6],k>=11)
-        if k>=11 and t>=a+0.3+k*0.14+0.3:
-            d.rectangle([x+120,y-14,x+220,y+22],fill=(250,214,60,255)); draw_text_big(lay,"NOVO!",x+170,y-6,3,(160,30,30,255))
-    fr.alpha_composite(lay)
-    if t>=K_['abriu']:                                                 # urna
-        v=clamp((t-K_['abriu'])/0.25); u=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); du=ImageDraw.Draw(u)
-        cx,cy=540,1760+int((1-v)*200)
-        du.rectangle([cx-150,cy-90,cx+150,cy+90],fill=(240,240,236,255),outline=(24,22,52,255),width=8)
-        du.rectangle([cx-70,cy-100,cx+70,cy-82],fill=(24,22,52,255))
-        pp_=int(((t*1.3)%1.0)*60); du.rectangle([cx-40,cy-170+pp_,cx+40,cy-110+pp_],fill=(255,255,255,255),outline=(24,22,52,255),width=4)
-        draw_text_big(u,"VOTE",cx,cy-30,6,(40,90,190,255))
-        fr.alpha_composite(u)
-    return fr.convert('RGB')
-def draw_text_big(img,txt,cx,y,sc,col):
-    tw=text_width(txt,1); im=Image.new('RGBA',(tw+4,12),(0,0,0,0)); draw_text(ImageDraw.Draw(im),txt,(tw+4)//2,2,1,col)
+def draw_text_big(img,txt,cx,y,sc,col,ol=True):
+    tw=text_width(txt,1); im=Image.new('RGBA',(tw+4,12),(0,0,0,0))
+    if ol: draw_text(ImageDraw.Draw(im),txt,(tw+4)//2,2,1,col)
+    else: draw_text(ImageDraw.Draw(im),txt,(tw+4)//2,2,1,col,outline=None)
     im=im.resize(((tw+4)*sc,12*sc),Image.NEAREST); img.alpha_composite(im,(int(cx-im.width/2),int(y)))
-def campanha(t):
-    """fala 15: panfleto da jessica, discurso do Enzo e a briga do 777"""
-    fr=blur_bg('camp',T['eleicao'][0],CI(132,250,3.0),0.45).convert('RGBA')
-    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
-    if t<K_['discurso']:
-        s=npc_k(191,'down',0,2,carry='panfleto').resize((32*12,48*12),Image.NEAREST); lay.paste(s,(140,560),s)
-        d.rectangle([540,520,1010,1060],fill=(250,250,244,255),outline=(40,90,190,255),width=10)
-        draw_text_big(lay,"VOTE",775,560,7,(40,90,190,255)); draw_text_big(lay,"JOÃO",775,680,7,(200,40,50,255)); draw_text_big(lay,"GUILHERME",775,800,4,(200,40,50,255))
-        draw_text_big(lay,"(ELA É A 32!)",775,920,3,(24,22,52,255))
-    elif t<K_['briga']:
-        s=npc_k(614,'down',0,2).resize((32*11,48*11),Image.NEAREST); lay.paste(s,(360,1100),s)
-        d.rounded_rectangle([90,520,990,1020],radius=40,fill=(255,255,255,255),outline=(24,22,52,255),width=8)
-        d.polygon([(470,1015),(560,1015),(500,1100)],fill=(255,255,255,255))
-        for i,(ln,c) in enumerate((("A COMIDA ACABA...",(24,22,52,255)),("MAS A PALAVRA",(24,22,52,255)),("DE UM HOMEM",(24,22,52,255)),("MANTÉM-SE FIXA!",(200,40,50,255)))):
-            draw_text_big(lay,ln,540,580+i*105,5,c)
-    else:
-        for side,(pid,nm,msg,col) in enumerate(((335,"APENAS UM JOGADOR","VOTEM 777!",(214,50,50)),(621,"BACHIRAPRO","TA ME COPIANDO!",(40,90,190)))):
-            x=60+side*500; y=520
-            d.rectangle([x,y,x+460,y+700],fill=col+(255,),outline=(255,255,255,255),width=6)
-            s=npc_k(pid,'down' if side==0 else 'down',0,2).resize((32*9,48*9),Image.NEAREST); lay.paste(s,(x+230-s.width//2,y+20),s)
-            d.rectangle([x+14,y+470,x+446,y+686],fill=(24,22,52,255))
-            draw_text_big(lay,nm,x+230,y+490,2 if len(nm)>12 else 3,WHITE)
-            draw_text_big(lay,"777",x+230,y+540,6,(255,214,70,255))
-            draw_text_big(lay,msg,x+230,y+630,2,(255,255,255,255))
-        v=clamp((t-K_['n777'])/0.2)
-        if v>0:
-            sc=int(8+4*(1-v)); draw_text_big(lay,"X",540,800,sc,(255,214,70,255))
-    fr.alpha_composite(lay); return fr.convert('RGB')
-def promessa(t):
-    fr=blur_bg('prom',T['eleicao'][0],CI(160,424,3.0),0.45).convert('RGBA')
-    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
-    poster(lay,d,240,420,600,335,"APENAS UM JOGADOR",(214,50,50))
-    d.rectangle([140,1060,940,1300],fill=(250,250,244,255),outline=(24,22,52,255),width=6)
-    draw_text_big(lay,"PROMESSA:",540,1080,3,(24,22,52,255))
-    draw_text_big(lay,"DELEGACIA, HOSPITAL",540,1140,3,(200,40,50,255)); draw_text_big(lay,"E BOMBEIROS",540,1210,4,(200,40,50,255))
-    fr.alpha_composite(lay)
-    v=clamp((t-K_['antes']+0.4)/0.2)
-    if v>0:
-        st=Image.new('RGBA',(260,90),(0,0,0,0)); ds=ImageDraw.Draw(st)
-        ds.rectangle([3,3,256,86],outline=(60,220,90,255),width=5); draw_text(ds,"JÁ TEM!",130,26,4,(60,220,90,255))
-        sc=1+(1-v)*1.2; st=st.resize((int(260*2.6*sc/1.6),int(90*2.6*sc/1.6)),Image.NEAREST).rotate(10,expand=True)
-        fr.alpha_composite(st,(540-st.width//2,1240-st.height//2))
-    return fr.convert('RGB')
-def destaque(t):
-    fr=blur_bg('dest',T['eleicao'][0],CI(132,250,3.0),0.45).convert('RGBA')
-    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
-    for kk in range(5): d.polygon([(540,300),(360-kk*30,1450),(720+kk*30,1450)],fill=(255,240,200,9))
-    d.polygon([(340,1440),(540,1340),(740,1440),(540,1540)],fill=(80,70,120,255))
-    fr.alpha_composite(lay)
-    dr=['down','right','down','left'][int((t-T['destaque'][0])/0.7)%4]
-    s=npc_k(614,dr,0,2).resize((32*15,48*15),Image.NEAREST)
-    fr.alpha_composite(s,(540-s.width//2,1440-s.height))
-    return fr.convert('RGB')
 
-# ---------- UI por cima ----------
-def draw_ui(t,cam,mode,tnames=None):
+# =====================================================================
+#  EP. 10 — cenas
+# =====================================================================
+K_=KW
+def CI(x,y,z): px,py=iso.PW(x,y); return (px,py,z)
+QX,QY=lot(*PADARIA); PX_,PY_=lot(*PETSHOP); TX,TY=lot(*TORRE); BX,BY=lot(*BOMBEIROS)
+FX0,FY0,FX1,FY1=vox.campo_rect(); FXM,FYM=(FX0+FX1)/2,(FY0+FY1)/2
+CX0,CY0,CX1,CY1=iso.CURRAL
+FARMER=(-100,348)
+RF=ROADF+5; RG=ROADG+5
+
+# ---------- cachorros coloridos (os 3 do GLEYDSON) ----------
+_DC={}
+def dogc(dr,fr,k,col,peludo=False,pequeno=False):
+    key=(dr,fr,k,col,peludo,pequeno)
+    if key in _DC: return _DC[key]
+    im=Image.new('RGBA',(30,22),(0,0,0,0)); d=ImageDraw.Draw(im)
+    c=col; c2=tuple(int(v*0.78) for v in col); o=tuple(int(v*0.4) for v in col)
+    sw=[0,1,0,-1][fr%4]
+    for lx,o_ in ((7,sw),(10,-sw),(17,-sw),(20,sw)): d.rectangle([lx+o_,15,lx+1+o_,20],fill=c2)
+    d.rectangle([5,9,22,16],fill=c,outline=o)
+    if peludo:
+        for xx in range(5,23,2): d.line([(xx,9),(xx+1,7)],fill=c); d.line([(xx,16),(xx+1,18)],fill=c)
+    d.rectangle([19,4,27,11],fill=c,outline=o); d.rectangle([25,8,28,11],fill=tuple(min(255,int(v*1.15)+20) for v in col),outline=o)
+    d.point((27,8),fill=(20,20,20)); d.point((23,6),fill=(20,20,20)); d.rectangle([19,3,21,7],fill=c2)
+    d.line([(5,10),(1,6-abs(sw))],fill=c,width=2)
+    d.rectangle([18,9,20,11],fill=(220,40,40))                         # coleira
+    if dr=='left': im=im.transpose(Image.FLIP_LEFT_RIGHT)
+    if pequeno: im=im.resize((22,16),Image.NEAREST)
+    if k==1: im=im.resize((im.width//2,im.height//2),Image.NEAREST)
+    else: im=im.resize((int(im.width*1.4),int(im.height*1.4)),Image.NEAREST)
+    im.info['foot']=0
+    _DC[key]=im; return im
+DOGS3=[((40,36,40),False,True,"PRETO PEQUENO"),((226,184,90),True,False,"AMARELO PELUDO"),((214,170,80),False,False,"AMARELO PELO CURTO")]
+
+# ---------- vacas ----------
+_COW={}
+def cow32(dr,fr,k,var=0):
+    key=(dr,fr,k,var)
+    if key in _COW: return _COW[key]
+    im=Image.new('RGBA',(36,26),(0,0,0,0)); d=ImageDraw.Draw(im)
+    w=(246,244,238); b=(40,36,40) if var%2==0 else (150,90,50); o=(60,56,60)
+    sw=[0,1,0,-1][fr%4]
+    for lx,o_ in ((7,sw),(11,-sw),(22,-sw),(26,sw)): d.rectangle([lx+o_,17,lx+2+o_,24],fill=w); d.rectangle([lx+o_,23,lx+2+o_,24],fill=o)
+    d.rectangle([5,8,28,18],fill=w,outline=o)
+    rr=random.Random(var)
+    for _ in range(3):
+        x=rr.randint(7,22); y=rr.randint(9,14); d.ellipse([x,y,x+rr.randint(3,6),y+rr.randint(2,4)],fill=b)
+    d.rectangle([26,4,34,13],fill=w,outline=o); d.rectangle([29,10,35,14],fill=(240,170,170),outline=o)
+    d.point((31,7),fill=(20,20,20)); d.line([(26,4),(24,2)],fill=(220,210,180)); d.line([(33,4),(35,2)],fill=(220,210,180))
+    d.ellipse([14,17,18,20],fill=(240,170,170))
+    d.line([(5,9),(2,15)],fill=w,width=2)
+    if dr=='left': im=im.transpose(Image.FLIP_LEFT_RIGHT)
+    if k==1: im=im.resize((18,13),Image.NEAREST)
+    im.info['foot']=0
+    _COW[key]=im; return im
+
+# ---------- obras: rua G (máquina) ----------
+def roller_extra(t):
+    rg=rua_g(t)
+    if not (0<rg<1): return []
+    out=[]
+    for sgn in (-1,1):
+        x=131.5+sgn*(6+rg*120)
+        def fn(vd,vx0,vy0,k,x=x,sgn=sgn):
+            def Q(dx,dy,dz): X,Y=iso.PW(x+dx,RG+dy,dz); return (X*k-vx0,Y*k-vy0)
+            vd.polygon([Q(-3,-3,0),Q(3,-3,0),Q(3,3,0),Q(-3,3,0)],fill=(0,30,0,80))
+            for (a0,a1,b0,b1,z0,z1,c) in ((-3,3,-3,3,1.5,5,(250,200,40)),(-1,2,-2,2,5,9,(250,200,40))):
+                vd.polygon([Q(a0,b1,z0),Q(a1,b1,z0),Q(a1,b1,z1),Q(a0,b1,z1)],fill=iso.sh(c,0.85))
+                vd.polygon([Q(a1,b0,z0),Q(a1,b1,z0),Q(a1,b1,z1),Q(a1,b0,z1)],fill=iso.sh(c,0.7))
+                vd.polygon([Q(a0,b0,z1),Q(a1,b0,z1),Q(a1,b1,z1),Q(a0,b1,z1)],fill=c)
+            cx_,cy_=Q(sgn*3.5,0,1.5); vd.ellipse([cx_-3*k,cy_-3*k,cx_+3*k,cy_+3*k],fill=(70,70,76))
+            p_=Q(0,0,9.5); on=int(t*6)%2; vd.rectangle([p_[0]-k,p_[1]-k,p_[0]+k,p_[1]+k],fill=(255,150,40) if on else (150,90,30))
+        out.append((x+RG+2,('fn',fn)))
+    return out
+
+# ---------- fumaça do forno ----------
+def smoke_extra(t):
+    if padaria_p(t)<1: return []
+    sx,sy=QX+17.5,QY+5.5
+    def fn(vd,vx0,vy0,k):
+        rr=random.Random(4)
+        for i in range(14):
+            ph=rr.uniform(0,1); a=((t*0.5+ph)%1.0)
+            X,Y=iso.PW(sx+a*6,sy-a*3,23+a*26); X=X*k-vx0; Y=Y*k-vy0; r_=int((2+a*6)*k)
+            g=int(220+a*25); vd.ellipse([X-r_,Y-r_,X+r_,Y+r_],fill=(g,g,g,int(170*(1-a))))
+    return [(sx+sy+30,('fn',fn))]
+
+# ---------- ponte fantasma (1000) ----------
+def ponte_extra(t):
+    a,b=T['ponte']
+    if not (a<=t<b or t>=T['resumo'][0]+99): return []
+    f=clamp((t-K_['ponte'])/0.8)
+    if f<=0: return []
+    y=ROADD+5
+    def fn(vd,vx0,vy0,k):
+        def S(x,yy,z): X,Y=iso.PW(x,yy,z); return (X*k-vx0,Y*k-vy0)
+        x0,x1=220,262
+        on=int(t*4)%2
+        col=(255,255,255,int(230*f)) if on else (255,214,70,int(230*f))
+        for side in (-4,4):
+            for xx in np.arange(x0,x1,2.0):
+                if int(xx/2)%2: continue
+                a_=S(xx,y+side,0); b_=S(xx+1.4,y+side,0)
+                vd.line([a_,b_],fill=col,width=2*k)
+                a_=S(xx,y+side,4); b_=S(xx+1.4,y+side,4)
+                vd.line([a_,b_],fill=col,width=2*k)
+        for xx in np.arange(x0,x1+0.1,6):
+            vd.line([S(xx,y-4,0),S(xx,y-4,4)],fill=col,width=2*k); vd.line([S(xx,y+4,0),S(xx,y+4,4)],fill=col,width=2*k)
+        X,Y=S(241,y,9); draw_text(vd,'1000',int(X),int(Y)-4*k,k,(255,214,70,int(255*f)),outline=(24,22,52,255))
+    return [(240+y+10,('fn',fn))]
+
+# ---------- moradores ----------
+FILA=[781,786,790,794,798,802,806,810]
+def special_people(t):
+    out=[]
+    # fila na padaria
+    if T['padaria'][0]+0.8<=t<T['padaria'][1]+0.3:
+        for k,pid in enumerate(FILA):
+            out.append((QX+18+k*3.2,QY+21,sf(pid,'left',0,hop=abs(math.sin(t*3+k))*1.0 if t>=K_['fila'] else 0)))
+    # Venefrides com o pão de queijo
+    if K_['paoqueijo']-0.4<=t<T['padaria'][1]+0.3:
+        f=clamp((t-K_['paoqueijo']+0.4)/1.6)
+        x=QX+14+f*10; y=QY+21+f*5
+        out.append((x,y,sf(136,'right' if f<1 else 'down',int(t*8)%4 if f<1 else 0,hop=abs(math.sin(t*6))*2 if t>=K_['ganhou'] else 0)))
+    # obras na rua G
+    if 0<rua_g(t)<1:
+        for j in range(3): out.append((131.5-14+j*14,RG+9,sf(8020+j,'up',int(t*6+j)%2*2,'pedreiro')))
+    # GLEYDSON sai do petshop com os 3 cachorros
+    a,b=T['destaque']
+    if K_['saiu']-0.3<=t<b:
+        f=clamp((t-K_['saiu']+0.3)/2.4)
+        x=PX_+10+f*22; y=PY_+25
+        out.append((x,y,sf(75,'right',int(t*8)%4,hop=abs(math.sin(t*5))*1.5 if t>=K_['tres'] else 0)))
+        for j,(col,pel,peq,_) in enumerate(DOGS3):
+            out.append((x+3.5+j*3.0,y+2.2+(j%2)*1.6,(lambda k,col=col,pel=pel,peq=peq,j=j: dogc('right',int(t*10+j)%4,k,col,pel,peq))))
+    # fazenda: fazendeiro e as vacas
+    a,b=T['vacas']
+    if a-0.2<=t<b+0.2:
+        out.append((FARMER[0],FARMER[1],sf(9500,'left',int(t*3)%2*2 if t>=K_['vacas'] else 0,'fazendeiro',carry='balde')))
+        if t>=K_['vacas']-0.3:
+            cf=clamp((t-K_['vacas']+0.3)/1.2)
+            out.append((CX1+12-cf*26,CY0+24,(lambda k,fr=int(t*6)%4,cf=cf: cow32('left',fr if cf<1 else 0,k,0))))
+    return out
+def iso_people(t,cam):
+    cx,cy,z=cam; vw,vh=1080/z,1920/z
+    out=[]; names=[]
+    for pp in people:
+        st=person_state(pp,t)
+        if st is None: continue
+        x,y=st[0],st[1]
+        if FX0-4<x<FX1+4 and FY0-4<y<FY1+10: continue
+        if QX-2<x<QX+50 and QY+16<y<QY+28 and T['padaria'][0]<=t<T['padaria'][1]+0.3: continue
+        if PX_-14<x<PX_+70 and PY_+14<y<PY_+40 and T['destaque'][0]<=t<T['destaque'][1]+0.3: continue
+        px,py=iso.PW(x,y)
+        if not (cx-vw/2-20<px<cx+vw/2+20 and cy-vh/2-30<py<cy+vh/2+30): continue
+        st0=person_state(pp,t-0.08)
+        dx,dy=(x-st0[0],y-st0[1]) if st0 else (0,1)
+        moving=abs(dx)+abs(dy)>0.05
+        sxd,syd=(dx-dy)*2,(dx+dy)
+        dr=('right' if sxd>0 else 'left') if abs(sxd)>abs(syd)*1.2 else ('down' if syd>0 else 'up')
+        if not moving: dr='down'
+        out.append((x,y,sf(pp['id'],dr,(int(t*8+pp['ph']*3)%4) if moving else 0)))
+        if pp['id'] in REG and z>=2.4 and pp['id'] not in (75,136): names.append((abs(px-cx)+abs(py-cy),x,y,pp['id']))
+        if len(out)>80: break
+    names=[n[1:] for n in sorted(names)[:3]]
+    C=count_at(t)
+    for i,l in enumerate(house_lots):
+        p=house_p(i,C)
+        if 0<p<1:
+            lx_,ly_=lot(*l)
+            for j in range(2): out.append((lx_+4+j*12,ly_+22,sf(8000+(i+j)%6,'down',int(t*6+j)%2*2,'pedreiro')))
+    pq=padaria_p(t)
+    if 0<pq<1:
+        for j in range(3): out.append((QX+3+j*7,QY+21,sf(8010+j,'down',int(t*6+j)%2*2,'pedreiro')))
+    out+=special_people(t)
+    return out,names
+
+# ---------- câmera ----------
+CAMS=[(0.0,CI(132,452,4.0)),(T['titulo'][1]-0.4,CI(132,452,4.5)),
+      (T['recap'][0]+0.4,CI(BX+10,BY+18,3.6)),(T['recap'][1]-0.2,CI(130,560,1.5)),
+      (T['oito'][0]+0.3,CI(60,600,1.8)),(T['oito'][1],CI(QX+12,QY+12,3.4)),
+      (T['padaria'][0]+0.6,CI(QX+14,QY+12,4.6)),(K_['paoqueijo']-0.5,CI(QX+18,QY+16,5.0)),(T['padaria'][1],CI(QX+22,QY+20,5.4)),
+      (T['casas'][0]+0.3,CI(110,610,2.6)),(T['casas'][1],CI(115,610,2.8)),
+      (T['ruag'][0]+0.3,CI(131,RG,2.0)),(K_['terreno']-0.2,CI(131,RG,2.2)),(K_['torre'],CI(TX+12,TY+6,4.2)),(T['ruag'][1],CI(TX+12,TY+6,4.6)),
+      (K_['saiu']-0.3,CI(PX_+18,PY_+24,7.0)),(T['destaque'][1],CI(PX_+30,PY_+25,7.6)),
+      (T['vacas'][0]+0.3,CI(-110,330,4.0)),(K_['curral'],CI(-122,322,4.4)),(T['vacas'][1],CI(-124,322,4.8)),
+      (T['ponte'][0]+0.2,CI(200,420,2.4)),(K_['ponte'],CI(238,424,3.4)),(T['ponte'][1],CI(238,424,3.8)),
+      (T['resumo'][0]+0.3,CI(130,560,1.3)),(T['resumo'][1],CI(130,450,0.8)),
+      (T['cta'][0]+0.3,CI(QX+14,QY+14,3.6)),(DUR+1,CI(QX+14,QY+14,4.2))]
+def _interp_cam(t,L):
+    for (a,va),(b,vb) in zip(L,L[1:]):
+        if a<=t<b:
+            f=smooth((t-a)/(b-a)); return tuple(va[i]+(vb[i]-va[i])*f for i in range(3))
+    return L[-1][1] if t>=L[-1][0] else L[0][1]
+def camiso(t): return _interp_cam(t,CAMS)
+def w2si(x,y,cam,z_=0):
+    cx,cy,zz=cam; px,py=iso.PW(x,y,z_)
+    return ((px-(cx-540/zz))*zz/4,(py-(cy-960/zz))*zz/4)
+
+# ---------- telas cheias ----------
+def destaque_card(t):
+    """fala 10: card do morador em destaque + os 3 cachorros aparecendo"""
+    fr=blur_bg('dest',T['destaque'][0],CI(PX_+20,PY_+22,3.0),0.8).convert('RGBA')
+    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
+    for kk in range(5): d.polygon([(540,300),(360-kk*30,1300),(720+kk*30,1300)],fill=(255,240,200,9))
+    d.polygon([(330,1290),(540,1200),(750,1290),(540,1380)],fill=(80,70,120,255))
+    fr.alpha_composite(lay)
+    s=npc_k(75,'down',0,2).resize((32*13,48*13),Image.NEAREST); fr.alpha_composite(s,(540-s.width//2,1290-s.height))
+    for j,((col,pel,peq,nm),tk) in enumerate(zip(DOGS3,('preto','peludo','curto'))):
+        t0=K_[tk]; v=clamp((t-t0)/0.25)
+        if v<=0: continue
+        x=180+j*360; y=1480
+        dg=dogc('right' if j<2 else 'left',0,2,col,pel,peq); sc=7 if not peq else 7
+        dg=dg.resize((dg.width*sc,dg.height*sc),Image.NEAREST)
+        yy=y+int((1-v)*120)
+        fr.alpha_composite(dg,(x-dg.width//2,yy))
+        draw_text_big(fr,nm,x,yy+dg.height+10,3 if len(nm)<15 else 2,(255,214,70,255))
+    return fr.convert('RGB')
+CHAT=[("CABO JAIR","QUERO COLOCAR PANFLETE, SANTINHO","OU FAZER COMÍCIO, ALGUÉM SABE COMO FAZ?"),
+      ("ENZO MILDANA","VCS VIRAM O EPISÓDIO 9?",""),
+      ("GLEYDSON","QUERO MEUS CACHORROS, OS 3...","DESDE O EPISÓDIO 1 KSKSKS"),
+      ("VENEFRIDES","ALGUÉM ARRUMA UM PÃO DE QUEIJO?",""),
+      ("ISABELY67","VOTA EM MIM!","")]
+def chat_phone(t):
+    fr=blur_bg('chat',T['chat'][0],CI(132,250,3.0),0.8).convert('RGBA')
+    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
+    a,b=T['chat']; v=clamp((t-a)/0.3)
+    ox=int((1-v)*600)
+    X0,Y0,X1,Y1=170+ox,330,910+ox,1700
+    d.rounded_rectangle([X0,Y0,X1,Y1],radius=70,fill=(20,20,26,255))
+    d.rounded_rectangle([X0+24,Y0+70,X1-24,Y1-70],radius=20,fill=(236,229,221,255))
+    d.rounded_rectangle([(X0+X1)//2-70,Y0+28,(X0+X1)//2+70,Y0+46],radius=9,fill=(50,50,58,255))
+    d.rectangle([X0+24,Y0+70,X1-24,Y0+180],fill=(40,120,90,255))
+    draw_text_big(lay,"CHAT DA CIDADE",(X0+X1)//2,Y0+92,3,(255,255,255,255))
+    draw_text_big(lay,"PINDAMONHANGABA",(X0+X1)//2,Y0+142,2,(200,240,220,255))
+    n=int((t-a-0.3)/0.55)+1
+    y=Y0+210
+    for k,(nm,l1,l2) in enumerate(CHAT[:max(0,n)]):
+        h=160 if l2 else 120
+        mine=k%2==1
+        bx0=X0+40 if not mine else X0+80; bx1=X1-80 if not mine else X1-40
+        d.rounded_rectangle([bx0,y,bx1,y+h],radius=18,fill=(255,255,255,255) if not mine else (220,248,198,255))
+        draw_text_big(lay,nm,(bx0+bx1)//2,y+12,2,[(200,60,60,255),(40,90,190,255),(150,80,180,255),(40,140,80,255),(230,120,40,255)][k])
+        f=min(3,int((bx1-bx0-30)/(text_width(l1,1)+4))) or 1
+        draw_text_big(lay,l1,(bx0+bx1)//2,y+50,f,(30,30,30,255),False)
+        if l2: draw_text_big(lay,l2,(bx0+bx1)//2,y+92,min(3,int((bx1-bx0-30)/(text_width(l2,1)+4))) or 1,(30,30,30,255),False)
+        y+=h+22
+    fr.alpha_composite(lay); return fr.convert('RGB')
+CANDS=[(12,"CRISTIANO RONALDO"),(347,"JOÃO GUILHERME"),(154,"WESLEY"),(67,"KIRA"),(614,"ENZO MILDANA"),(11,"ISABELY67"),
+       (2,"DIDI"),(189,"CABELUDO"),(621,"BACHIRAPRO"),(647,"SALES"),(426,"MT"),(335,"APENAS UM JOGADOR"),(191,"JESSICA"),(257,"ALBERT AISTEN"),
+       (96,"CABO JAIR"),(434,"SAITU")]
+def mural16(t):
+    fr=blur_bg('mural',T['mural'][0],CI(160,424,3.0),0.8).convert('RGBA')
+    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
+    a=T['mural'][0]
+    for k,(pid,nm) in enumerate(CANDS):
+        t0=a+0.2+k*0.11; v=clamp((t-t0)/0.18)
+        if v<=0: continue
+        r,c=divmod(k,4)
+        x=int(70+c*240); y=420+r*250+int((1-v)*40)
+        poster(lay,d,x,y,215,pid,nm,COLS[k%6],k>=14)
+        if k>=14 and t>=t0+0.3:
+            d.rectangle([x+110,y-14,x+215,y+22],fill=(250,214,60,255)); draw_text_big(lay,"NOVO!",x+162,y-6,3,(160,30,30,255))
+    fr.alpha_composite(lay); return fr.convert('RGB')
+PLACAR=[(614,"ENZO MILDANA",3),(96,"CABO JAIR",3),(11,"ISABELY67",2),(335,"APENAS UM JOGADOR",1)]
+def placar(t):
+    fr=blur_bg('placar',T['placar'][0],CI(160,424,3.0),0.8).convert('RGBA')
+    lay=Image.new('RGBA',(OUTW,OUTH),(0,0,0,0)); d=ImageDraw.Draw(lay)
+    a,b=T['placar']
+    if t<K_['sexta']:
+        for side,(pid,nm,v_) in enumerate(PLACAR[:2]):
+            x=70+side*500; y=460
+            col=[(40,90,190),(214,50,50)][side]
+            d.rectangle([x,y,x+440,y+760],fill=col+(255,),outline=(255,255,255,255),width=6)
+            s=npc_k(pid,'down',0,2).resize((32*9,48*9),Image.NEAREST); lay.paste(s,(x+220-s.width//2,y+20),s)
+            d.rectangle([x+14,y+470,x+426,y+746],fill=(24,22,52,255))
+            draw_text_big(lay,nm,x+220,y+490,3,WHITE)
+            vv=min(v_,int(clamp((t-K_['empate'])/max(0.5,K_['tres3']-K_['empate']))*v_+0.999)) if t>=K_['empate'] else 0
+            draw_text_big(lay,str(vv),x+220,y+550,11,(255,214,70,255))
+            draw_text_big(lay,"VOTOS",x+220,y+690,3,WHITE)
+        if t>=K_['empate']:
+            vv=clamp((t-K_['empate'])/0.2); draw_text_big(lay,"X",540,760,int(6+4*(1-vv)),(255,214,70,255))
+        y=1280
+        for k,(pid,nm,v_) in enumerate(PLACAR[2:]):
+            d.rectangle([110,y+k*90,970,y+k*90+70],fill=(24,22,52,230),outline=(255,255,255,255),width=3)
+            draw_text_big(lay,f"{nm}: {v_} VOTO{'S' if v_>1 else ''}",540,y+k*90+18,3,WHITE)
+    else:
+        d.ellipse([290,560,790,1060],fill=(250,250,244,255),outline=(24,22,52,255),width=14)
+        ang=(t*1.6)%(2*math.pi)
+        d.line([540,810,540+int(math.sin(ang)*190),810-int(math.cos(ang)*190)],fill=(200,40,50,255),width=14)
+        d.line([540,810,540+int(math.sin(ang/12)*120),810-int(math.cos(ang/12)*120)],fill=(24,22,52,255),width=18)
+        d.ellipse([520,790,560,830],fill=(24,22,52,255))
+        draw_text_big(lay,"SEXTA 11:25",540,1110,6,(255,214,70,255))
+        draw_text_big(lay,"A VOTAÇÃO FECHA",540,1210,3,WHITE)
+        if t>=K_['quem']:
+            pz=int(4*math.sin(t*8))
+            draw_text_big(lay,"QUEM VAI SER",540,1320+pz,5,WHITE); draw_text_big(lay,"O PREFEITO?",540,1410+pz,5,(255,214,70,255))
+        if t>=K_['ep11']:
+            d.rectangle([200,1540,880,1640],fill=(200,40,50,255)); draw_text_big(lay,"DESCOBRE NO EP. 11!",540,1566,4,WHITE)
+    fr.alpha_composite(lay); return fr.convert('RGB')
+
+# ---------- UI ----------
+def draw_ui(t,cam,mode):
     ui=Image.new('RGBA',(W,H),(0,0,0,0)); d=ImageDraw.Draw(ui)
     C=count_at(t); hs=nhouses(C)
     if t>=T['recap'][0] and mode=='city':
@@ -539,126 +505,125 @@ def draw_ui(t,cam,mode,tnames=None):
     a,b=T['titulo']; v=pop(t,a,b)
     if v>0:
         box(d,20,118,250,208,(24,22,52,int(225*v)))
-        draw_text(d,"A CIDADE DOS",135,130,2,WHITE); draw_text(d,"SEGUIDORES",135,152,3,YEL); draw_text(d,"EPISÓDIO 9",135,188,1,LBLUE)
+        draw_text(d,"A CIDADE DOS",135,130,2,WHITE); draw_text(d,"SEGUIDORES",135,152,3,YEL); draw_text(d,"EPISÓDIO 10",135,188,1,LBLUE)
     a,b=T['recap']
     banner(d,["DA ÚLTIMA VEZ:"],110,t,a+0.3,b,[LBLUE],1)
-    banner(d,["CAMPO DE FUTEBOL"],134,t,a+0.6,b,[GREEN],2)
-    banner(d,["721 MORADORES"],166,t,a+2.6,b,[YEL],2)
-    # fogo
-    a,b=T['fogo']
-    chip(d,"CHEIRO DE FUMAÇA...",135,120,t,K_['fumaca'],K_['FOGO']-0.1,WHITE)
-    if K_['FOGO']<=t<K_['apagou']:
-        sc=int(5+math.sin(t*18)*0.6); draw_text(d,"FOGO!",135,120+int(math.sin(t*25)*3),sc,(255,120,40,255),outline=(90,20,10,255))
-        if mode=='city':
-            sx,sy=w2si(MX+10,MY1,cam,22); tag_s(d,"MERCADINHO DO CENTRO",sx,sy,t,K_['FOGO']+0.4,K_['baldes']+0.5,RED,dy=-60)
-    chip(d,"BALDE PRA CÁ...",80,390,t,K_['baldes']+0.4,K_['apagou'],LBLUE)
-    chip(d,"...BALDE PRA LÁ!",190,410,t,K_['la'],K_['apagou'],LBLUE)
-    banner(d,["NINGUÉM","SE MACHUCOU!"],110,t,K_['apagou'],b,[WHITE,GREEN],2)
-    banner(d,["MAS PRECISAVA","DE BOMBEIROS..."],380,t,K_['precisava'],b,[WHITE,YEL],2)
-    # bombeiros
-    a,b=T['bombeiros']
-    if K_['fundado']<=t<K_['caminhao']+0.6:
-        box(d,16,104,254,186,(200,40,50,240))
-        draw_text(d,"FUNDADO O",135,114,1,WHITE); draw_text(d,"CORPO DE",135,130,2,YEL); draw_text(d,"BOMBEIROS!",135,154,3,YEL)
-        fireworks(d,t,K_['fundado']+0.3,6)
-    chip(d,"SIRENE LIGADA!",135,400,t,K_['sirene'],K_['banho'],RED)
-    banner(d,["PRIMEIRA MISSÃO:","BANHO NO MERCADINHO"],110,t,K_['banho'],K_['reforma']-0.1,[LBLUE,WHITE],1)
-    banner(d,["MERCADINHO","REFORMADO!"],110,t,K_['reforma'],b,[WHITE,GREEN],2)
-    if K_['reforma']<=t<K_['reforma']+1.2: fireworks(d,t,K_['reforma'],5,(160,300))
+    banner(d,["CORPO DE BOMBEIROS"],134,t,a+1.0,b,[RED],2)
+    banner(d,["780 MORADORES"],166,t,a+3.4,b,[YEL],2)
+    # 800
+    if K_['oitocentos']<=t<T['oito'][1]+0.4:
+        box(d,30,110,240,200,(200,40,50,240)); draw_text(d,"800!",135,124,6,YEL); draw_text(d,"MARCO BATIDO!",135,182,1,WHITE)
+        fireworks(d,t,K_['oitocentos'],8)
+    # padaria
+    a,b=T['padaria']
+    if K_['padaria']<=t<K_['forno']:
+        box(d,24,108,246,170,(180,100,50,240)); draw_text(d,"ABRIU A",135,116,1,WHITE); draw_text(d,"PADARIA!",135,132,3,(255,240,200,255))
+        fireworks(d,t,K_['padaria']+0.2,5,(180,300))
+    chip(d,"PÃO QUENTINHO!",135,110,t,K_['forno'],K_['paoqueijo']-0.1,YEL)
+    chip(d,"FILA NA PORTA!",135,130,t,K_['fila'],K_['paoqueijo']-0.1,WHITE)
+    if mode=='city' and K_['paoqueijo']<=t<b:
+        sx,sy=w2si(QX+20,QY+24,cam,16); tag_s(d,"VENEFRIDES",sx,sy,t,K_['paoqueijo'],b,YEL,dy=-44)
+    banner(d,["PEDIU PÃO DE QUEIJO NA BIO..."],110,t,K_['paoqueijo'],b,[WHITE],1)
+    banner(d,["...E GANHOU!"],130,t,K_['ganhou'],b,[GREEN],2)
     # casas
-    banner(d,["A RUA E FECHOU!"],110,t,K_['ruaE'],K_['ruaF']-0.1,[GREEN],2)
-    banner(d,["A RUA F","COMEÇOU!"],110,t,K_['ruaF'],T['casas'][1],[WHITE,YEL],2)
+    a,b=T['casas']
     if mode=='city':
-        for n,t0 in ((73,K_['c73']),(74,K_['c74']),(75,K_['c75']),(76,K_['c76']),(77,K_['c77']),(78,K_['c78'])):
+        for n,t0 in ((79,K_['c79']),(80,K_['c80']),(81,K_['c81'])):
             x,y=lot(*house_lots[n-1]); sx,sy=w2si(x+10,y+12,cam,22)
-            tag_s(d,f"CASA {n}",sx,sy,t,t0,(K_['ruaF']-0.1 if n<77 else T['casas'][1]),GREEN if n<77 else YEL)
-    # petshop
-    a,b=T['petshop']
-    if K_['petshop']<=t<K_['cachorro']-0.1:
-        box(d,30,110,240,170,(220,80,140,240)); draw_text(d,"ABRIU O",135,118,1,WHITE); draw_text(d,"PETSHOP!",135,134,3,WHITE)
-        fireworks(d,t,K_['petshop']+0.2,5,(170,300))
-    banner(d,["BICHARADA SOLTA!"],110,t,K_['cachorro']-0.1,b,[YEL],2)
-    for k,(w_,t0) in enumerate((("CACHORRO",K_['cachorro']),("GATO",K_['gato']),("GALINHA",K_['galinha']))):
-        chip(d,w_,70+k*65,400,t,t0,b,[YEL,LBLUE,WHITE][k])
-    # campeonato
-    a,b=T['campeonato']
-    if a<=t<b:
-        v=pop(t,a,b)
-        box(d,24,100,246,150,(24,22,52,235)); draw_text(d,"CAMPEONATO DE PINDAMONHANGABA",135,108,1,YEL)
-        g1=1 if t>=K_['timecontra']+0.6 else 0; g2=1 if t>=K_['torcida']+0.4 else 0; g1+=1 if t>=b-0.8 else 0
-        d.rectangle([44,122,98,142],fill=(40,150,80,255)); d.rectangle([172,122,226,142],fill=(40,90,190,255))
-        draw_text(d,"VERDE",71,128,1,WHITE); draw_text(d,"AZUL",199,128,1,WHITE); draw_text(d,f"{g1}  X  {g2}",135,126,2,WHITE)
-    chip(d,"TIME CONTRA TIME!",135,400,t,K_['timecontra'],b,WHITE)
-    chip(d,"ARQUIBANCADA LOTADA!",135,420,t,K_['torcida'],b,GREEN)
+            tag_s(d,f"CASA {n}",sx,sy,t,t0,b,GREEN if n<81 else YEL)
+    banner(d,["A RUA F TÁ ENCHENDO!"],110,t,a+0.3,b,[GREEN],2)
+    # rua G + torre
+    a,b=T['ruag']
+    chip(d,"O ESPAÇO TÁ ACABANDO...",135,110,t,K_['espaco'],K_['ruanova']-0.05,WHITE)
+    banner(d,["RUA NOVA!"],108,t,K_['ruanova'],K_['torre'],[YEL],3)
+    if K_['ruanova']<=t<K_['torre']: chip(d,"RUA G",135,410,t,K_['ruanova']+0.3,K_['torre'],LBLUE)
+    if K_['torre']<=t<b:
+        box(d,30,100,240,170,(24,22,52,235)); draw_text(d,"TERRENO RESERVADO:",135,108,1,LBLUE)
+        draw_text(d,"TORRE DE INTERNET",135,124,1,WHITE); draw_text(d,"900",135,140,3,YEL)
+    # destaque
+    a,b=T['destaque']
+    if mode=='card':
+        banner(d,["MORADOR EM DESTAQUE"],40,t,a+0.1,b,[YEL],2)
+        banner(d,["GLEYDSON"],74,t,a+0.3,b,[WHITE],3)
+        chip(d,"DESDE O EPISÓDIO 1...",135,120,t,a+1.0,b,LBLUE)
+    if mode=='city' and t>=K_['saiu']-0.3 and a<=t<b:
+        banner(d,["SAIU DO PETSHOP","COM OS TRÊS!"],100,t,K_['saiu'],b,[WHITE,GREEN],2)
+        f=clamp((t-K_['saiu']+0.3)/2.4); sx,sy=w2si(PX_+10+f*22,PY_+25,cam,20)
+        tag_s(d,"GLEYDSON",sx,sy,t,K_['saiu'],b,YEL,dy=-42)
+        if t>=K_['tres']:
+            for k in range(6):
+                hx=40+k*38+int(math.sin(t*3+k)*5); hy=380-int(((t*40+k*23)%60))
+                d.polygon([(hx,hy),(hx+4,hy-4),(hx+8,hy),(hx+4,hy+5)],fill=(240,80,120,255)); d.ellipse([hx-1,hy-6,hx+4,hy-1],fill=(240,80,120,255)); d.ellipse([hx+4,hy-6,hx+9,hy-1],fill=(240,80,120,255))
+    # vacas
+    a,b=T['vacas']
+    banner(d,["O FAZENDEIRO AGORA","CUIDA DAS VACAS!"],100,t,K_['vacas']-0.4,K_['desafio']-0.05,[WHITE,YEL],1)
+    if K_['desafio']<=t<b:
+        v=clamp((t-K_['comentario'])/0.25)
+        box(d,18,96,252,176,(40,120,70,240))
+        draw_text(d,"DESAFIO!",135,104,1,YEL)
+        if t>=K_['comentario']:
+            sc=2+int((1-v)*2)
+            draw_text(d,"1 COMENTÁRIO",135,122,2,WHITE); draw_text(d,"= 1 VACA!",135,146,2,YEL)
+    if mode=='city' and K_['curral']<=t<b:
+        sx,sy=w2si((CX0+CX1)/2,CY1,cam,8); tag_s(d,"CURRAL: VAGAS ABERTAS!",sx,sy,t,K_['curral'],b,YEL,dy=10)
+        banner(d,["VAMOS VER, HEIN!"],400,t,K_['vamosver'],b,[YEL],2)
+    if mode=='city' and K_['vacas']<=t<b:
+        sx,sy=w2si(FARMER[0],FARMER[1],cam,20); tag_s(d,"O FAZENDEIRO",sx,sy,t,K_['vacas'],K_['curral'],WHITE,dy=-36)
     # eleição
-    a,b=T['eleicao']
+    if mode=='chat':
+        banner(d,["A VOTAÇÃO TÁ ABERTA!"],50,t,K_['aberta'],T['chat'][1],[GREEN],2)
+        banner(d,["E O CHAT NÃO PARA!"],440,t,K_['chat'],T['chat'][1],[YEL],2)
     if mode=='mural':
         box(d,14,40,256,88,(200,40,50,240)); draw_text(d,"ELEIÇÃO PRA PREFEITO",135,48,1,WHITE)
-        draw_text(d,"14 CANDIDATOS!" if t>=K_['c14'] else "...",135,62,2,YEL)
-        if t>=K_['abriu']:
-            v=clamp((t-K_['abriu'])/0.2); y=384
-            box(d,40,y,230,y+26,(40,150,80,245)); draw_text(d,"VOTAÇÃO ABERTA!",135,y+8,1 if v<1 else 1,WHITE)
-    if mode=='campanha':
-        if t<K_['discurso']: banner(d,["PANFLETANDO","PRO ADVERSÁRIO!"],40,t,K_['panfleto']-0.4,K_['discurso'],[WHITE,YEL],2)
-        elif t<K_['briga']: banner(d,["DISCURSO NO CHAT"],40,t,K_['discurso'],K_['briga'],[YEL],2)
-        else: banner(d,["QUEM É O","VERDADEIRO 777?"],40,t,K_['briga'],b,[WHITE,YEL],2)
-    if mode=='promessa':
-        banner(d,["PROMETEU BOMBEIROS..."],40,t,T['promessa'][0]+0.2,T['promessa'][1],[WHITE],2)
-        banner(d,["O FOGO CHEGOU","ANTES DA ELEIÇÃO!"],400,t,K_['antes'],T['promessa'][1],[YEL,WHITE],1)
-    if mode=='destaque':
-        a,b=T['destaque']
-        banner(d,["MORADOR EM DESTAQUE"],40,t,a+0.1,b,[YEL],2)
-        banner(d,["ENZO MILDANA"],74,t,a+0.4,b,[WHITE],3)
-        for k,(w_,t0,x,y) in enumerate((("FEZ DISCURSO",K_['discurso2'],70,150),("ACALMOU A BRIGA",K_['discurso2']+0.8,200,200),("SEMPRE ON-LINE!",K_['online'],80,260))):
-            chip(d,w_,x,y,t,t0,b,[YEL,GREEN,LBLUE][k])
-        if t>=K_['online']:
-            d.ellipse([196,252,204,260],fill=(60,220,90,255))
-    # próximo marco
-    a,b=T['proximo']
-    if a<=t<b:
-        box(d,30,96,240,170,(24,22,52,235)); draw_text(d,"PRÓXIMO MARCO",135,104,1,LBLUE); draw_text(d,"800",135,118,4,YEL)
-        if t>=K_['m800']+0.6: draw_text(d,"PADARIA E LANCHONETE",135,156,1,WHITE)
-        if mode=='city' and t>=K_['reservado']:
-            sx,sy=w2si(QX+10,QY+22,cam,20); tag_s(d,"TERRENO RESERVADO!",sx,sy,t,K_['reservado'],b,GREEN,dy=-28)
-        banner(d,["FALTAM SÓ 20!"],390,t,K_['faltam'],b,[YEL],3)
+        draw_text(d,"16 CANDIDATOS!" if t>=K_['c16'] else "...",135,62,2,YEL)
+        chip(d,"CHEGOU ONTEM E JÁ TÁ LÁ EM CIMA!",135,395,t,K_['ontem'],T['mural'][1],YEL)
+    if mode=='placar':
+        if t<K_['sexta']:
+            banner(d,["PLACAR AO VIVO"],40,t,T['placar'][0]+0.1,K_['sexta'],[YEL],2)
+            banner(d,["EMPATE NO TOPO!"],78,t,K_['empate'],K_['sexta'],[WHITE],2)
+    # ponte
+    a,b=T['ponte']
+    chip(d,"O RIO TÁ LOGO ALI...",135,110,t,a+0.2,K_['ponte']-0.05,LBLUE)
+    if K_['ponte']<=t<b:
+        box(d,24,100,246,170,(24,22,52,235)); draw_text(d,"EM BREVE:",135,108,1,LBLUE); draw_text(d,"A PONTE!",135,122,3,YEL)
+        draw_text(d,"1000 = VIRA CIDADE",135,154,1,WHITE) if t>=K_['mil'] else None
     # resumo
     a,b=T['resumo']
     banner(d,["RESULTADO:"],84,t,a+0.2,b,[LBLUE],1)
-    banner(d,["780 MORADORES"],110,t,K_['r780'],b,[YEL])
-    banner(d,["78 CASAS"],146,t,K_['r78'],b,[WHITE])
-    banner(d,["1 CORPO DE BOMBEIROS"],330,t,K_['rbomb'],b,[RED])
-    banner(d,["1 PETSHOP"],366,t,K_['rpet'],b,[(240,140,190,255)])
+    banner(d,["814 MORADORES"],110,t,K_['r814'],b,[YEL])
+    banner(d,["81 CASAS"],146,t,K_['r81'],b,[WHITE])
+    banner(d,["1 PADARIA"],330,t,K_['rpad'],b,[(255,220,160,255)])
+    banner(d,["1 RUA NOVA"],366,t,K_['rrua'],b,[GREEN])
     a,b=T['cta']; v=pop(t,a,b+1,0.01)
     if v>0:
-        yy=110+int((1-v)*14)
+        yy=100+int((1-v)*14)
         box(d,24,yy,246,yy+62,(200,40,50,240))
         draw_text(d,"LINK NA BIO!",135,yy+10,2,WHITE); draw_text(d,"ESCOLHE O TEU MORADOR",135,yy+38,1,YEL)
-        if t>=K_['votar']-0.2: banner(d,["E VAI VOTAR","NO TEU PREFEITO!"],370,t,K_['votar']-0.2,b+1,[WHITE,GREEN],2)
+        chip(d,"VOTA NO TEU PREFEITO!",135,360,t,K_['vota'],b+1,GREEN)
+        if t>=K_['comenta']-0.2: banner(d,["COMENTA =","1 VACA PRO FAZENDEIRO!"],385,t,K_['comenta']-0.2,b+1,[WHITE,YEL],1)
     return ui
 
 def view_frame(t):
     iso.VOX=False; iso.K=2
     cam=camiso(t)
     ppl,names=iso_people(t,cam)
-    ex=ball_extra(t)+truck_extra(t)+fire_extra(t)
+    ex=roller_extra(t)+smoke_extra(t)+ponte_extra(t)
     fr=iso.render_view(t,cam,ppl,ex,None)
     fr=placa_texto(fr,cam)
     return fr,cam,names
 def render_frame(t):
     names=None; cam=camiso(t)
-    a15=T['eleicao'][0]; e15=KW['panfleto']-0.5
-    if a15<=t<e15: mode='mural'; fr=mural(t)
-    elif e15<=t<T['eleicao'][1]: mode='campanha'; fr=campanha(t)
-    elif T['promessa'][0]<=t<T['promessa'][1]: mode='promessa'; fr=promessa(t)
-    elif T['destaque'][0]<=t<T['destaque'][1]: mode='destaque'; fr=destaque(t)
+    c_end=K_['saiu']-0.3
+    if T['destaque'][0]<=t<c_end: mode='card'; fr=destaque_card(t)
+    elif T['chat'][0]<=t<T['chat'][1]: mode='chat'; fr=chat_phone(t)
+    elif T['mural'][0]<=t<T['mural'][1]: mode='mural'; fr=mural16(t)
+    elif T['placar'][0]<=t<T['placar'][1]: mode='placar'; fr=placar(t)
     else:
         fr,cam,names=view_frame(t); fr=grade(fr); mode='city'
-    for t0,dur,k in ((KW['FOGO'],0.3,0.6),(KW['fundado'],0.25,0.5),(KW['reforma'],0.25,0.4),(KW['petshop'],0.2,0.4)):
+    for t0,dur,k in ((KW['oitocentos'],0.3,0.6),(KW['padaria'],0.25,0.5),(KW['ruanova'],0.2,0.3),(KW['empate'],0.2,0.4)):
         if t0<=t<t0+dur: fr=flash(fr,(1-(t-t0)/dur)*k)
-    for cut in [T[k][0] for k in T]+[e15,KW['discurso'],KW['briga']]:
+    for cut in [T[k][0] for k in T]+[c_end,KW['sexta']]:
         if cut>0.1 and cut<=t<cut+0.1: fr=flash(fr,(1-(t-cut)/0.1)*0.35)
-    if mode=='city' and KW['FOGO']<=t<KW['apagou']:                    # brilho laranja do fogo
-        a=np.array(fr).astype(np.float32); a[:,:,0]*=1.06; a[:,:,2]*=0.9; fr=Image.fromarray(np.clip(a,0,255).astype(np.uint8))
     fr=fr.convert('RGBA')
     if names:
         nl=names_layer(t,cam,names)

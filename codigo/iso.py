@@ -10,7 +10,7 @@ from font import draw_text, text_width
 import scene as SC
 from scene import lot, MH6, ROADD, ROADE, ROADF
 
-MH = MH6
+MH = getattr(SC, 'MAPH', MH6)
 TOP = 80
 OX, OY = MH*2+40, TOP
 IW, IH = (MW+MH)*2+80, MW+MH+TOP+60
@@ -591,6 +591,62 @@ def caminhao(vd, X, Y, k, eixo, t, sirene=True):
             vd.rectangle([p_[0]-2*k+j*2*k, p_[1]-k, p_[0]+j*2*k, p_[1]+k], fill=cc)
             if j == on: vd.ellipse([p_[0]-5*k+j*2*k, p_[1]-4*k, p_[0]+3*k+j*2*k, p_[1]+3*k], fill=c+(60,))
 
+# ---------------- ep. 10: padaria (marco 800), terreno da torre (900), curral ----------------
+def padaria():
+    lx_, ly_ = lot(*SC.PADARIA); x0, x1, y0, y1 = lx_+1, lx_+20, ly_+2, ly_+17
+    shadow(x0, y0, x1, y1, 16)
+    wc = (246, 226, 186)
+    box(x0, y0, x1, y1, 11, wc, sh(wc, 0.8))
+    quad([P(x0, y0, 0), P(x1, y0, 0), P(x1, y0, 3), P(x0, y0, 3)], (170, 110, 70))
+    # frente da padaria dá pra rua F (lado y0, que é o "fundo" na vista) -> vitrine também na lateral leste
+    quad([P(x1, y0+2, 1), P(x1, y1-2, 1), P(x1, y1-2, 7), P(x1, y0+2, 7)], (200, 236, 250))
+    for v in np.arange(y0+3, y1-2, 2.5): d.line([P(x1, v, 1.2), P(x1, v, 6.8)], fill=(170, 206, 224))
+    quad([P(x0+2, y1, 0), P(x0+9, y1, 0), P(x0+9, y1, 7), P(x0+2, y1, 7)], (200, 236, 250))
+    door_s(x0, y1, 12, 15.5, 7, (150, 90, 50))
+    for k in range(8):                                         # toldo listrado
+        u = 0.5+k*2.4
+        quad([P(x0+u, y1, 9.5), P(x0+u+2.4, y1, 9.5), P(x0+u+2.4, y1+3, 7.2), P(x0+u, y1+3, 7.2)], [(180, 90, 50), (250, 240, 220)][k % 2])
+    gable_roof(x0, y0, x1, y1, 11, 6, [(110, 60, 36), (140, 80, 46), (170, 100, 58), (196, 124, 72)])
+    box(x1-5, y0+2, x1-2, y0+5, 22, (176, 96, 70), (140, 74, 52)); top(x1-5, y0+2, x1-2, y0+5, 22, (90, 60, 50))   # chaminé do forno
+    sx_, sy_ = P(x0+9.5, y1, 14.5)
+    d.rectangle([sx_-22, sy_-7, sx_+22, sy_+3], fill=(250, 246, 232), outline=OUT)
+    draw_text(d, "PADARIA", int(sx_)+1, int(sy_)-5, 1, (150, 80, 40, 255), outline=None)
+    X, Y = P(x0+5.5, y1, 3.5)                                 # pão na vitrine
+    for (a, b) in ((-4, 0), (0, -1), (4, 0)): d.ellipse([X+a-3, Y+b-1, X+a+3, Y+b+2], fill=(214, 150, 70))
+
+def terreno_res(l, num, l1, l2, cor=(250, 214, 70)):
+    """terreno reservado pra um marco, cercado e com placa"""
+    lx_, ly_ = lot(*l); x0, x1, y0, y1 = lx_+1, lx_+20, ly_+2, ly_+22
+    quad([P(x0, y0), P(x1, y0), P(x1, y1), P(x0, y1)], (150, 120, 76))
+    for k in range(0, int(y1-y0), 4): d.line([P(x0+1, y0+k+1), P(x1-1, y0+k+1)], fill=(160, 130, 84))
+    for u in np.arange(x0, x1+0.1, 3):
+        d.line([P(u, y1), P(u, y1, 4)], fill=(240, 236, 226)); d.line([P(u, y0), P(u, y0, 4)], fill=(240, 236, 226))
+    for v in np.arange(y0, y1+0.1, 3):
+        d.line([P(x0, v), P(x0, v, 4)], fill=(240, 236, 226)); d.line([P(x1, v), P(x1, v, 4)], fill=(240, 236, 226))
+    for (a, b) in (((x0, y1), (x1, y1)), ((x1, y0), (x1, y1)), ((x0, y0), (x1, y0)), ((x0, y0), (x0, y1))):
+        d.line([P(*a, 3), P(*b, 3)], fill=(214, 210, 200))
+    bx, by = (x0+x1)/2, y0 if l[2] == 'b' else y1
+    for u in (-6, 6): d.line([P(bx+u, by), P(bx+u, by, 13)], fill=(104, 66, 36))
+    quad([P(bx-9, by, 8), P(bx+9, by, 8), P(bx+9, by, 20), P(bx-9, by, 20)], cor)
+    cx, cy = P(bx, by, 18); draw_text(d, num, int(cx)+1, int(cy)-5, 1, (120, 40, 30, 255), outline=None)
+    cx, cy = P(bx, by, 13.5); draw_text(d, l1, int(cx)+1, int(cy)-4, 1, (120, 40, 30, 255), outline=None)
+
+CURRAL = (-146, 300, -104, 342)
+def curral():
+    x0, y0, x1, y1 = CURRAL
+    quad([P(x0, y0), P(x1, y0), P(x1, y1), P(x0, y1)], (150, 130, 82))
+    for k in range(0, int(y1-y0), 3): d.line([P(x0+1, y0+k+1), P(x1-1, y0+k+1)], fill=(140, 120, 74))
+    wood = (130, 84, 46)
+    for u in np.arange(x0, x1+0.1, 3):
+        d.line([P(u, y0), P(u, y0, 5)], fill=wood); d.line([P(u, y1), P(u, y1, 5)], fill=wood)
+    for v in np.arange(y0, y1+0.1, 3):
+        d.line([P(x0, v), P(x0, v, 5)], fill=wood); d.line([P(x1, v), P(x1, v, 5)], fill=wood)
+    for z in (2.2, 4.4):
+        for (a, b) in (((x0, y0), (x1, y0)), ((x0, y0), (x0, y1)), ((x1, y0), (x1, y1)), ((x0, y1), (x1, y1))):
+            d.line([P(*a, z), P(*b, z)], fill=(156, 104, 60))
+    box(x0+2, y0+2, x0+12, y0+5, 2, (110, 120, 130), (80, 90, 100)); top(x0+2, y0+2, x0+12, y0+5, 2, (90, 160, 220))   # bebedouro
+    for k in range(4): X, Y = P(x1-6-k*3, y0+4, 0); d.ellipse([X-5, Y-3, X+5, Y+2], fill=(214, 190, 90))                    # feno
+
 # ---------------- cache de sprites ----------------
 def sprite(fn, x0, y0, x1, y1, hz, pad=24):
     """desenha fn() num sprite próprio. Devolve (img, bx0, by0) em coordenadas da tela iso (já multiplicadas por K)"""
@@ -612,7 +668,11 @@ def ground():
     """chão do mapa (680) em 2x + texturas pro terreno de fora"""
     global _G
     if _G is None:
-        G = make_ground16_h(MH, (ROADD, ROADE, ROADF), True)[0]
+        roads = (ROADD, ROADE, ROADF)+((SC.ROADG,) if hasattr(SC, 'ROADG') else ())
+        G = make_ground16_h(MH, roads, True)[0]
+        if hasattr(SC, 'ROADG'):                              # ep. 10: versão sem a rua G (pra animação da rua abrindo)
+            G0 = make_ground16_h(MH, (ROADD, ROADE, ROADF), True)[0]
+            globals()['_G0'] = G0
         blk = G[70*S:110*S, 20*S:110*S]                       # um pedaço só de grama
         t2 = np.vstack([np.hstack([blk, blk[:, ::-1]]), np.hstack([blk[::-1], blk[::-1, ::-1]])])
         road = G[620*S:670*S, 122*S:142*S]                    # rua principal (pra estrada que sai da cidade)
@@ -667,6 +727,16 @@ def terreno_l(lx, ly):
     # dentro do mapa: o chão de verdade
     ins = ~outside
     out[ins] = G[np.clip(gy[ins], 0, G.shape[0]-1), np.clip(gx[ins], 0, G.shape[1]-1)]
+    if hasattr(SC, 'rua_g') and '_G0' in globals():
+        rg = SC.rua_g(SC.T_ATUAL[0])
+        if rg < 1:                                            # a rua G vai abrindo da avenida pros lados
+            G0 = globals()['_G0']
+            band = ins & (ly >= SC.ROADG-4) & (ly < SC.ROADG+14)
+            reach = 6+rg*120
+            hide = band & (np.abs(lx-131.5) > reach)
+            out[hide] = G0[np.clip(gy[hide], 0, G0.shape[0]-1), np.clip(gx[hide], 0, G0.shape[1]-1)]
+            dirt = band & (np.abs(np.abs(lx-131.5)-reach) < 3) & (ly >= SC.ROADG) & (ly < SC.ROADG+10)
+            out[dirt] = (150, 112, 70)
     return np.clip(out, 0, 255).astype(np.uint8)
 
 _TV = {}
@@ -739,7 +809,14 @@ def objetos(t, C):
         if pp_ > 0: out.append((lx_+ly_+40, spr(('pet', pp_), lambda pp_=pp_, lx_=lx_, ly_=ly_: construcao(lx_+1, ly_+5, lx_+20, ly_+20, pp_, petshop, 12, (150, 210, 236)), lot_box(lp), 46)))
         else: out.append((lx_+ly_+20, spr(('st', lp), lambda: stakes(lp), lot_box(lp), 10)))
         lq = SC.PADARIA; lx_, ly_ = lot(*lq)
-        out.append((lx_+ly_+20, spr('padaria800', terreno_padaria, lot_box(lq), 30)))
+        pq = round(getattr(SC, 'padaria_p', lambda t: 0)(t)*20)/20
+        if pq > 0: out.append((lx_+ly_+40, spr(('pad', pq), lambda pq=pq, lx_=lx_, ly_=ly_: construcao(lx_+1, ly_+2, lx_+20, ly_+17, pq, padaria, 11, (246, 226, 186)), lot_box(lq), 60)))
+        else: out.append((lx_+ly_+20, spr('padaria800', terreno_padaria, lot_box(lq), 30)))
+        if hasattr(SC, 'TORRE') and getattr(SC, 'rua_g', lambda t: 1)(t) >= 0.95:
+            lq = SC.TORRE; lx_, ly_ = lot(*lq)
+            out.append((lx_+ly_+20, spr('torre900', lambda: terreno_res(lq, "900", "TORRE", ""), lot_box(lq), 30)))
+        if hasattr(SC, 'TORRE'):
+            out.append((CURRAL[0]+CURRAL[1]+30, spr('curral', curral, (CURRAL[0]-2, CURRAL[1]-2, CURRAL[2]+2, CURRAL[3]+2), 10)))
     out.append((246, spr('igreja', church, (110, 60, 150, 108), 80)))
     out.append((349, spr('escola', escola, (158, 126, 210, 150), 60)))
     out.append((181+420, spr('pref', prefeitura, (136, 396, 186, 424), 60)))
@@ -777,7 +854,7 @@ def objetos(t, C):
     return out
 
 LAMPS6 = [(x, y) for y in range(124, MH-10, 34) for x in (123, 140) if not (205 < y < 285) and
-          all(not (r_-26 < y < r_+16) for r_ in (SC.ROADA, SC.ROADC, ROADD, ROADE, ROADF))]
+          all(not (r_-26 < y < r_+16) for r_ in (SC.ROADA, SC.ROADC, ROADD, ROADE, ROADF, getattr(SC, 'ROADG', -99)))]
 
 def person_sprite(pid, dr, fr, carry=None, uniform=None):
     import vila16 as V

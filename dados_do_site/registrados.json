@@ -377,6 +377,30 @@
    "cor_cabelo": 0,
    "cor_chapeu": 2
   },
+  "bio": "Quero meus cachorro"
+ },
+ {
+  "id": 76,
+  "casa": 8,
+  "chegou_no_ep": 1,
+  "nome": "Gey",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 4,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 6,
+   "estampa": "listrada",
+   "acessorio": "fone",
+   "cor_baixo": 3,
+   "cor_cabelo": 7,
+   "cor_chapeu": 0,
+   "cor_acessorio": 6
+  },
   "bio": null
  },
  {
@@ -444,6 +468,74 @@
    "cor_chapeu": 4
   },
   "bio": null
+ },
+ {
+  "id": 89,
+  "casa": 9,
+  "chegou_no_ep": 1,
+  "nome": "tomasthurbano",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 9,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 3,
+   "camisa2": 7,
+   "estampa": "lisa",
+   "cor_baixo": 3,
+   "cor_cabelo": 7,
+   "cor_chapeu": 11
+  },
+  "bio": null
+ },
+ {
+  "id": 96,
+  "casa": 10,
+  "chegou_no_ep": 1,
+  "nome": "Cabo Jair",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "franja",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 9,
+   "estampa": "lisa",
+   "cor_baixo": 2,
+   "cor_cabelo": 1,
+   "cor_chapeu": 5
+  },
+  "bio": null
+ },
+ {
+  "id": 136,
+  "casa": 14,
+  "chegou_no_ep": 1,
+  "nome": "Venefrides",
+  "aparencia": {
+   "pele": 2,
+   "baixo": "calca",
+   "barba": false,
+   "cabelo": "careca",
+   "camisa": 1,
+   "chapeu": null,
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 7,
+   "estampa": "regata",
+   "acessorio": "fone",
+   "cor_baixo": 5,
+   "cor_cabelo": 2,
+   "cor_chapeu": 9,
+   "cor_acessorio": 7
+  },
+  "bio": "Cês tão bão? Alguém arruma um pão de queijo aí pra mim?"
  },
  {
   "id": 150,
@@ -1160,6 +1252,30 @@
   "bio": null
  },
  {
+  "id": 390,
+  "casa": 39,
+  "chegou_no_ep": 4,
+  "nome": "Manuel Larp João",
+  "aparencia": {
+   "pele": 0,
+   "baixo": "bermuda",
+   "barba": false,
+   "cabelo": "curto",
+   "camisa": 9,
+   "chapeu": "palha",
+   "oculos": false,
+   "sapato": 0,
+   "camisa2": 4,
+   "estampa": "xadrez",
+   "acessorio": "cachecol",
+   "cor_baixo": 4,
+   "cor_cabelo": 6,
+   "cor_chapeu": 5,
+   "cor_acessorio": 0
+  },
+  "bio": null
+ },
+ {
   "id": 412,
   "casa": 42,
   "chegou_no_ep": 4,
@@ -1200,6 +1316,30 @@
    "cor_baixo": 3,
    "cor_cabelo": 5,
    "cor_chapeu": 6
+  },
+  "bio": null
+ },
+ {
+  "id": 434,
+  "casa": 44,
+  "chegou_no_ep": 4,
+  "nome": "Saitu🌹",
+  "aparencia": {
+   "pele": 1,
+   "baixo": "saia",
+   "barba": false,
+   "cabelo": "longo",
+   "camisa": 7,
+   "chapeu": null,
+   "oculos": true,
+   "sapato": 0,
+   "camisa2": 8,
+   "estampa": "lisa",
+   "acessorio": "fone",
+   "cor_baixo": 3,
+   "cor_cabelo": 0,
+   "cor_chapeu": 4,
+   "cor_acessorio": 1
   },
   "bio": null
  },

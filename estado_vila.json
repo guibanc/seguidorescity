@@ -1,12 +1,12 @@
 {
  "serie": "A Cidade dos Seguidores",
- "seguidores": 780,
+ "seguidores": 814,
  "regras": {
   "1 seguidor": "1 morador",
   "10 seguidores": "1 casa (casa i fica pronta com 10*(i+1) seguidores; construção começa em 10*i+5)",
   "marcos": "cada marco abaixo ganha uma construção nova; marcos já feitos: 300 = mercadinho, 400 = escola, 500 = prefeitura + ruas calçadas, 600 = 2º mercadinho + posto de saúde, 700 = campo de futebol"
  },
- "casas_prontas": 78,
+ "casas_prontas": 81,
  "construcoes": [
   "ruas calçadas: principal (x 127-136, até y 680), A (y 330), B (y 240), C (y 150), D (y 420), E (y 510, ep. 6), F (y 600, ep. 6)",
   "praça com poço, árvore e bancos",
@@ -28,7 +28,10 @@
   "ep. 9: MERCADINHO DO CENTRO pegou fogo e foi reformado (mesmo lugar)",
   "ep. 9: CORPO DE BOMBEIROS no lote (206,600,a) — ponto 'bombeiros'",
   "ep. 9: PETSHOP no lote (16,600,a) — ponto 'petshop'",
-  "ep. 9: terreno RESERVADO da padaria/lanchonete (marco 800) no lote (16,600,b) — ponto 'padaria' com marco 800"
+  "ep. 10: PADARIA/LANCHONETE (marco 800) no lote reservado (16,600,b) — ponto 'padaria'",
+  "ep. 10: RUA G (y = 690); o mapa cresceu pra baixo (680 -> 740). Lotes novos da rua G no FIM da lista (casas 88+)",
+  "ep. 10: terreno RESERVADO da torre de internet (marco 900) no lote (206,690,b) — ponto 'torre'",
+  "ep. 10: curral na fazenda do vizinho (fora do mapa, oeste: x -146..-104, y 300..342). Desafio: cada comentário no ep. 10 = 1 vaca (mostrar no ep. 11)"
  ],
  "lotes_casas": [
   [
@@ -483,18 +486,31 @@
   ]
  ],
  "lotes_livres": [
-  "casa 79: lote 140,600,a",
-  "casa 80: lote 82,600,a",
-  "casa 81: lote 82,600,b",
   "casa 82: lote 162,600,a",
   "casa 83: lote 60,600,a",
   "casa 84: lote 60,600,b",
   "casa 85: lote 184,600,a",
   "casa 86: lote 38,600,a",
-  "casa 87: lote 38,600,b"
+  "casa 87: lote 38,600,b",
+  "casa 88: lote 104,690,a",
+  "casa 89: lote 104,690,b",
+  "casa 90: lote 140,690,a",
+  "casa 91: lote 140,690,b",
+  "casa 92: lote 82,690,a",
+  "casa 93: lote 82,690,b",
+  "casa 94: lote 162,690,a",
+  "casa 95: lote 162,690,b",
+  "casa 96: lote 60,690,a",
+  "casa 97: lote 60,690,b",
+  "casa 98: lote 184,690,a",
+  "casa 99: lote 184,690,b",
+  "casa 100: lote 38,690,a",
+  "casa 101: lote 38,690,b",
+  "casa 102: lote 206,690,a",
+  "casa 103: lote 16,690,a",
+  "casa 104: lote 16,690,b"
  ],
  "proximos_marcos": {
-  "800": "padaria/lanchonete",
   "900": "torre de internet",
   "1000": "rio ganha ponte (vira cidade)",
   "1500": "bombeiros",
@@ -505,19 +521,19 @@
   "50000": "aeroporto",
   "100000": "arranha-céu símbolo"
  },
- "ultimo_episodio_publicado": 9,
+ "ultimo_episodio_publicado": 10,
  "nome_vila": "Pindamonhangaba",
  "proxima_casa": {
-  "numero": 79,
-  "comeca_em": 785,
-  "pronta_em": 790,
+  "numero": 82,
+  "comeca_em": 815,
+  "pronta_em": 820,
   "lote": [
-   140,
+   162,
    600,
    "a"
   ]
  },
- "proximo_episodio": 10,
+ "proximo_episodio": 11,
  "estilo_visual": "32 BITS desde o ep. 7 (iso.K = 2). No ep. 8 testamos um visual 'tudo em blocos' (vox.py), mas foi CANCELADO: o vídeo e o site seguem em 32 bits. O vox.py ficou guardado em arquivo_ep8_blocos/.",
  "status_ep3": "vídeo gerado (78 s), sincronizado com a narração",
  "site": "pasta site/: SITE_ESPEC.md + img/ + dados/ (gerar com codigo/exportar_site.py)",
@@ -527,7 +543,8 @@
   "400": "escola",
   "500": "prefeitura + ruas calçadas (vira cidadezinha)",
   "600": "2º mercadinho + posto de saúde",
-  "700": "campo de futebol"
+  "700": "campo de futebol",
+  "800": "padaria/lanchonete"
  },
  "prefeitura": {
   "lotes": [
@@ -568,22 +585,22 @@
     "a"
    ]
   ],
-  "padaria_800": [
-   16,
-   600,
+  "torre_900": [
+   206,
+   690,
    "b"
   ]
  },
  "capacidade": "90 lotes de casa → dá até 900 inscritos sem crescer o mapa de novo",
  "ganchos": [
-  "VOTAÇÃO ABERTA (14 candidatos) — resultado no próximo ep.?",
-  "800 = padaria/lanchonete (faltam 20)",
-  "bombeiros fundados",
-  "petshop e bicharada solta",
-  "campeonato no campo (verde x azul)"
+  "eleição: empate Enzo Mildana 3 x 3 Cabo Jair, votação fecha sexta 27/11 11:25 — resultado no ep. 11",
+  "vacas: 1 comentário no ep. 10 = 1 vaca no curral",
+  "900 = torre de internet (terreno na rua G)",
+  "1000 = ponte sobre o rio (vira cidade)"
  ],
  "status_ep7": "vídeo gerado (105,5 s) com a narração (+1,3 s de respiro pro tambor): placa vazia no escuro, votação, PINDAMONHANGABA, mutirão do pórtico, fogos, nuvens -> 32 bits, provador, casas 62-64, montagem do site, candidaturas, economia, campo",
  "status_ep8": "vídeo gerado (93,5 s) em 32 bits com a narração final: recap, a cidade crescendo, vitrine dos moradores, casas 65-72, QUASE... 700, obra do campo, o time (7 jogadores com nome), passes, GOOOL, vira-lata, fazendeiro, mural dos 11 candidatos, 'os seguidores entregaram', VAMO ACALMA, 800, resumo, CTA",
- "obs_lotes": "os lotes antes previstos pras casas 88, 89 e 90 viraram bombeiros, petshop e padaria: as casas 88+ precisam de lotes novos (mapa cresce pra baixo/direita, previsto pro 1000)",
- "status_ep9": "vídeo gerado (104 s), 32 bits: fogo no mercadinho, bombeiros, casas 73-78, petshop, campeonato, eleição 14 candidatos e votação aberta, campanha (jessica/Enzo/777), destaque Enzo Mildana, terreno 800"
+ "status_ep9": "vídeo gerado (104 s), 32 bits: fogo no mercadinho, bombeiros, casas 73-78, petshop, campeonato, eleição 14 candidatos e votação aberta, campanha (jessica/Enzo/777), destaque Enzo Mildana, terreno 800",
+ "status_ep10": "vídeo gerado (107 s), 32 bits: 800/padaria, Venefrides e o pão de queijo, casas 79-81, rua G, terreno da torre, GLEYDSON e os 3 cachorros, vacas do fazendeiro + desafio, chat no celular, 16 candidatos, empate 3x3, ponte no 1000",
+ "mapa_altura_logica": 740
 }
